@@ -36,7 +36,7 @@ const adminMiddleware = async (req, res, next) => {
 
 // GET /api/admin/users - Get all users (admin only)
 router.get('/users', adminMiddleware, (req, res) => {
-  const users = db.prepare('SELECT id, email, name, created_at FROM users ORDER BY created_at DESC').all();
+  const users = db.prepare('SELECT id, username, name, created_at FROM users ORDER BY created_at DESC').all();
 
   res.json({
     success: true,
@@ -89,7 +89,7 @@ router.get('/stats', adminMiddleware, (req, res) => {
   const avgCaloriesPerUser = totalUsers > 0 ? Math.round(totalCaloriesLogged / totalUsers) : 0;
 
   const topUsers = db.prepare(`
-    SELECT u.id, u.name, u.email, COUNT(f.id) as log_count, COALESCE(SUM(f.calories), 0) as total_calories
+    SELECT u.id, u.name, u.username, COUNT(f.id) as log_count, COALESCE(SUM(f.calories), 0) as total_calories
     FROM users u
     LEFT JOIN food_logs f ON u.id = f.user_id
     GROUP BY u.id
@@ -125,7 +125,7 @@ router.get('/food-logs', adminMiddleware, (req, res) => {
   const { limit = 50, offset = 0 } = req.query;
 
   const logs = db.prepare(`
-    SELECT f.*, u.name as user_name, u.email as user_email
+    SELECT f.*, u.name as user_name, u.username as user_username
     FROM food_logs f
     JOIN users u ON f.user_id = u.id
     ORDER BY f.created_at DESC

@@ -31,7 +31,7 @@ try {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE NOT NULL,
+      username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       name TEXT NOT NULL,
       role TEXT DEFAULT 'user' CHECK(role IN ('user', 'admin')),
@@ -134,26 +134,26 @@ if (quoteCount.count === 0) {
 
 // User operations
 export const UserDB = {
-  create(email, password, name, role = 'user') {
+  create(username, password, name, role = 'user') {
     const hashedPassword = bcrypt.hashSync(password, 10);
-    const stmt = db.prepare('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)');
-    const result = stmt.run(email, hashedPassword, name, role);
+    const stmt = db.prepare('INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)');
+    const result = stmt.run(username, hashedPassword, name, role);
     return this.findById(result.lastInsertRowid);
   },
 
-  findByEmail(email) {
-    return db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  findByUsername(username) {
+    return db.prepare('SELECT * FROM users WHERE username = ?').get(username);
   },
 
   findById(id) {
-    return db.prepare('SELECT id, email, name, role, created_at FROM users WHERE id = ?').get(id);
+    return db.prepare('SELECT id, username, name, role, created_at FROM users WHERE id = ?').get(id);
   },
 
-  verifyPassword(email, password) {
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  verifyPassword(username, password) {
+    const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
     if (!user) return null;
     if (!bcrypt.compareSync(password, user.password)) return null;
-    return { id: user.id, email: user.email, name: user.name, role: user.role };
+    return { id: user.id, username: user.username, name: user.name, role: user.role };
   },
 
   setAdmin(userId) {

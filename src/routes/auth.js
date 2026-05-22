@@ -8,11 +8,15 @@ const router = express.Router();
 // POST /api/auth/register - 註冊新用戶
 router.post('/register', async (req, res, next) => {
   try {
-    const { email, password, name } = req.body;
+    const { username, password, name } = req.body;
 
     // Validation
-    if (!email || !password || !name) {
+    if (!username || !password || !name) {
       return res.status(400).json({ error: '請填寫所有必填欄位' });
+    }
+
+    if (username.length < 3) {
+      return res.status(400).json({ error: '帳號至少需要 3 個字元' });
     }
 
     if (password.length < 6) {
@@ -20,18 +24,18 @@ router.post('/register', async (req, res, next) => {
     }
 
     // Check if user exists
-    const existingUser = UserDB.findByEmail(email);
+    const existingUser = UserDB.findByUsername(username);
     if (existingUser) {
-      return res.status(409).json({ error: '此電子郵件已被註冊' });
+      return res.status(409).json({ error: '此帳號已被註冊' });
     }
 
     // Create user
-    const user = UserDB.create(email, password, name);
+    const user = UserDB.create(username, password, name);
 
     // Generate token
     const token = generateToken({
       id: user.id,
-      email: user.email,
+      username: user.username,
       name: user.name
     });
 
@@ -41,7 +45,7 @@ router.post('/register', async (req, res, next) => {
       data: {
         user: {
           id: user.id,
-          email: user.email,
+          username: user.username,
           name: user.name
         },
         token
@@ -55,23 +59,23 @@ router.post('/register', async (req, res, next) => {
 // POST /api/auth/login - 登入
 router.post('/login', async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
     // Validation
-    if (!email || !password) {
-      return res.status(400).json({ error: '請填寫電子郵件和密碼' });
+    if (!username || !password) {
+      return res.status(400).json({ error: '請填寫帳號和密碼' });
     }
 
     // Verify password
-    const user = UserDB.verifyPassword(email, password);
+    const user = UserDB.verifyPassword(username, password);
     if (!user) {
-      return res.status(401).json({ error: '電子郵件或密碼錯誤' });
+      return res.status(401).json({ error: '帳號或密碼錯誤' });
     }
 
     // Generate token
     const token = generateToken({
       id: user.id,
-      email: user.email,
+      username: user.username,
       name: user.name
     });
 
@@ -81,7 +85,7 @@ router.post('/login', async (req, res, next) => {
       data: {
         user: {
           id: user.id,
-          email: user.email,
+          username: user.username,
           name: user.name
         },
         token

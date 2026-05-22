@@ -185,8 +185,8 @@
 
     <form onsubmit="handleLogin(event)">
       <div class="form-group">
-        <label>電子郵件</label>
-        <input type="email" id="email-input" placeholder="請輸入電子郵件" required>
+        <label>帳號</label>
+        <input type="text" id="username-input" placeholder="請輸入帳號" required>
       </div>
       <div class="form-group">
         <label>密碼</label>
@@ -223,7 +223,7 @@
 
     async function handleLogin(e) {
       e.preventDefault();
-      const email = document.getElementById('email-input').value;
+      const username = document.getElementById('username-input').value;
       const password = document.getElementById('password-input').value;
       const btn = document.querySelector('.btn-login');
 
@@ -234,7 +234,7 @@
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ username, password })
         });
 
         const result = await response.json();
