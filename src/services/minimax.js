@@ -22,7 +22,7 @@ export async function analyzeFoodImage(imageBase64, prompt) {
 
   // MiniMax Vision API format - messages array with image_url content block
   const payload = {
-    model: 'minimax-vision-01',
+    model: 'MiniMax-Text-01',
     messages: [{
       role: 'user',
       content: [
