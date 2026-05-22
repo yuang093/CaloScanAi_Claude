@@ -248,14 +248,13 @@
             <tr>
               <th>ID</th>
               <th>名稱</th>
-              <th>Email</th>
+              <th>帳號</th>
               <th>註冊日期</th>
-              <th>記錄數</th>
               <th>操作</th>
             </tr>
           </thead>
           <tbody id="users-table-body">
-            <tr><td colspan="6" class="loading">載入中...</td></tr>
+            <tr><td colspan="5" class="loading">載入中...</td></tr>
           </tbody>
         </table>
       </div>
@@ -462,16 +461,16 @@
         if (result.success) {
           const tbody = document.getElementById('users-table-body');
           if (result.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999;">尚無會員資料</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">尚無會員資料</td></tr>';
           } else {
             tbody.innerHTML = result.data.map(user => `
               <tr>
                 <td>${user.id}</td>
                 <td>${user.name}</td>
-                <td>${user.email}</td>
+                <td>${user.username}</td>
                 <td>${new Date(user.created_at).toLocaleDateString('zh-TW')}</td>
-                <td>-</td>
                 <td>
+                  <button class="btn btn-secondary btn-small" onclick="editPassword(${user.id}, '${user.name}')">修改密碼</button>
                   <button class="btn btn-danger btn-small" onclick="deleteUser(${user.id})">刪除</button>
                 </td>
               </tr>
@@ -479,7 +478,7 @@
           }
         }
       } catch (error) {
-        document.getElementById('users-table-body').innerHTML = '<tr><td colspan="6" class="error">載入失敗</td></tr>';
+        document.getElementById('users-table-body').innerHTML = '<tr><td colspan="5" class="error">載入失敗</td></tr>';
       }
     }
 
@@ -557,6 +556,32 @@
 
     function showError(message) {
       document.getElementById('error-container').innerHTML = '<div class="error">' + message + '</div>';
+    }
+
+    function editPassword(id, name) {
+      const newPassword = prompt(`請輸入新密碼（用戶：${name}）：`);
+      if (!newPassword || newPassword.length < 6) {
+        if (newPassword) alert('密碼至少需要 6 個字元');
+        return;
+      }
+
+      fetch('/api/admin/users/' + id + '/password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify({ password: newPassword })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          alert('密碼已更新');
+        } else {
+          alert(result.error || '更新失敗');
+        }
+      })
+      .catch(() => alert('更新失敗'));
     }
 
     async function deleteUser(id) {

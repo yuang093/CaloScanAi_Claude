@@ -81,6 +81,27 @@ router.delete('/users/:id', adminMiddleware, (req, res) => {
   });
 });
 
+// PUT /api/admin/users/:id/password - Update user password (admin only)
+router.put('/users/:id/password', adminMiddleware, (req, res) => {
+  const { password } = req.body;
+
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: '密碼至少需要 6 個字元' });
+  }
+
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  const result = db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, req.params.id);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: '用戶不存在' });
+  }
+
+  res.json({
+    success: true,
+    message: '密碼已更新'
+  });
+});
+
 // GET /api/admin/stats - Get system statistics (admin only)
 router.get('/stats', adminMiddleware, (req, res) => {
   const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
