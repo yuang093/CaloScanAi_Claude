@@ -1,7 +1,4 @@
-version: '3.8'
-
 services:
-  # CaloScanAi Application
   app:
     build:
       context: .
@@ -17,8 +14,6 @@ services:
     volumes:
       - app_data:/app/data
       - ./uploads:/app/uploads
-    ports:
-      - "3002:3000"
     networks:
       - caloscanai_network
     healthcheck:
@@ -28,7 +23,6 @@ services:
       retries: 3
       start_period: 10s
 
-  # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
     container_name: caloscanai_nginx
@@ -37,7 +31,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
     ports:
-      - "80:80"
+      - "3080:80"
       - "443:443"
     networks:
       - caloscanai_network
