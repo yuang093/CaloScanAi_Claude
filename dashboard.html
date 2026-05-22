@@ -432,10 +432,15 @@
   <div id="barcode-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div class="modal-content" style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:400px; width:90%;">
       <h3 style="margin-bottom:16px;">📱 條碼掃描</h3>
-      <div style="margin-bottom:16px;">
-        <input type="text" id="barcode-input" placeholder="輸入條碼號碼" class="input" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px;">
+      <div id="barcode-camera-container" style="display:none; margin-bottom:16px; position:relative;">
+        <video id="barcode-video" style="width:100%; border-radius:12px; background:#000;"></video>
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); border:2px solid var(--color-primary); width:200px; height:100px; border-radius:8px; pointer-events:none;"></div>
+        <div style="text-align:center; margin-top:8px; font-size:0.85rem; color:var(--color-text-muted);">將條碼置於框內</div>
       </div>
-      <div id="barcode-result" style="display:none; padding:16px; background:var(--color-bg); border-radius:12px; margin-bottom:16px;">
+      <div id="barcode-input-container">
+        <input type="text" id="barcode-input" placeholder="或輸入條碼號碼" class="input" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px;">
+      </div>
+      <div id="barcode-result" style="display:none; padding:16px; background:var(--color-bg); border-radius:12px; margin:16px 0;">
         <div style="font-weight:bold; margin-bottom:8px;" id="barcode-product-name"></div>
         <div style="font-size:0.9rem; color:var(--color-text-muted);" id="barcode-product-brand"></div>
         <div style="margin-top:12px; display:grid; grid-template-columns:repeat(4,1fr); gap:8px; text-align:center;">
@@ -446,10 +451,11 @@
         </div>
       </div>
       <div style="display:flex; gap:12px;">
+        <button id="camera-btn" onclick="toggleCameraScan()" class="btn btn-secondary" style="flex:1;">📷 相機掃描</button>
         <button onclick="lookupBarcode()" class="btn btn-primary" style="flex:1;">查詢</button>
-        <button onclick="closeBarcodeModal()" class="btn btn-secondary" style="flex:1;">關閉</button>
       </div>
       <button id="add-barcode-btn" class="btn btn-primary" style="display:none; margin-top:12px; width:100%;" onclick="addBarcodeToLog()">加入日誌</button>
+      <button onclick="closeBarcodeModal()" class="btn btn-secondary" style="margin-top:8px; width:100%;">關閉</button>
     </div>
   </div>
 
@@ -849,6 +855,89 @@
       document.getElementById('barcode-input').value = '';
       document.getElementById('barcode-result').style.display = 'none';
       document.getElementById('add-barcode-btn').style.display = 'none';
+      stopCameraScan();
+    }
+
+    let cameraStream = null;
+    let cameraScanInterval = null;
+
+    async function toggleCameraScan() {
+      const video = document.getElementById('barcode-video');
+      const container = document.getElementById('barcode-camera-container');
+      const inputContainer = document.getElementById('barcode-input-container');
+      const cameraBtn = document.getElementById('camera-btn');
+
+      if (cameraStream) {
+        stopCameraScan();
+        container.style.display = 'none';
+        inputContainer.style.display = 'block';
+        cameraBtn.textContent = '📷 相機掃描';
+        return;
+      }
+
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+        video.srcObject = cameraStream;
+        video.play();
+        container.style.display = 'block';
+        inputContainer.style.display = 'none';
+        cameraBtn.textContent = '⌨️ 輸入模式';
+
+        // Start scanning frames
+        cameraScanInterval = setInterval(scanBarcodeFrame, 500);
+      } catch (err) {
+        alert('無法開啟相機，請確認已授權相機權限');
+        console.error(err);
+      }
+    }
+
+    function stopCameraScan() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      if (cameraScanInterval) {
+        clearInterval(cameraScanInterval);
+        cameraScanInterval = null;
+      }
+    }
+
+    async function scanBarcodeFrame() {
+      const video = document.getElementById('barcode-video');
+      if (!video || video.readyState < 2) return;
+
+      // Create canvas to capture frame
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+
+      // Convert to base64
+      const imageData = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+
+      try {
+        // Send to API to scan barcode using AI Vision
+        const response = await fetch('/api/barcode/scan', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify({ image: imageData })
+        });
+
+        const result = await response.json();
+        if (result.success && result.data.barcode) {
+          stopCameraScan();
+          document.getElementById('barcode-input').value = result.data.barcode;
+          lookupBarcode();
+        }
+      } catch (err) {
+        // Silent fail for frames without barcode
+      }
     }
 
     let barcodeProductData = null;
