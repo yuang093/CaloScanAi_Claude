@@ -15,65 +15,105 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-const db = new Database(dbPath);
+let db;
+try {
+  db = new Database(dbPath);
+} catch (err) {
+  console.error('❌ 無法建立資料庫連線:', err.message);
+  process.exit(1);
+}
 
 // Enable foreign keys
 db.pragma('foreign_keys = ON');
 
-// Initialize database schema
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    name TEXT NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-  );
+// Initialize database schema with error handling
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      name TEXT NOT NULL,
+      role TEXT DEFAULT 'user' CHECK(role IN ('user', 'admin')),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
 
-  CREATE TABLE IF NOT EXISTS food_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    image_data TEXT,
-    meal_type TEXT DEFAULT 'general',
-    calories INTEGER DEFAULT 0,
-    protein REAL DEFAULT 0,
-    carbs REAL DEFAULT 0,
-    fat REAL DEFAULT 0,
-    description TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
+    CREATE TABLE IF NOT EXISTS food_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      image_data TEXT,
+      meal_type TEXT DEFAULT 'general',
+      calories INTEGER DEFAULT 0,
+      protein REAL DEFAULT 0,
+      carbs REAL DEFAULT 0,
+      fat REAL DEFAULT 0,
+      description TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
 
-  CREATE TABLE IF NOT EXISTS daily_progress (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    date TEXT NOT NULL,
-    total_calories INTEGER DEFAULT 0,
-    total_protein REAL DEFAULT 0,
-    total_carbs REAL DEFAULT 0,
-    total_fat REAL DEFAULT 0,
-    goal_calories INTEGER DEFAULT 2000,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE(user_id, date)
-  );
+    CREATE TABLE IF NOT EXISTS daily_progress (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      total_calories INTEGER DEFAULT 0,
+      total_protein REAL DEFAULT 0,
+      total_carbs REAL DEFAULT 0,
+      total_fat REAL DEFAULT 0,
+      goal_calories INTEGER DEFAULT 2000,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE(user_id, date)
+    );
 
-  CREATE TABLE IF NOT EXISTS daily_quotes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    quote TEXT NOT NULL,
-    author TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-  );
-`);
+    CREATE TABLE IF NOT EXISTS daily_quotes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      quote TEXT NOT NULL,
+      author TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS barcodes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      barcode TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      brand TEXT,
+      calories INTEGER DEFAULT 0,
+      protein REAL DEFAULT 0,
+      carbs REAL DEFAULT 0,
+      fat REAL DEFAULT 0,
+      serving_size TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+} catch (err) {
+  console.error('❌ 資料庫結構初始化失敗:', err.message);
+  process.exit(1);
+}
+
+// ALTER TABLE for role column (SQLite doesn't auto-add to existing tables)
+try {
+  db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user' CHECK(role IN ('user', 'admin'))");
+} catch (err) {
+  // Column may already exist, ignore error
+  if (!err.message.includes('duplicate column name')) {
+    console.warn('⚠️ users.role 欄位設定警告:', err.message);
+  }
+}
 
 // Create indexes
-db.exec(`
-  CREATE INDEX IF NOT EXISTS idx_food_logs_user_id ON food_logs(user_id);
-  CREATE INDEX IF NOT EXISTS idx_food_logs_created_at ON food_logs(created_at);
-  CREATE INDEX IF NOT EXISTS idx_daily_progress_user_date ON daily_progress(user_id, date);
-`);
+try {
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_food_logs_user_id ON food_logs(user_id);
+    CREATE INDEX IF NOT EXISTS idx_food_logs_created_at ON food_logs(created_at);
+    CREATE INDEX IF NOT EXISTS idx_daily_progress_user_date ON daily_progress(user_id, date);
+  `);
+} catch (err) {
+  console.error('❌ 索引建立失敗:', err.message);
+  process.exit(1);
+}
 
 // Seed default daily quotes if empty
 const quoteCount = db.prepare('SELECT COUNT(*) as count FROM daily_quotes').get();
@@ -94,10 +134,10 @@ if (quoteCount.count === 0) {
 
 // User operations
 export const UserDB = {
-  create(email, password, name) {
+  create(email, password, name, role = 'user') {
     const hashedPassword = bcrypt.hashSync(password, 10);
-    const stmt = db.prepare('INSERT INTO users (email, password, name) VALUES (?, ?, ?)');
-    const result = stmt.run(email, hashedPassword, name);
+    const stmt = db.prepare('INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, ?)');
+    const result = stmt.run(email, hashedPassword, name, role);
     return this.findById(result.lastInsertRowid);
   },
 
@@ -106,14 +146,19 @@ export const UserDB = {
   },
 
   findById(id) {
-    return db.prepare('SELECT id, email, name, created_at FROM users WHERE id = ?').get(id);
+    return db.prepare('SELECT id, email, name, role, created_at FROM users WHERE id = ?').get(id);
   },
 
   verifyPassword(email, password) {
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     if (!user) return null;
     if (!bcrypt.compareSync(password, user.password)) return null;
-    return { id: user.id, email: user.email, name: user.name };
+    return { id: user.id, email: user.email, name: user.name, role: user.role };
+  },
+
+  setAdmin(userId) {
+    const stmt = db.prepare('UPDATE users SET role = ? WHERE id = ?');
+    stmt.run('admin', userId);
   }
 };
 
@@ -264,5 +309,60 @@ export const QuoteDB = {
     return db.prepare('SELECT * FROM daily_quotes ORDER BY id').all();
   }
 };
+
+// Barcode operations
+export const BarcodeDB = {
+  findByBarcode(barcode) {
+    return db.prepare('SELECT * FROM barcodes WHERE barcode = ?').get(barcode);
+  },
+
+  create(data) {
+    const stmt = db.prepare(`
+      INSERT INTO barcodes (barcode, name, brand, calories, protein, carbs, fat, serving_size)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(
+      data.barcode,
+      data.name,
+      data.brand || '未知',
+      data.calories || 0,
+      data.protein || 0,
+      data.carbs || 0,
+      data.fat || 0,
+      data.servingSize || '未知'
+    );
+    return this.findByBarcode(data.barcode);
+  },
+
+  upsert(data) {
+    const existing = this.findByBarcode(data.barcode);
+    if (existing) {
+      const stmt = db.prepare(`
+        UPDATE barcodes SET name = ?, brand = ?, calories = ?, protein = ?, carbs = ?, fat = ?, serving_size = ?
+        WHERE barcode = ?
+      `);
+      stmt.run(data.name, data.brand || '未知', data.calories || 0, data.protein || 0, data.carbs || 0, data.fat || 0, data.servingSize || '未知', data.barcode);
+    } else {
+      this.create(data);
+    }
+    return this.findByBarcode(data.barcode);
+  }
+};
+
+// Seed default barcodes if empty
+const barcodeCount = db.prepare('SELECT COUNT(*) as count FROM barcodes').get();
+if (barcodeCount.count === 0) {
+  const defaultBarcodes = [
+    { barcode: '4710138000014', name: '義美小泡芙', brand: '義美', calories: 140, protein: 2, carbs: 18, fat: 6, servingSize: '30g' },
+    { barcode: '4710595600011', name: '泰山八寶粥', brand: '泰山', calories: 180, protein: 4, carbs: 30, fat: 4, servingSize: '250g' },
+    { barcode: '4901234567890', name: '可口可樂', brand: '可口可樂', calories: 140, protein: 0, carbs: 35, fat: 0, servingSize: '330ml' },
+    { barcode: '4712345678901', name: '乖乖', brand: '乖乖', calories: 200, protein: 3, carbs: 25, fat: 10, servingSize: '45g' },
+    { barcode: '6920202888888', name: '維他奶', brand: '維他奶', calories: 100, protein: 5, carbs: 12, fat: 3, servingSize: '250ml' }
+  ];
+
+  for (const bc of defaultBarcodes) {
+    BarcodeDB.create(bc);
+  }
+}
 
 export default db;

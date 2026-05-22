@@ -21,9 +21,9 @@ const adminMiddleware = async (req, res, next) => {
       return res.status(401).json({ error: '無效的認證令牌' });
     }
 
-    // Check if user is admin (email contains 'admin' for demo)
+    // Check if user is admin via role field
     const user = UserDB.findById(decoded.id);
-    if (!user || !user.email.includes('admin')) {
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: '需要管理員權限' });
     }
 

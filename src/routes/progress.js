@@ -5,7 +5,7 @@ import { FoodLogDB, DailyProgressDB, QuoteDB } from '../services/database.js';
 const router = express.Router();
 
 // GET /api/progress/daily - Get today's progress (authenticated)
-router.get('/daily', authMiddleware, async (req, res) => {
+router.get('/daily', authMiddleware, async (req, res, next) => {
   try {
     const today = new Date().toISOString().split('T')[0];
 
@@ -58,7 +58,7 @@ router.get('/daily', authMiddleware, async (req, res) => {
 });
 
 // GET /api/progress/weekly - Get weekly progress (authenticated)
-router.get('/weekly', authMiddleware, async (req, res) => {
+router.get('/weekly', authMiddleware, async (req, res, next) => {
   try {
     const today = new Date();
     const weekAgo = new Date(today);
@@ -117,7 +117,7 @@ router.get('/weekly', authMiddleware, async (req, res) => {
 });
 
 // GET /api/progress/history - Get progress history (authenticated)
-router.get('/history', authMiddleware, async (req, res) => {
+router.get('/history', authMiddleware, async (req, res, next) => {
   try {
     const { startDate, endDate, limit = 30 } = req.query;
 
@@ -140,7 +140,7 @@ router.get('/history', authMiddleware, async (req, res) => {
 });
 
 // PUT /api/progress/goals - Update daily goals (authenticated)
-router.put('/goals', authMiddleware, async (req, res) => {
+router.put('/goals', authMiddleware, async (req, res, next) => {
   try {
     const { goalCalories } = req.body;
 
@@ -169,7 +169,7 @@ router.put('/goals', authMiddleware, async (req, res) => {
 });
 
 // GET /api/progress/quotes - Get all quotes
-router.get('/quotes', async (req, res) => {
+router.get('/quotes', async (req, res, next) => {
   try {
     const quotes = QuoteDB.getAll();
     res.json({

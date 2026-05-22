@@ -1,6 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
-import { generateToken } from '../middleware/auth.js';
+import { generateToken, authMiddleware } from '../middleware/auth.js';
 import { UserDB } from '../services/database.js';
 
 const router = express.Router();
@@ -93,23 +93,9 @@ router.post('/login', async (req, res, next) => {
 });
 
 // GET /api/auth/me - 獲取當前用戶資訊
-router.get('/me', async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: '未提供認證令牌' });
-  }
-
-  const token = authHeader.split(' ')[1];
-  const { verifyToken } = await import('../middleware/auth.js');
-
+router.get('/me', authMiddleware, async (req, res, next) => {
   try {
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return res.status(401).json({ error: '無效的認證令牌' });
-    }
-
-    const user = UserDB.findById(decoded.id);
+    const user = UserDB.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ error: '用戶不存在' });
     }

@@ -27,3 +27,6 @@ coverage/
 uploads/
 temp/
 *.log
+
+# 資料庫目錄
+data/
