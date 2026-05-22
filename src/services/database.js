@@ -103,15 +103,14 @@ try {
   }
 }
 
-// Migration: email column renamed to username
+// Migration: email column renamed to username (SQLite 支援)
 try {
   const pragma = db.prepare("PRAGMA table_info(users)").all();
   const columns = pragma.map(c => c.name);
 
   if (columns.includes('email') && !columns.includes('username')) {
     db.exec("ALTER TABLE users ADD COLUMN username TEXT");
-    db.exec("UPDATE users SET username = email WHERE username IS NULL");
-    db.exec("ALTER TABLE users DROP COLUMN email");
+    db.exec("UPDATE users SET username = email WHERE username IS NULL OR username = ''");
     console.log('✅ 資料庫遷移完成: email → username');
   }
 } catch (err) {

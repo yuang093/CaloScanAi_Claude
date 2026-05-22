@@ -1,60 +1,52 @@
-root@localhost:/opt/caloscanai_claude# docker exec -it caloscanai_app node -e "const db = require('./src/services/database.js').default; const schema = db.prepare('PRAGMA table_info(users)').all(); console.log(JSON.stringify(schema, null, 2));"
-[
-  {
-    "cid": 0,
-    "name": "id",
-    "type": "INTEGER",
-    "notnull": 0,
-    "dflt_value": null,
-    "pk": 1
-  },
-  {
-    "cid": 1,
-    "name": "email",
-    "type": "TEXT",
-    "notnull": 1,
-    "dflt_value": null,
-    "pk": 0
-  },
-  {
-    "cid": 2,
-    "name": "password",
-    "type": "TEXT",
-    "notnull": 1,
-    "dflt_value": null,
-    "pk": 0
-  },
-  {
-    "cid": 3,
-    "name": "name",
-    "type": "TEXT",
-    "notnull": 1,
-    "dflt_value": null,
-    "pk": 0
-  },
-  {
-    "cid": 4,
-    "name": "role",
-    "type": "TEXT",
-    "notnull": 0,
-    "dflt_value": "'user'",
-    "pk": 0
-  },
-  {
-    "cid": 5,
-    "name": "created_at",
-    "type": "TEXT",
-    "notnull": 0,
-    "dflt_value": "CURRENT_TIMESTAMP",
-    "pk": 0
-  },
-  {
-    "cid": 6,
-    "name": "updated_at",
-    "type": "TEXT",
-    "notnull": 0,
-    "dflt_value": "CURRENT_TIMESTAMP",
-    "pk": 0
-  }
-]
+root@localhost:/opt/caloscanai_claude# docker logs caloscanai_app --tail 50
+Stack: SqliteError: no such column: username
+    at Database.prepare (/app/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at Object.verifyPassword (file:///app/src/services/database.js:153:21)
+    at file:///app/src/routes/auth.js:70:25
+    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+    at next (/app/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+    at /app/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/app/node_modules/express/lib/router/index.js:346:12)
+    at next (/app/node_modules/express/lib/router/index.js:280:10)
+❌ Error: no such column: username
+Stack: SqliteError: no such column: username
+    at Database.prepare (/app/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at Object.verifyPassword (file:///app/src/services/database.js:153:21)
+    at file:///app/src/routes/auth.js:70:25
+    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+    at next (/app/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+    at /app/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/app/node_modules/express/lib/router/index.js:346:12)
+    at next (/app/node_modules/express/lib/router/index.js:280:10)
+⚠️ APP_URL not set, CORS is open to all origins
+🚀 CaloScanAi API running on port 3000
+📊 Health check: http://localhost:3000/health
+❌ Error: no such column: username
+Stack: SqliteError: no such column: username
+    at Database.prepare (/app/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at Object.verifyPassword (file:///app/src/services/database.js:153:21)
+    at file:///app/src/routes/auth.js:70:25
+    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+    at next (/app/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+    at /app/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/app/node_modules/express/lib/router/index.js:346:12)
+    at next (/app/node_modules/express/lib/router/index.js:280:10)
+❌ Error: no such column: username
+Stack: SqliteError: no such column: username
+    at Database.prepare (/app/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at Object.verifyPassword (file:///app/src/services/database.js:153:21)
+    at file:///app/src/routes/auth.js:70:25
+    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+    at next (/app/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+    at /app/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/app/node_modules/express/lib/router/index.js:346:12)
+    at next (/app/node_modules/express/lib/router/index.js:280:10)
 root@localhost:/opt/caloscanai_claude# 
