@@ -18,18 +18,11 @@ export async function analyzeFoodImage(imageBase64, prompt) {
     return { success: false, error: 'API key not configured' };
   }
 
-  const dataUrl = `data:image/jpeg;base64,${imageBase64}`;
-
-  // MiniMax Vision API format - messages array with image_url content block
+  // MiniMax Vision API format - prompt + image_url
   const payload = {
-    model: 'MiniMax-Text-01',
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'image_url', image_url: { url: dataUrl } },
-        { type: 'text', text: prompt || '請詳細描述這張圖片中的食物內容，並估算總熱量（卡路里）和三大營養素（蛋白質、脂肪、碳水化合物）。請以 JSON 格式回覆，包含：totalCalories、totalProtein、totalCarbs、totalFat（數字），以及 description（文字）。' }
-      ]
-    }]
+    model: 'MiniMax-VL-01',
+    prompt: prompt || '請詳細描述這張圖片中的食物內容，並估算總熱量（卡路里）和三大營養素（蛋白質、脂肪、碳水化合物）。請以 JSON 格式回覆，包含：totalCalories、totalProtein、totalCarbs、totalFat（數字），以及 description（文字）。',
+    image_url: `data:image/jpeg;base64,${imageBase64}`
   };
 
   const requestBody = JSON.stringify(payload);
@@ -38,7 +31,7 @@ export async function analyzeFoodImage(imageBase64, prompt) {
     const options = {
       hostname: MINIMAX_API_HOST,
       port: 443,
-      path: '/v1/text/chatcompletion_v2',
+      path: '/v1/coding_plan/vlm',
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${MINIMAX_API_KEY}`,
@@ -60,8 +53,10 @@ export async function analyzeFoodImage(imageBase64, prompt) {
             resolve({ success: true, data: { content } });
           } else if (parsed.base_resp?.status_msg) {
             resolve({ success: false, error: parsed.base_resp.status_msg });
+          } else if (parsed.status_msg) {
+            resolve({ success: false, error: parsed.status_msg });
           } else {
-            resolve({ success: false, error: 'Unknown API response format' });
+            resolve({ success: true, data: { content: data } });
           }
         } catch (e) {
           resolve({ success: false, error: 'Failed to parse response' });
