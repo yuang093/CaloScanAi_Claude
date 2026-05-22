@@ -1,0 +1,64 @@
+嚴重問題（安全性）
+1. src/routes/admin.js — 管理員驗證邏輯極度脆弱
+用 user.email.includes('admin') 來判斷是否為管理員，任何 email 含有 admin 字樣的普通用戶都能取得管理員權限。
+Prompt：
+
+在 admin.js 的 adminMiddleware 中，判斷管理員身份的邏輯是 user.email.includes('admin')，這是嚴重的安全漏洞。請修改為在 users 資料表中新增 role 欄位（值為 'admin' 或 'user'），並在 adminMiddleware 中改為查詢 user.role === 'admin' 來判斷。
+
+
+2. src/routes/barcode.js — /api/barcode/add 沒有身份驗證
+任何人都可以新增或覆蓋條碼資料庫，且資料只存在記憶體（重啟即消失）。
+Prompt：
+
+barcode.js 的 POST /add 路由沒有加上 authMiddleware 保護，任何未登入用戶都能呼叫。請加上 authMiddleware，並將 barcode 資料改存進 SQLite database（新增 barcodes table），而不是 in-memory object。
+
+
+3. src/server/index.js — CORS 完全開放
+app.use(cors()) 沒有限制任何來源，生產環境應限制 origin。
+Prompt：
+
+index.js 中 app.use(cors()) 沒有設定允許的 origin。請改為讀取 process.env.APP_URL 作為 allowed origin，並在 .env.example 中補充說明設定方式。
+
+
+4. src/middleware/auth.js — JWT secret fallback 硬編碼
+const JWT_SECRET = process.env.JWT_SECRET || 'caloscanai-secret-key-change-in-production' 若環境變數沒設，會用明文 fallback，生產環境可能被忽略。
+Prompt：
+
+auth.js 中 JWT_SECRET 有 hardcoded fallback。請改為當 process.env.JWT_SECRET 未設定時直接 throw new Error('JWT_SECRET environment variable is required') 來強制中斷啟動，而不是使用預設值。
+
+
+🟡 邏輯錯誤（Bug）
+5. src/routes/progress.js — next 未定義
+/daily、/weekly、/history、/goals、/quotes 這幾個 route handler 的 catch block 都呼叫了 next(error)，但這些 handler 沒有在參數中宣告 next。
+Prompt：
+
+progress.js 中多個 async route handler（/daily、/weekly、/history、/goals、/quotes）的 catch block 使用了 next(error)，但 handler 宣告的參數是 (req, res) 沒有 next。請在所有這些 handler 的參數中加上 next，改為 async (req, res, next)。
+
+
+6. src/services/minimax.js — API 路徑疑似不正確
+endpoint 使用 /v1/coding_plan/vlm，這看起來不像標準 MiniMax Vision API 的路徑，應為 /v1/text/chatcompletion_v2 或類似路徑，且 payload 格式也與官方文件不符（標準格式需要 messages array 而非 prompt + image_url）。
+Prompt：
+
+minimax.js 中 API 呼叫的路徑是 /v1/coding_plan/vlm，且 payload 格式使用了 { prompt, image_url }，這不符合 MiniMax Vision API 的標準格式。請參考 MiniMax 官方文件，將路徑改為正確 endpoint，並將 payload 改為 messages array 格式，其中 image 應作為 image_url type 的 content block 傳入。
+
+
+7. src/services/minimax.js — parseNutritionalData 熱量累加邏輯有誤
+Calorie regex 會把文字中每一個提到的數字都加總，若 AI 回傳「早餐 300 大卡，午餐 500 大卡，總計 800 大卡」，會算出 300+500+800=1600，重複計算。
+Prompt：
+
+minimax.js 的 parseNutritionalData 函式中，calorie regex 會把所有匹配的數字累加，導致若 AI 回覆中既有分項又有總計數字，會重複累加。請改為只取最後一個（或最大值）匹配的 calorie 數字作為總熱量，而非全部加總。
+
+
+🟠 架構問題
+8. src/routes/auth.js — /me 路由重複實作了 auth 邏輯
+已有 authMiddleware 可以用，但 /me route 卻自己重新 import 並手動驗證 token，且用了動態 import() 而非靜態 import，造成不一致。
+Prompt：
+
+auth.js 的 GET /me route handler 自己手動解析 Authorization header 並動態 import verifyToken，但專案已有 authMiddleware 可以直接用。請將 /me 改為使用 authMiddleware，直接從 req.user 取得用戶 id，再查詢資料庫回傳完整資訊。
+
+
+9. nginx/conf.d/calo.conf — limit_req zone=api_limit 未定義
+nginx config 中 /api/ location 使用了 limit_req zone=api_limit，但 api_limit zone 在 nginx.conf 中沒有定義（需要 limit_req_zone 指令），會導致 nginx 啟動失敗。
+Prompt：
+
+calo.conf 中 limit_req zone=api_limit burst=20 nodelay; 引用了一個未定義的 api_limit zone。請在 nginx/nginx.conf 的 http block 中加入 limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s; 來定義這個 rate limit zone。

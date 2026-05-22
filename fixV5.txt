@@ -1,0 +1,17 @@
+V4 已經很完整，只有一個地方需要確認：
+
+Step 11 — 刪除 React 檔案的路徑清單
+計畫裡列了 src/hooks/ 和 src/utils/，但實際上 repo 裡這兩個目錄並不存在，clone 下來的結構只有：
+src/
+  App.jsx
+  components/
+  context/
+  pages/
+  middleware/
+  routes/
+  services/
+  styles/
+  assets/
+要刪的應該是：src/App.jsx、src/components/、src/context/、src/pages/ 這四個，以及 src/assets/（裡面只有一張 analyze_photo.jpg）。
+src/styles/ 要特別確認一下，裡面有 global.css 和三個 theme CSS，如果靜態 index.html 有引用這些樣式就不能刪。
+其他部分沒有問題，V4 可以直接進實作。

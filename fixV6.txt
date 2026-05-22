@@ -1,0 +1,13 @@
+所有 11 個 Step 都已正確實作，逐一確認結果如下：
+
+✅ 全部通過
+Step項目狀態1JWT_SECRET 生產環境強制檢查✅2role 欄位、barcodes table、錯誤處理、seed✅3admin.js 改用 user.role !== 'admin'✅4barcode.js 加 authMiddleware + 改存 SQLite✅5CORS 多 origin 逗號分隔支援✅6progress.js 所有 handler 補上 next 參數✅7minimax.js 正確 endpoint + messages array + JSON.parse✅8auth.js /me 改用 authMiddleware✅9limit_req_zone 放在 nginx.conf 的 http {} block✅10.gitignore 加入 data/ 和 uploads/✅11React 廢棄檔已清除，nginx root 改為 /app✅
+
+只有一個新發現的小問題：
+index.js — APP_URL 未設定時 CORS 退回 '*'
+jsorigin: corsOrigins.length > 0 ? corsOrigins : '*',
+開發環境沒設 APP_URL 的話會退回全開，邏輯上沒問題，但生產環境若忘記設定 APP_URL 也會靜默地全開而不報錯。建議加一行 warning：
+jsif (!process.env.APP_URL && process.env.NODE_ENV === 'production') {
+  console.warn('⚠️ APP_URL not set, CORS is open to all origins');
+}
+這是小優化，不是 bug，其他全部正確，這次修改可以定稿了。

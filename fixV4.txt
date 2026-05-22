@@ -1,0 +1,15 @@
+V3 已經非常完整，只有兩個小地方值得確認：
+
+#11 — .gitignore 確認
+直接看一下現有的 .gitignore 內容是否已經包含 data/，如果沒有就直接加，不需要「確認」這個步驟，可以改成明確的 action：「在 .gitignore 加入 data/ 和 uploads/」。uploads/ 也是同樣問題，用戶上傳的圖片不應該進 Git。
+
+#12 — React 檔案未使用
+這個問題的描述有點模糊，需要先釐清專案架構再決定怎麼處理。看目前的結構，index.html 是直接靜態提供的，不是 Vite/React build 的產物，而 src/App.jsx、src/pages/ 這些 React 檔案沒有對應的 vite.config.js、也沒有 build script，package.json 的 scripts 裡只有 start 和 dev，沒有 build。
+所以有兩條路，修正方案應該明確選一條：
+
+A. 這些 React 檔案是廢棄的：直接刪除，nginx.conf 的 root /app/dist 改為對應靜態 HTML 的路徑
+B. 打算用 React 重寫前端：補上 vite.config.js、在 package.json 加 build script、Dockerfile 加 build 步驟
+
+目前 nginx.conf 寫的是 root /app/dist，但 dist/ 根本不存在，這其實是一個獨立的 bug，應該升級為正式問題項目加進清單裡，而不只是附在 #12 的「或許需要整合」。
+
+其他部分 V3 沒有需要修正的，可以直接進實作了。

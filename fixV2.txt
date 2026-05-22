@@ -1,0 +1,32 @@
+整體修改方向完全正確，不過有幾點值得補充或調整：
+
+Step 1 — auth.js JWT_SECRET
+建議補上一個條件：只在 NODE_ENV === 'production' 時才強制 throw，開發環境保留 fallback 方便本地測試，不然每個開發者都要先設環境變數才能跑起來。
+
+Step 2 — database.js role 欄位
+新增 role 欄位時要注意 SQLite 的 ALTER TABLE 限制。因為 table 已用 CREATE TABLE IF NOT EXISTS 建立，既有資料庫不會自動加欄位。需要在初始化邏輯中額外處理：
+ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'
+但要用 try/catch 包起來，因為欄位已存在時會報錯。這個細節比較容易漏掉。
+
+Step 6 — MiniMax API 路徑
+這個問題的修正方向稍微有些模糊。MiniMax 的 Vision API 目前官方的正確 endpoint 是 /v1/text/chatcompletion_v2，payload 需要是：
+json{
+  "model": "MiniMax-VL-01",
+  "messages": [{
+    "role": "user",
+    "content": [
+      { "type": "image_url", "image_url": { "url": "data:image/jpeg;base64,..." } },
+      { "type": "text", "text": "請分析..." }
+    ]
+  }]
+}
+Prompt 裡只說「參考官方文件修正」，但實際上這個格式差異很大，建議 Prompt 直接把正確格式寫進去，否則 AI 修改時可能還是猜錯。
+
+Step 7 — 熱量 regex「只取最大值」
+「只取最大值」不完全準確。如果 AI 回覆的是「牛肉 350 大卡、白飯 280 大卡，共 630 大卡」，取最大值會拿到 630 正確；但若回覆的是「總熱量約 800~1000 大卡」，取最大值會拿到 1000 而非中間值。
+更穩健的做法是：優先取最後出現的數字（通常是總計），或者改為直接要求 AI 回傳結構化 JSON 格式，從根本解決 regex 解析不穩定的問題。
+
+缺少的一項 — src/services/database.js 同步操作無錯誤處理
+database.js 頂層有一段同步初始化（db.exec、db.prepare），如果 SQLite 初始化失敗（磁碟滿、權限問題）會直接讓整個 server crash 且沒有任何提示。建議加一個 try/catch 包住初始化區塊，並在 catch 中輸出明確錯誤訊息後 process.exit(1)。
+
+修改順序本身沒問題，Step 1→2→3→4 的依賴順序也正確。整體來說這份清單已經很完整，主要是 Step 6 和 Step 7 的 Prompt 需要寫得更具體。

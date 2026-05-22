@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaloScanAi - 任務規劃</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #fff;
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      text-align: center;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 40px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .columns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .column {
+      background: rgba(255,255,255,0.05);
+      border-radius: 20px;
+      padding: 20px;
+      min-height: 400px;
+    }
+    .column-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .column-icon { font-size: 1.5rem; }
+    .column-title { color: #fff; font-size: 1.1rem; font-weight: 600; }
+    .column-count {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+    }
+    .cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card {
+      background: rgba(255,255,255,0.95);
+      border-radius: 14px;
+      padding: 16px;
+      cursor: grab;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    .card.dragging {
+      opacity: 0.5;
+      transform: rotate(3deg);
+    }
+    .card-title {
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-icon { font-size: 1.2rem; }
+    .card-desc {
+      font-size: 0.85rem;
+      color: #666;
+      line-height: 1.5;
+    }
+    .card-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      margin-top: 10px;
+      font-weight: 600;
+    }
+    .tag-api { background: #e3f2fd; color: #1565c0; }
+    .tag-db { background: #f3e5f5; color: #7b1fa2; }
+    .tag-ui { background: #fff3e0; color: #e65100; }
+    .tag-deploy { background: #e8f5e9; color: #2e7d32; }
+
+    .actions {
+      text-align: center;
+      margin-top: 40px;
+    }
+    .btn {
+      padding: 16px 48px;
+      border: none;
+      border-radius: 14px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-confirm {
+      background: linear-gradient(135deg, #74c69d, #95d5b2);
+      color: #1a1a2e;
+    }
+    .btn-confirm:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 32px rgba(116, 198, 157, 0.4);
+    }
+    .btn-reset {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      margin-left: 16px;
+    }
+    .btn-reset:hover { background: rgba(255,255,255,0.2); }
+
+    .prompt-output {
+      margin-top: 40px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 16px;
+      padding: 24px;
+      display: none;
+    }
+    .prompt-output.show { display: block; }
+    .prompt-label {
+      color: #74c69d;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .prompt-text {
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 16px;
+      color: rgba(255,255,255,0.9);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .copy-btn {
+      background: #74c69d;
+      color: #1a1a2e;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 12px;
+    }
+    .copy-btn:hover { background: #95d5b2; }
+
+    @media (max-width: 900px) {
+      .columns { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 CaloScanAi 開發任務規劃</h1>
+    <p class="subtitle">拖曳卡片調整順序，完成後點擊「確定提交」</p>
+
+    <div class="columns">
+      <!-- 第一優先 -->
+      <div class="column" data-column="priority1">
+        <div class="column-header">
+          <span class="column-icon">🚀</span>
+          <span class="column-title">第一優先</span>
+          <span class="column-count" id="count1">0</span>
+        </div>
+        <div class="cards" id="cards1"></div>
+      </div>
+
+      <!-- 第二優先 -->
+      <div class="column" data-column="priority2">
+        <div class="column-header">
+          <span class="column-icon">📦</span>
+          <span class="column-title">第二優先</span>
+          <span class="column-count" id="count2">0</span>
+        </div>
+        <div class="cards" id="cards2"></div>
+      </div>
+
+      <!-- 第三優先 -->
+      <div class="column" data-column="priority3">
+        <div class="column-header">
+          <span class="column-icon">🎨</span>
+          <span class="column-title">第三優先</span>
+          <span class="column-count" id="count3">0</span>
+        </div>
+        <div class="cards" id="cards3"></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-confirm" onclick="generatePrompt()">確定提交</button>
+      <button class="btn btn-reset" onclick="resetOrder()">重置</button>
+    </div>
+
+    <div class="prompt-output" id="promptOutput">
+      <div class="prompt-label">📋 這是你的 Prompt（複製後貼回給我）：</div>
+      <pre class="prompt-text" id="promptText"></pre>
+      <button class="copy-btn" onclick="copyPrompt()">複製 Prompt</button>
+    </div>
+  </div>
+
+  <script>
+    // 任務資料
+    const allTasks = [
+      // 第一優先
+      {
+        id: 1,
+        title: '會員系統',
+        desc: '實現用戶註冊、登入、JWT 認證機制',
+        priority: 1,
+        icon: '🔐',
+        tag: 'api',
+        tagText: 'API 開發'
+      },
+      {
+        id: 2,
+        title: '資料庫串接',
+        desc: 'PostgreSQL 整合，儲存用戶資料、食物日誌、進度數據',
+        priority: 1,
+        icon: '🗄️',
+        tag: 'db',
+        tagText: '資料庫'
+      },
+      {
+        id: 3,
+        title: '食物日誌 API',
+        desc: '建立 CRUD API：新增、查詢、修改、刪除食物記錄',
+        priority: 1,
+        icon: '📝',
+        tag: 'api',
+        tagText: 'API 開發'
+      },
+
+      // 第二優先
+      {
+        id: 4,
+        title: '每日進度 API',
+        desc: '計算熱量攝取、營養素統計、目標達成率',
+        priority: 2,
+        icon: '📊',
+        tag: 'api',
+        tagText: 'API 開發'
+      },
+      {
+        id: 5,
+        title: '條碼掃描功能',
+        desc: 'OCR 辨識食品條碼，自動帶入營養資料',
+        priority: 2,
+        icon: '📱',
+        tag: 'ui',
+        tagText: '功能開發'
+      },
+      {
+        id: 6,
+        title: '每日名言系統',
+        desc: '激勵語句功能，增加用戶黏著度',
+        priority: 2,
+        icon: '💬',
+        tag: 'db',
+        tagText: '資料庫'
+      },
+
+      // 第三優先
+      {
+        id: 7,
+        title: '管理後台',
+        desc: '會員管理、食物資料庫管理、數據統計',
+        priority: 3,
+        icon: '👨‍💼',
+        tag: 'ui',
+        tagText: '後台開發'
+      },
+      {
+        id: 8,
+        title: '主題系統增強',
+        desc: '三主題完整实现，包含動畫、過場效果',
+        priority: 3,
+        icon: '🎨',
+        tag: 'ui',
+        tagText: 'UI 優化'
+      },
+      {
+        id: 9,
+        title: 'Docker 部署',
+        desc: '容器化部署到 VPS，生產環境優化',
+        priority: 3,
+        icon: '🚀',
+        tag: 'deploy',
+        tagText: '部署'
+      }
+    ];
+
+    let draggedCard = null;
+    let taskOrder = [];
+
+    // 初始化
+    function init() {
+      // 依 priority 分組
+      const tasks = [...allTasks].sort((a, b) => {
+        if (a.priority !== b.priority) return a.priority - b.priority;
+        return a.id - b.id;
+      });
+
+      taskOrder = tasks.map(t => t.id);
+
+      renderCards();
+    }
+
+    function renderCards() {
+      for (let i = 1; i <= 3; i++) {
+        const container = document.getElementById(`cards${i}`);
+        container.innerHTML = '';
+      }
+
+      allTasks.forEach(task => {
+        const card = createCard(task);
+        const col = document.getElementById(`cards${task.priority}`);
+        col.appendChild(card);
+      });
+
+      updateCounts();
+    }
+
+    function createCard(task) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.draggable = true;
+      card.dataset.id = task.id;
+      card.innerHTML = `
+        <div class="card-title">
+          <span class="card-icon">${task.icon}</span>
+          ${task.title}
+        </div>
+        <div class="card-desc">${task.desc}</div>
+        <span class="card-tag tag-${task.tag}">${task.tagText}</span>
+      `;
+
+      card.addEventListener('dragstart', handleDragStart);
+      card.addEventListener('dragend', handleDragEnd);
+
+      return card;
+    }
+
+    function handleDragStart(e) {
+      draggedCard = e.target;
+      e.target.classList.add('dragging');
+    }
+
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+      draggedCard = null;
+    }
+
+    // 讓 column 接受 drop
+    document.querySelectorAll('.cards').forEach(container => {
+      container.addEventListener('dragover', e => {
+        e.preventDefault();
+        const afterEl = getDragAfterElement(container, e.clientY);
+        if (draggedCard) {
+          if (afterEl) {
+            container.insertBefore(draggedCard, afterEl);
+          } else {
+            container.appendChild(draggedCard);
+          }
+        }
+      });
+    });
+
+    function getDragAfterElement(container, y) {
+      const cards = [...container.querySelectorAll('.card:not(.dragging)')];
+      return cards.reduce((closest, card) => {
+        const box = card.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset, element: card };
+        }
+        return closest;
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function updateCounts() {
+      for (let i = 1; i <= 3; i++) {
+        const count = document.querySelectorAll(`#cards${i} .card`).length;
+        document.getElementById(`count${i}`).textContent = count;
+      }
+    }
+
+    function generatePrompt() {
+      // 收集每個優先級的任務順序
+      const priorities = { 1: [], 2: [], 3: [] };
+
+      for (let i = 1; i <= 3; i++) {
+        const cards = document.querySelectorAll(`#cards${i} .card`);
+        cards.forEach(card => {
+          const id = parseInt(card.dataset.id);
+          const task = allTasks.find(t => t.id === id);
+          priorities[i].push(task.title);
+        });
+      }
+
+      const prompt = `請按照以下順序實作 CaloScanAi 功能：
+
+【第一優先 - 核心功能】
+${priorities[1].map((t, i) => `${i + 1}. ${t}`).join('\n')}
+
+【第二優先 - 進階功能】
+${priorities[2].map((t, i) => `${i + 1}. ${t}`).join('\n')}
+
+【第三優先 - 優化功能】
+${priorities[3].map((t, i) => `${i + 1}. ${t}`).join('\n')}
+
+請開始實作第一優先的功能。`;
+
+      document.getElementById('promptText').textContent = prompt;
+      document.getElementById('promptOutput').classList.add('show');
+    }
+
+    function copyPrompt() {
+      const text = document.getElementById('promptText').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('已複製到剪貼簿！');
+      });
+    }
+
+    function resetOrder() {
+      init();
+      document.getElementById('promptOutput').classList.remove('show');
+    }
+
+    init();
+  </script>
+</body>
+</html>

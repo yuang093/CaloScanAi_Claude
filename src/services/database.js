@@ -103,6 +103,21 @@ try {
   }
 }
 
+// Migration: email column renamed to username
+try {
+  const pragma = db.prepare("PRAGMA table_info(users)").all();
+  const columns = pragma.map(c => c.name);
+
+  if (columns.includes('email') && !columns.includes('username')) {
+    db.exec("ALTER TABLE users ADD COLUMN username TEXT");
+    db.exec("UPDATE users SET username = email WHERE username IS NULL");
+    db.exec("ALTER TABLE users DROP COLUMN email");
+    console.log('✅ 資料庫遷移完成: email → username');
+  }
+} catch (err) {
+  console.warn('⚠️ 資料庫遷移警告:', err.message);
+}
+
 // Create indexes
 try {
   db.exec(`

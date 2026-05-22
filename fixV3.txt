@@ -1,0 +1,23 @@
+V2 已經很完整了，只有幾個小細節值得再確認：
+
+Step 2 — database.js 的 ALTER TABLE 時機
+目前計畫是把 role 欄位和 barcodes table 一起在 Step 2 處理，這沒問題。但要注意 ALTER TABLE 的 try/catch 要和 CREATE TABLE IF NOT EXISTS 分開寫，不能放在同一個 db.exec() 裡，因為 db.exec() 是一次執行多個 SQL，只要其中一條失敗整個都會 rollback。建議拆成個別的 db.prepare().run() 或分開呼叫 db.exec()。
+
+Step 4 — barcode.js 改存 SQLite 後的 barcodeDatabase
+原本的 hardcoded in-memory 資料（義美小泡芙、泰山八寶粥等 5 筆）需要遷移進去，可以用類似 daily_quotes 的 seed 邏輯（先 SELECT COUNT 再決定要不要 insert）。這點計畫裡沒有提到，容易被遺漏。
+
+Step 5 — CORS APP_URL
+index.js 讀 APP_URL 作為 origin 白名單時，要考慮開發環境可能需要多個 origin（例如 http://localhost:5173 的前端 dev server）。建議 APP_URL 支援逗號分隔多個值，cors({ origin: process.env.APP_URL.split(',') })，並在 .env.example 中說明格式，否則開發者本機跑前後端分離時會一直被 CORS 擋住。
+
+Step 7 — minimax.js 「取最後匹配」
+取最後匹配的前提是 AI 回傳的格式夠穩定。如果 Step 6 已經改成要求 AI 回傳結構化 JSON，Step 7 的 regex 邏輯理論上就不再需要了，兩個修正方向有些重疊。建議明確決定走哪條路：
+
+走 JSON 格式：Step 7 直接刪掉整個 regex 解析，改為 JSON.parse(response)
+走 regex：保留但改為取最後匹配
+
+兩條路都可以，但計畫裡同時列兩個選項，實作時可能會猶豫。
+
+Step 9 — nginx.conf 的 limit_req_zone 位置
+補上去的 limit_req_zone 必須放在 nginx.conf 的 http {} block 內，不能放在 conf.d/calo.conf 裡，因為 calo.conf 是在 server {} 層級被 include 的。這個細節如果沒特別說清楚，直接貼到 calo.conf 裡 nginx 還是會啟動失敗。建議在計畫裡標注「加入 nginx/nginx.conf 的 http block，非 calo.conf」。
+
+整體而言 V2 已經可以直接進入實作，上面這些都是實作層面的小細節，補上就很完整了。
