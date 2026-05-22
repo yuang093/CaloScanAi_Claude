@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaloScanAi - 食物日誌</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🥗%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="src/styles/global.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --color-bg: #faf6f1;
+      --color-surface: #fff9f4;
+      --color-primary: #c85a3b;
+      --color-primary-light: #e07a5f;
+      --color-text: #3d2c29;
+      --color-text-muted: #8b7355;
+      --color-border: #e8ddd4;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      --font-family: 'Noto Sans TC', -apple-system, sans-serif;
+    }
+    [data-theme="playful"] {
+      --color-bg: #fef6e9;
+      --color-surface: #ffffff;
+      --color-primary: #FF6B9D;
+      --color-primary-light: #FFB3C6;
+      --color-text: #2d2d2d;
+      --color-text-muted: #666;
+      --color-border: #f0e6d9;
+    }
+    [data-theme="natural"] {
+      --color-bg: #f4f9f4;
+      --color-surface: #ffffff;
+      --color-primary: #2d6a4f;
+      --color-primary-light: #74c69d;
+      --color-text: #1a3a1a;
+      --color-text-muted: #5a5a5a;
+      --color-border: #d4e8d4;
+    }
+    [data-theme="dark"] {
+      --color-bg: #1a1a2e;
+      --color-surface: #252540;
+      --color-text: #ffffff;
+      --color-text-muted: #aaa;
+      --color-border: #3a3a5a;
+    }
+    body {
+      font-family: var(--font-family);
+      background: var(--color-bg);
+      color: var(--color-text);
+      min-height: 100vh;
+    }
+    .nav {
+      position: sticky;
+      top: 0;
+      height: 64px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      z-index: 100;
+    }
+    .logo {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: var(--color-primary);
+    }
+    .logo span { color: var(--color-primary-light); }
+    .nav-links { display: flex; gap: 8px; }
+    .nav-link {
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      color: var(--color-text-muted);
+      transition: all 0.2s;
+    }
+    .nav-link.active, .nav-link:hover {
+      background: var(--color-primary);
+      color: white;
+    }
+    .main-content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+    .page-title {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .page-title h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+    .page-title p {
+      color: var(--color-text-muted);
+    }
+    .upload-zone {
+      border: 2px dashed var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: var(--color-surface);
+      margin-bottom: 24px;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--color-primary);
+      transform: translateY(-2px);
+    }
+    .upload-icon { font-size: 3rem; margin-bottom: 12px; }
+    .upload-zone p { color: var(--color-text-muted); margin-bottom: 4px; }
+    .upload-zone span { font-size: 0.85rem; color: var(--color-text-muted); opacity: 0.7; }
+
+    .preview-container {
+      position: relative;
+      display: inline-block;
+    }
+    .preview-image {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: var(--radius-lg);
+      object-fit: contain;
+    }
+    .change-btn {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      padding: 8px 16px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover { background: var(--color-primary-light); transform: translateY(-2px); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .analysis-result {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .analysis-result h3 { margin-bottom: 20px; font-size: 1.1rem; }
+    .nutrition-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .nutrition-item {
+      text-align: center;
+      padding: 16px 8px;
+      background: var(--color-bg);
+      border-radius: 14px;
+    }
+    .nutrition-value {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: var(--color-primary);
+    }
+    .nutrition-label {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      margin-top: 4px;
+    }
+    .analysis-text {
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: var(--color-text-muted);
+      margin-bottom: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 12px;
+      background: var(--color-bg);
+      border-radius: 12px;
+    }
+
+    .theme-switcher {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 200;
+    }
+    .theme-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      font-size: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      transition: transform 0.2s;
+    }
+    .theme-btn:hover { transform: scale(1.1); }
+    .theme-dropdown {
+      position: absolute;
+      bottom: 70px;
+      right: 0;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      display: none;
+    }
+    .theme-dropdown.open { display: block; }
+    .theme-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .theme-option:hover { background: var(--color-bg); }
+    .theme-option.active { background: var(--color-primary); color: white; }
+    .theme-option-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid white;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .food-log-section { margin-top: 40px; }
+    .food-log-section h3 { margin-bottom: 16px; }
+    .food-log-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 16px;
+    }
+    .food-log-item {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform 0.2s;
+    }
+    .food-log-item:hover { transform: translateY(-4px); }
+    .food-log-img {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+    }
+    .food-log-info {
+      padding: 12px;
+      text-align: center;
+    }
+    .food-log-cal {
+      font-weight: bold;
+      color: var(--color-primary);
+    }
+    .food-log-time {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--color-text-muted);
+    }
+  </style>
+</head>
+<body data-theme="natural">
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="logo">Calo<span>Scan</span>Ai</div>
+    <div class="nav-links">
+      <button class="nav-link active" onclick="switchPage('food-log')">食物日誌</button>
+      <button class="nav-link" onclick="switchPage('progress')">每日進度</button>
+    </div>
+    <button class="nav-link" onclick="logout()">登出</button>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Food Log Page -->
+    <div id="food-log-page">
+      <div class="page-title">
+        <h1>食物日誌</h1>
+        <p>上傳照片，讓 AI 幫你分析熱量</p>
+      </div>
+
+      <div class="upload-section" style="display:flex; gap:12px; margin-bottom:16px;">
+        <button class="btn btn-secondary" onclick="openBarcodeScanner()" style="flex:1;">
+          📱 掃描條碼
+        </button>
+      </div>
+
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+        <div id="upload-placeholder">
+          <div class="upload-icon">📷</div>
+          <p>點擊上傳或拖曳圖片</p>
+          <span>支援 JPEG、PNG、WebP</span>
+        </div>
+        <div id="preview-container" style="display:none;">
+          <img id="preview-image" class="preview-image" alt="Preview">
+          <button class="change-btn" onclick="event.stopPropagation(); document.getElementById('file-input').click()">更換圖片</button>
+        </div>
+      </div>
+      <input type="file" id="file-input" accept="image/*" style="display:none;" onchange="handleFileSelect(event)">
+
+      <button id="analyze-btn" class="btn-primary" onclick="analyzeImage()" disabled>
+        分析食物
+      </button>
+
+      <div id="analysis-result" class="analysis-result" style="display:none;">
+        <h3>📊 分析結果</h3>
+        <div class="nutrition-grid">
+          <div class="nutrition-item">
+            <div class="nutrition-value" id="result-calories">0</div>
+            <div class="nutrition-label">卡路里 (kcal)</div>
+          </div>
+          <div class="nutrition-item">
+            <div class="nutrition-value" id="result-protein">0g</div>
+            <div class="nutrition-label">蛋白質</div>
+          </div>
+          <div class="nutrition-item">
+            <div class="nutrition-value" id="result-carbs">0g</div>
+            <div class="nutrition-label">碳水化合物</div>
+          </div>
+          <div class="nutrition-item">
+            <div class="nutrition-value" id="result-fat">0g</div>
+            <div class="nutrition-label">脂肪</div>
+          </div>
+        </div>
+        <div class="analysis-text" id="analysis-text"></div>
+        <button class="btn-primary" onclick="addToFoodLog()">加入日誌</button>
+      </div>
+
+      <div class="food-log-section">
+        <h3>📝 今日記錄</h3>
+        <div id="food-log-list" class="food-log-grid">
+          <div class="empty-state">尚無記錄，上傳圖片開始吧！</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Page (hidden by default) -->
+    <div id="progress-page" style="display:none;">
+      <div class="page-title">
+        <h1>每日進度</h1>
+        <p id="current-date"></p>
+      </div>
+
+      <div class="analysis-result">
+        <h3>🔥 今日攝取</h3>
+        <div class="nutrition-grid">
+          <div class="nutrition-item">
+            <div class="nutrition-value" id="total-cal">0</div>
+            <div class="nutrition-label">卡路里 (kcal)</div>
+          </div>
+          <div class="nutrition-item">
+            <div class="nutrition-value" id="total-pro">0g</div>
+            <div class="nutrition-label">蛋白質</div>
+          </div>
+          <div class="nutrition-item">
+            <div class="nutrition-value" id="total-carb">0g</div>
+            <div class="nutrition-label">碳水化合物</div>
+          </div>
+          <div class="nutrition-item">
+            <div class="nutrition-value" id="total-fat">0g</div>
+            <div class="nutrition-label">脂肪</div>
+          </div>
+        </div>
+        <div style="text-align:center; margin-top:16px;">
+          <p style="color:var(--color-text-muted);">目標攝取：2000 kcal</p>
+          <p style="font-size:1.2rem; margin-top:8px;">
+            剩餘 <strong id="remaining-cal">2000</strong> kcal
+          </p>
+        </div>
+      </div>
+
+      <div class="analysis-result">
+        <h3>🍽️ 餐次摘要</h3>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; justify-content:space-between; padding:12px; background:var(--color-bg); border-radius:12px;">
+            <span>🌅 早餐</span>
+            <strong style="color:var(--color-primary);">450 kcal</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:12px; background:var(--color-bg); border-radius:12px;">
+            <span>☀️ 午餐</span>
+            <strong style="color:var(--color-primary);">680 kcal</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:12px; background:var(--color-bg); border-radius:12px;">
+            <span>🌙 晚餐</span>
+            <strong style="color:var(--color-primary);">320 kcal</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Barcode Scanner Modal -->
+  <div id="barcode-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div class="modal-content" style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:400px; width:90%;">
+      <h3 style="margin-bottom:16px;">📱 條碼掃描</h3>
+      <div style="margin-bottom:16px;">
+        <input type="text" id="barcode-input" placeholder="輸入條碼號碼" class="input" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px;">
+      </div>
+      <div id="barcode-result" style="display:none; padding:16px; background:var(--color-bg); border-radius:12px; margin-bottom:16px;">
+        <div style="font-weight:bold; margin-bottom:8px;" id="barcode-product-name"></div>
+        <div style="font-size:0.9rem; color:var(--color-text-muted);" id="barcode-product-brand"></div>
+        <div style="margin-top:12px; display:grid; grid-template-columns:repeat(4,1fr); gap:8px; text-align:center;">
+          <div><span id="barcode-calories" style="font-weight:bold; color:var(--color-primary);">0</span><br><small>卡路里</small></div>
+          <div><span id="barcode-protein" style="font-weight:bold;">0g</span><br><small>蛋白質</small></div>
+          <div><span id="barcode-carbs" style="font-weight:bold;">0g</span><br><small>碳水</small></div>
+          <div><span id="barcode-fat" style="font-weight:bold;">0g</span><br><small>脂肪</small></div>
+        </div>
+      </div>
+      <div style="display:flex; gap:12px;">
+        <button onclick="lookupBarcode()" class="btn btn-primary" style="flex:1;">查詢</button>
+        <button onclick="closeBarcodeModal()" class="btn btn-secondary" style="flex:1;">關閉</button>
+      </div>
+      <button id="add-barcode-btn" class="btn btn-primary" style="display:none; margin-top:12px; width:100%;" onclick="addBarcodeToLog()">加入日誌</button>
+    </div>
+  </div>
+
+  <!-- Theme Switcher -->
+  <div class="theme-switcher">
+    <div class="theme-dropdown" id="theme-dropdown">
+      <div class="theme-option" onclick="setTheme('playful')">
+        <div class="theme-option-icon" style="background:#FF6B9D;">🎨</div>
+        <span>俏皮</span>
+      </div>
+      <div class="theme-option active" onclick="setTheme('natural')">
+        <div class="theme-option-icon" style="background:#2d6a4f;">🌿</div>
+        <span>自然</span>
+      </div>
+      <div class="theme-option" onclick="setTheme('warm')">
+        <div class="theme-option-icon" style="background:#c85a3b;">🍊</div>
+        <span>溫暖</span>
+      </div>
+      <div class="theme-option" onclick="toggleDarkMode()" style="margin-top:8px; border-top:1px solid var(--color-border); padding-top:12px;">
+        <div class="theme-option-icon" id="mode-icon" style="background:#1a1225;">🌙</div>
+        <span id="mode-text">深色模式</span>
+      </div>
+    </div>
+    <button class="theme-btn" id="theme-btn" style="background:#2d6a4f;" onclick="toggleThemeDropdown()">
+      🌿
+    </button>
+  </div>
+
+  <script>
+    // State
+    let currentImage = null;
+    let currentPreview = null;
+    let analysisData = null;
+    let foodLog = [];
+    let isDark = false;
+
+    // Theme management
+    function setTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      localStorage.setItem('caloscanai_theme', theme);
+
+      const themes = {
+        playful: { bg: '#FF6B9D', icon: '🎨' },
+        natural: { bg: '#2d6a4f', icon: '🌿' },
+        warm: { bg: '#c85a3b', icon: '🍊' }
+      };
+
+      document.getElementById('theme-btn').style.background = themes[theme].bg;
+      document.getElementById('theme-btn').textContent = themes[theme].icon;
+
+      // Update active state
+      document.querySelectorAll('.theme-option').forEach(opt => {
+        opt.classList.remove('active');
+        if (opt.textContent.includes(theme === 'playful' ? '俏皮' : theme === 'natural' ? '自然' : '溫暖')) {
+          opt.classList.add('active');
+        }
+      });
+
+      document.getElementById('theme-dropdown').classList.remove('open');
+    }
+
+    function toggleDarkMode() {
+      isDark = !isDark;
+      document.body.setAttribute('data-theme', isDark ? 'dark' : document.body.getAttribute('data-theme'));
+      document.getElementById('mode-icon').textContent = isDark ? '☀️' : '🌙';
+      document.getElementById('mode-text').textContent = isDark ? '淺色模式' : '深色模式';
+      localStorage.setItem('caloscanai_mode', isDark ? 'dark' : 'light');
+      document.getElementById('theme-dropdown').classList.remove('open');
+    }
+
+    function toggleThemeDropdown() {
+      document.getElementById('theme-dropdown').classList.toggle('open');
+    }
+
+    // File handling
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          currentPreview = e.target.result;
+          document.getElementById('preview-image').src = currentPreview;
+          document.getElementById('upload-placeholder').style.display = 'none';
+          document.getElementById('preview-container').style.display = 'block';
+          document.getElementById('analyze-btn').disabled = false;
+          document.getElementById('analysis-result').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Drag and drop
+    const uploadZone = document.getElementById('upload-zone');
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('drag-over');
+    });
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.classList.remove('drag-over');
+    });
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        document.getElementById('file-input').files = e.dataTransfer.files;
+        handleFileSelect({ target: { files: [file] } });
+      }
+    });
+
+    // Analyze image
+    async function analyzeImage() {
+      if (!currentPreview) return;
+
+      const btn = document.getElementById('analyze-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span> 分析中...';
+
+      try {
+        const base64Data = currentPreview.replace(/^data:image\/\w+;base64,/, '');
+
+        const response = await fetch('/api/food/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64Data })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          analysisData = result.analysis;
+          displayAnalysisResult(analysisData);
+        } else {
+          alert('分析失敗：' + result.error);
+        }
+      } catch (error) {
+        console.error('Analysis error:', error);
+        alert('分析失敗，請稍後再試');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '分析食物';
+      }
+    }
+
+    function displayAnalysisResult(data) {
+      document.getElementById('result-calories').textContent = data.totalCalories || 0;
+      document.getElementById('result-protein').textContent = (data.totalProtein || 0) + 'g';
+      document.getElementById('result-carbs').textContent = (data.totalCarbs || 0) + 'g';
+      document.getElementById('result-fat').textContent = (data.totalFat || 0) + 'g';
+
+      // Truncate long descriptions
+      const desc = data.description || '';
+      document.getElementById('analysis-text').textContent = desc.length > 500 ? desc.substring(0, 500) + '...' : desc;
+
+      document.getElementById('analysis-result').style.display = 'block';
+      document.getElementById('analyze-btn').style.display = 'none';
+    }
+
+    function addToFoodLog() {
+      if (!analysisData) return;
+
+      const btn = document.querySelector('#analysis-result .btn-primary');
+      btn.disabled = true;
+      btn.textContent = '儲存中...';
+
+      const base64Data = currentPreview.replace(/^data:image\/\w+;base64,/, '');
+
+      fetch('/api/food/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify({
+          image: base64Data,
+          mealType: 'general'
+        })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          const entry = {
+            id: result.data.id,
+            image: currentPreview,
+            calories: analysisData.totalCalories || 0,
+            protein: analysisData.totalProtein || 0,
+            carbs: analysisData.totalCarbs || 0,
+            fat: analysisData.totalFat || 0,
+            time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })
+          };
+
+          foodLog.unshift(entry);
+          renderFoodLog();
+          resetUpload();
+        } else {
+          alert('儲存失敗：' + result.error);
+          btn.disabled = false;
+          btn.textContent = '加入日誌';
+        }
+      })
+      .catch(err => {
+        alert('儲存失敗，請稍後再試');
+        btn.disabled = false;
+        btn.textContent = '加入日誌';
+      });
+    }
+
+    function renderFoodLog() {
+      const container = document.getElementById('food-log-list');
+
+      if (foodLog.length === 0) {
+        container.innerHTML = '<div class="empty-state">尚無記錄，上傳圖片開始吧！</div>';
+        return;
+      }
+
+      container.innerHTML = foodLog.map(item => `
+        <div class="food-log-item">
+          <img src="${item.image}" alt="Food" class="food-log-img">
+          <div class="food-log-info">
+            <div class="food-log-cal">${item.calories} kcal</div>
+            <div class="food-log-time">${item.time}</div>
+          </div>
+        </div>
+      `).join('');
+
+      updateProgressTotals();
+    }
+
+    function updateProgressTotals() {
+      const total = foodLog.reduce((acc, item) => ({
+        cal: acc.cal + item.calories,
+        pro: acc.pro + item.protein,
+        carb: acc.carb + item.carbs,
+        fat: acc.fat + item.fat
+      }), { cal: 0, pro: 0, carb: 0, fat: 0 });
+
+      document.getElementById('total-cal').textContent = total.cal;
+      document.getElementById('total-pro').textContent = total.pro + 'g';
+      document.getElementById('total-carb').textContent = total.carb + 'g';
+      document.getElementById('total-fat').textContent = total.fat + 'g';
+      document.getElementById('remaining-cal').textContent = Math.max(0, 2000 - total.cal);
+    }
+
+    function resetUpload() {
+      currentPreview = null;
+      currentImage = null;
+      analysisData = null;
+      document.getElementById('preview-container').style.display = 'none';
+      document.getElementById('upload-placeholder').style.display = 'block';
+      document.getElementById('analyze-btn').style.display = 'block';
+      document.getElementById('analyze-btn').disabled = true;
+      document.getElementById('analyze-btn').textContent = '分析食物';
+      document.getElementById('analysis-result').style.display = 'none';
+      document.getElementById('file-input').value = '';
+    }
+
+    // Navigation
+    function switchPage(page) {
+      document.getElementById('food-log-page').style.display = page === 'food-log' ? 'block' : 'none';
+      document.getElementById('progress-page').style.display = page === 'progress' ? 'block' : 'none';
+
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        if (link.textContent.includes(page === 'food-log' ? '食物日誌' : '每日進度')) {
+          link.classList.add('active');
+        }
+      });
+
+      if (page === 'progress') {
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('zh-TW', {
+          year: 'numeric', month: 'long', day: 'numeric'
+        });
+        fetchProgressData();
+      }
+    }
+
+    // Fetch progress data from API
+    async function fetchProgressData() {
+      try {
+        const response = await fetch('/api/progress/daily', {
+          headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          }
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          const { stats, goals, quote } = result.data;
+
+          // Update nutrition values
+          document.getElementById('total-cal').textContent = stats.calories;
+          document.getElementById('total-pro').textContent = stats.protein + 'g';
+          document.getElementById('total-carb').textContent = stats.carbs + 'g';
+          document.getElementById('total-fat').textContent = stats.fat + 'g';
+          document.getElementById('remaining-cal').textContent = goals.remaining;
+
+          // Update progress bar if exists
+          const progressBar = document.querySelector('.progress-bar-fill');
+          if (progressBar) {
+            progressBar.style.width = goals.caloriesPercent + '%';
+          }
+
+          // Show quote if element exists
+          const quoteEl = document.getElementById('daily-quote');
+          if (quoteEl && quote) {
+            quoteEl.textContent = '"' + quote.quote + '"' + (quote.author ? ' — ' + quote.author : '');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch progress:', error);
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = 'index.html';
+    }
+
+    // Check auth on load
+    function checkAuth() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = 'index.html';
+        return false;
+      }
+      return true;
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!checkAuth()) return;
+      const savedTheme = localStorage.getItem('caloscanai_theme') || 'natural';
+      setTheme(savedTheme);
+
+      if (localStorage.getItem('caloscanai_mode') === 'dark') {
+        isDark = true;
+        document.getElementById('mode-icon').textContent = '☀️';
+        document.getElementById('mode-text').textContent = '淺色模式';
+      }
+
+      // Load food log from API
+      loadFoodLog();
+    });
+
+    // Load food log from API
+    async function loadFoodLog() {
+      try {
+        const response = await fetch('/api/food/logs?limit=50', {
+          headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          }
+        });
+        const result = await response.json();
+
+        if (result.success && result.data.logs.length > 0) {
+          foodLog = result.data.logs.map(log => ({
+            id: log.id,
+            image: log.image_data ? 'data:image/jpeg;base64,' + log.image_data : '',
+            calories: log.calories,
+            protein: log.protein,
+            carbs: log.carbs,
+            fat: log.fat,
+            time: new Date(log.created_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })
+          }));
+          renderFoodLog();
+        }
+      } catch (error) {
+        console.error('Failed to load food log:', error);
+      }
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.theme-switcher')) {
+        document.getElementById('theme-dropdown').classList.remove('open');
+      }
+    });
+
+    // Barcode scanner functions
+    function openBarcodeScanner() {
+      document.getElementById('barcode-modal').style.display = 'flex';
+      document.getElementById('barcode-input').focus();
+    }
+
+    function closeBarcodeModal() {
+      document.getElementById('barcode-modal').style.display = 'none';
+      document.getElementById('barcode-input').value = '';
+      document.getElementById('barcode-result').style.display = 'none';
+      document.getElementById('add-barcode-btn').style.display = 'none';
+    }
+
+    let barcodeProductData = null;
+
+    async function lookupBarcode() {
+      const barcode = document.getElementById('barcode-input').value.trim();
+      if (!barcode) {
+        alert('請輸入條碼號碼');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/barcode/lookup/' + barcode);
+        const result = await response.json();
+
+        if (result.success || result.data) {
+          barcodeProductData = result.data;
+          document.getElementById('barcode-product-name').textContent = result.data.name;
+          document.getElementById('barcode-product-brand').textContent = (result.data.brand || '未知') + ' • ' + (result.data.servingSize || '');
+          document.getElementById('barcode-calories').textContent = result.data.calories || 0;
+          document.getElementById('barcode-protein').textContent = (result.data.protein || 0) + 'g';
+          document.getElementById('barcode-carbs').textContent = (result.data.carbs || 0) + 'g';
+          document.getElementById('barcode-fat').textContent = (result.data.fat || 0) + 'g';
+          document.getElementById('barcode-result').style.display = 'block';
+          document.getElementById('add-barcode-btn').style.display = 'block';
+        } else {
+          barcodeProductData = result.data;
+          document.getElementById('barcode-product-name').textContent = result.data.name;
+          document.getElementById('barcode-product-brand').textContent = '未知商品';
+          document.getElementById('barcode-calories').textContent = 0;
+          document.getElementById('barcode-protein').textContent = '0g';
+          document.getElementById('barcode-carbs').textContent = '0g';
+          document.getElementById('barcode-fat').textContent = '0g';
+          document.getElementById('barcode-result').style.display = 'block';
+          document.getElementById('add-barcode-btn').style.display = 'block';
+        }
+      } catch (error) {
+        alert('查詢失敗，請稍後再試');
+      }
+    }
+
+    function addBarcodeToLog() {
+      if (!barcodeProductData) return;
+
+      const entry = {
+        id: Date.now(),
+        image: '',
+        calories: barcodeProductData.calories || 0,
+        protein: barcodeProductData.protein || 0,
+        carbs: barcodeProductData.carbs || 0,
+        fat: barcodeProductData.fat || 0,
+        description: barcodeProductData.name,
+        time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })
+      };
+
+      foodLog.unshift(entry);
+      renderFoodLog();
+      updateProgressTotals();
+      closeBarcodeModal();
+    }
+
+    // Enter key for barcode input
+    document.getElementById('barcode-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        lookupBarcode();
+      }
+    });
+  </script>
+</body>
+</html>

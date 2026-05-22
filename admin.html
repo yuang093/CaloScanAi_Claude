@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaloScanAi - 管理後台</title>
+  <link rel="stylesheet" href="src/styles/global.css">
+  <style>
+    body {
+      font-family: var(--font-family);
+      background: var(--color-bg);
+      color: var(--color-text);
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+    .nav {
+      position: sticky;
+      top: 0;
+      height: var(--nav-height);
+      padding: 0 var(--space-8);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--nav-bg);
+      border-bottom: var(--nav-border);
+      z-index: var(--z-sticky);
+      backdrop-filter: blur(20px);
+    }
+    .logo { font-size: 1.4rem; font-weight: bold; color: var(--logo-color); }
+    .logo span { color: var(--logo-accent); }
+    .nav-link {
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-full);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-muted);
+      transition: all var(--transition-fast);
+    }
+    .nav-link.active, .nav-link:hover { background: var(--color-primary); color: white; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: var(--space-12) var(--space-6); }
+
+    .page-header { margin-bottom: var(--space-12); }
+    .page-header h1 { font-size: var(--font-size-4xl); margin-bottom: var(--space-3); }
+    .page-header p { color: var(--color-text-muted); }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-5);
+      margin-bottom: var(--space-12);
+    }
+    .stat-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      text-align: center;
+      box-shadow: var(--card-shadow);
+      transition: all var(--transition-base);
+    }
+    .stat-value { font-size: var(--font-size-5xl); font-weight: var(--font-weight-bold); color: var(--color-primary); }
+    .stat-label { font-size: var(--font-size-sm); color: var(--color-text-muted); margin-top: var(--space-2); }
+
+    .section { margin-bottom: var(--space-12); }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-5);
+    }
+    .section-title { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); }
+
+    table {
+      width: 100%;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+    }
+    th, td { padding: var(--space-4) var(--space-5); text-align: left; border-bottom: 1px solid var(--color-border); }
+    th { background: var(--color-surface-2); font-weight: var(--font-weight-semibold); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--color-surface-2); }
+
+    .badge {
+      display: inline-block;
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+    }
+    .badge-admin { background: #e3f2fd; color: #1565c0; }
+    .badge-user { background: #e8f5e9; color: #2e7d32; }
+
+    .btn {
+      padding: var(--button-padding);
+      border: none;
+      border-radius: var(--button-border-radius);
+      cursor: pointer;
+      font-weight: var(--button-font-weight);
+      transition: all var(--transition-base);
+    }
+    .btn-primary { background: var(--color-primary); color: white; box-shadow: var(--button-shadow); }
+    .btn-primary:hover { background: var(--color-primary-light); box-shadow: var(--button-hover-shadow); transform: translateY(-2px); }
+    .btn-danger { background: var(--color-error); color: white; }
+    .btn-danger:hover { background: #c82333; }
+    .btn-small { padding: var(--space-2) var(--space-3); font-size: var(--font-size-sm); }
+
+    .tab-container { margin-bottom: var(--space-6); display: flex; gap: var(--space-2); }
+    .tab-btn {
+      padding: var(--space-3) var(--space-6);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-muted);
+      border-bottom: 3px solid transparent;
+      transition: all var(--transition-fast);
+    }
+    .tab-btn.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+
+    .loading { text-align: center; padding: var(--space-10); color: var(--color-text-muted); }
+    .error { background: #fee; color: #c00; padding: var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-5); }
+
+    /* Theme Switcher */
+    .theme-switcher {
+      position: fixed;
+      bottom: var(--space-6);
+      right: var(--space-6);
+      z-index: var(--z-sticky);
+    }
+    .theme-switcher-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-full);
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      box-shadow: var(--shadow-lg);
+      transition: all var(--transition-base);
+    }
+    .theme-switcher-btn:hover { transform: scale(1.1); box-shadow: var(--shadow-xl); }
+    .theme-dropdown {
+      position: absolute;
+      bottom: calc(100% + var(--space-3));
+      right: 0;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+      box-shadow: var(--shadow-xl);
+      min-width: 200px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(10px);
+      transition: all var(--transition-base);
+    }
+    .theme-dropdown.open { opacity: 1; visibility: visible; transform: translateY(0); }
+    .theme-option {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+    .theme-option:hover { background: var(--color-surface-2); }
+    .theme-option.active { background: var(--color-secondary-light); }
+    .theme-option-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+    .theme-option-text { font-weight: var(--font-weight-medium); color: var(--color-text); }
+
+    @media (max-width: 768px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .nav { padding: 0 var(--space-4); }
+      .container { padding: var(--space-8) var(--space-4); }
+    }
+  </style>
+</head>
+<body data-theme="natural" data-mode="light">
+  <nav class="nav">
+    <div class="logo">Calo<span>Scan</span>Ai 管理後台</div>
+    <button class="nav-link" onclick="logout()">登出</button>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h1>📊 系統概覽</h1>
+      <p>最後更新：<span id="last-updated"></span></p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-users">0</div>
+        <div class="stat-label">會員總數</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-logs">0</div>
+        <div class="stat-label">食物記錄</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-calories">0</div>
+        <div class="stat-label">總熱量記錄</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-avg">0</div>
+        <div class="stat-label">平均熱量/人</div>
+      </div>
+    </div>
+
+    <div class="tab-container">
+      <button class="tab-btn active" onclick="switchTab('users')">會員管理</button>
+      <button class="tab-btn" onclick="switchTab('logs')">食物日誌</button>
+      <button class="tab-btn" onclick="switchTab('quotes')">勵志語</button>
+    </div>
+
+    <div id="error-container"></div>
+
+    <!-- Users Tab -->
+    <div id="users-tab" class="tab-content">
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">會員列表</h2>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>名稱</th>
+              <th>Email</th>
+              <th>註冊日期</th>
+              <th>記錄數</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body">
+            <tr><td colspan="6" class="loading">載入中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Logs Tab -->
+    <div id="logs-tab" class="tab-content" style="display:none;">
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">食物日誌</h2>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>用戶</th>
+              <th>熱量</th>
+              <th>蛋白質</th>
+              <th>碳水</th>
+              <th>脂肪</th>
+              <th>時間</th>
+            </tr>
+          </thead>
+          <tbody id="logs-table-body">
+            <tr><td colspan="7" class="loading">載入中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quotes Tab -->
+    <div id="quotes-tab" class="tab-content" style="display:none;">
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">勵志語管理</h2>
+          <button class="btn btn-primary" onclick="showAddQuoteForm()">新增</button>
+        </div>
+
+        <div id="add-quote-form" style="display:none; background:#f9f9f9; padding:20px; border-radius:12px; margin-bottom:20px;">
+          <h3 style="margin-bottom:16px;">新增勵志語</h3>
+          <div style="margin-bottom:12px;">
+            <input type="text" id="quote-text" placeholder="輸入勵志語內容" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
+          </div>
+          <div style="margin-bottom:12px;">
+            <input type="text" id="quote-author" placeholder="作者（選填）" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
+          </div>
+          <div style="display:flex; gap:12px;">
+            <button class="btn btn-primary" onclick="addQuote()">儲存</button>
+            <button class="btn" style="background:#eee;" onclick="hideAddQuoteForm()">取消</button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>內容</th>
+              <th>作者</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="quotes-table-body">
+            <tr><td colspan="4" class="loading">載入中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Theme Switcher -->
+  <div class="theme-switcher">
+    <div class="theme-dropdown" id="theme-dropdown">
+      <div class="theme-option" onclick="setTheme('playful')">
+        <div class="theme-option-icon" style="background:#FF6B9D;">🎨</div>
+        <span class="theme-option-text">俏皮</span>
+      </div>
+      <div class="theme-option active" onclick="setTheme('natural')">
+        <div class="theme-option-icon" style="background:#2d6a4f;">🌿</div>
+        <span class="theme-option-text">自然</span>
+      </div>
+      <div class="theme-option" onclick="setTheme('warm')">
+        <div class="theme-option-icon" style="background:#c85a3b;">🍊</div>
+        <span class="theme-option-text">溫暖</span>
+      </div>
+      <div class="theme-option" onclick="toggleDarkMode()" style="margin-top:8px; border-top:1px solid var(--color-border); padding-top:12px;">
+        <div class="theme-option-icon" id="mode-icon" style="background:#1a1225;">🌙</div>
+        <span class="theme-option-text" id="mode-text">深色模式</span>
+      </div>
+    </div>
+    <button class="theme-switcher-btn" id="theme-btn" style="background:#2d6a4f;" onclick="toggleThemeDropdown()">
+      🌿
+    </button>
+  </div>
+
+  <script>
+    let isDark = false;
+
+    // Theme management
+    function setTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      localStorage.setItem('caloscanai_theme', theme);
+
+      const themes = {
+        playful: { bg: '#FF6B9D', icon: '🎨' },
+        natural: { bg: '#2d6a4f', icon: '🌿' },
+        warm: { bg: '#c85a3b', icon: '🍊' }
+      };
+
+      document.getElementById('theme-btn').style.background = themes[theme].bg;
+      document.getElementById('theme-btn').textContent = themes[theme].icon;
+
+      document.querySelectorAll('.theme-option').forEach(opt => {
+        opt.classList.remove('active');
+        if (opt.textContent.includes(theme === 'playful' ? '俏皮' : theme === 'natural' ? '自然' : '溫暖')) {
+          opt.classList.add('active');
+        }
+      });
+
+      document.getElementById('theme-dropdown').classList.remove('open');
+    }
+
+    function toggleDarkMode() {
+      isDark = !isDark;
+      document.body.setAttribute('data-mode', isDark ? 'dark' : 'light');
+      document.getElementById('mode-icon').textContent = isDark ? '☀️' : '🌙';
+      document.getElementById('mode-text').textContent = isDark ? '淺色模式' : '深色模式';
+      localStorage.setItem('caloscanai_mode', isDark ? 'dark' : 'light');
+      document.getElementById('theme-dropdown').classList.remove('open');
+    }
+
+    function toggleThemeDropdown() {
+      document.getElementById('theme-dropdown').classList.toggle('open');
+    }
+
+    // Initialize theme from localStorage
+    function initTheme() {
+      const savedTheme = localStorage.getItem('caloscanai_theme') || 'natural';
+      setTheme(savedTheme);
+
+      if (localStorage.getItem('caloscanai_mode') === 'dark') {
+        isDark = true;
+        document.body.setAttribute('data-mode', 'dark');
+        document.getElementById('mode-icon').textContent = '☀️';
+        document.getElementById('mode-text').textContent = '淺色模式';
+      }
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.theme-switcher')) {
+        document.getElementById('theme-dropdown').classList.remove('open');
+      }
+    });
+
+    let currentTab = 'users';
+
+    // Check auth and load data
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      initTheme();
+      document.getElementById('last-updated').textContent = new Date().toLocaleString('zh-TW');
+      loadStats();
+    });
+
+    async function loadStats() {
+      try {
+        const response = await fetch('/api/admin/stats', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+
+        if (!response.ok) {
+          if (response.status === 403) {
+            alert('需要管理員權限');
+            window.location.href = 'dashboard.html';
+            return;
+          }
+          throw new Error('載入失敗');
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          document.getElementById('stat-users').textContent = result.data.summary.totalUsers;
+          document.getElementById('stat-logs').textContent = result.data.summary.totalFoodLogs;
+          document.getElementById('stat-calories').textContent = result.data.summary.totalCaloriesLogged.toLocaleString();
+          document.getElementById('stat-avg').textContent = result.data.summary.avgCaloriesPerUser;
+        }
+      } catch (error) {
+        showError('載入統計資料失敗');
+      }
+    }
+
+    async function loadUsers() {
+      try {
+        const response = await fetch('/api/admin/users', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          const tbody = document.getElementById('users-table-body');
+          if (result.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999;">尚無會員資料</td></tr>';
+          } else {
+            tbody.innerHTML = result.data.map(user => `
+              <tr>
+                <td>${user.id}</td>
+                <td>${user.name}</td>
+                <td>${user.email}</td>
+                <td>${new Date(user.created_at).toLocaleDateString('zh-TW')}</td>
+                <td>-</td>
+                <td>
+                  <button class="btn btn-danger btn-small" onclick="deleteUser(${user.id})">刪除</button>
+                </td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (error) {
+        document.getElementById('users-table-body').innerHTML = '<tr><td colspan="6" class="error">載入失敗</td></tr>';
+      }
+    }
+
+    async function loadFoodLogs() {
+      try {
+        const response = await fetch('/api/admin/food-logs', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          const tbody = document.getElementById('logs-table-body');
+          if (result.data.logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#999;">尚無食物記錄</td></tr>';
+          } else {
+            tbody.innerHTML = result.data.logs.map(log => `
+              <tr>
+                <td>${log.id}</td>
+                <td>${log.user_name}</td>
+                <td>${log.calories} kcal</td>
+                <td>${log.protein}g</td>
+                <td>${log.carbs}g</td>
+                <td>${log.fat}g</td>
+                <td>${new Date(log.created_at).toLocaleString('zh-TW')}</td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (error) {
+        document.getElementById('logs-table-body').innerHTML = '<tr><td colspan="7" class="error">載入失敗</td></tr>';
+      }
+    }
+
+    async function loadQuotes() {
+      try {
+        const response = await fetch('/api/admin/quotes', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          const tbody = document.getElementById('quotes-table-body');
+          if (result.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999;">尚無勵志語</td></tr>';
+          } else {
+            tbody.innerHTML = result.data.map(quote => `
+              <tr>
+                <td>${quote.id}</td>
+                <td style="max-width:400px;">${quote.quote}</td>
+                <td>${quote.author || '佚名'}</td>
+                <td>
+                  <button class="btn btn-danger btn-small" onclick="deleteQuote(${quote.id})">刪除</button>
+                </td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (error) {
+        document.getElementById('quotes-table-body').innerHTML = '<tr><td colspan="4" class="error">載入失敗</td></tr>';
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+      document.getElementById(tab + '-tab').style.display = 'block';
+
+      if (tab === 'users') loadUsers();
+      else if (tab === 'logs') loadFoodLogs();
+      else if (tab === 'quotes') loadQuotes();
+    }
+
+    function showError(message) {
+      document.getElementById('error-container').innerHTML = '<div class="error">' + message + '</div>';
+    }
+
+    async function deleteUser(id) {
+      if (!confirm('確定要刪除此用戶嗎？')) return;
+
+      try {
+        const response = await fetch('/api/admin/users/' + id, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          loadUsers();
+          loadStats();
+        } else {
+          alert(result.error || '刪除失敗');
+        }
+      } catch (error) {
+        alert('刪除失敗');
+      }
+    }
+
+    async function deleteQuote(id) {
+      if (!confirm('確定要刪除此勵志語嗎？')) return;
+
+      try {
+        const response = await fetch('/api/admin/quotes/' + id, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          loadQuotes();
+        } else {
+          alert(result.error || '刪除失敗');
+        }
+      } catch (error) {
+        alert('刪除失敗');
+      }
+    }
+
+    function showAddQuoteForm() {
+      document.getElementById('add-quote-form').style.display = 'block';
+    }
+
+    function hideAddQuoteForm() {
+      document.getElementById('add-quote-form').style.display = 'none';
+      document.getElementById('quote-text').value = '';
+      document.getElementById('quote-author').value = '';
+    }
+
+    async function addQuote() {
+      const quote = document.getElementById('quote-text').value.trim();
+      const author = document.getElementById('quote-author').value.trim();
+
+      if (!quote) {
+        alert('請輸入勵志語內容');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/admin/quotes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify({ quote, author })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          hideAddQuoteForm();
+          loadQuotes();
+        } else {
+          alert(result.error || '新增失敗');
+        }
+      } catch (error) {
+        alert('新增失敗');
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>

@@ -5,16 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CaloScanAi - 登入</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🥗%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="src/styles/global.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      font-family: var(--font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+      background: linear-gradient(135deg, var(--color-bg-dark, #1a1a2e) 0%, var(--color-bg-dark-2, #16213e) 50%, var(--color-primary-dark, #0f3460) 100%);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
+      transition: background 0.4s ease;
+    }
+    [data-theme="playful"] {
+      --color-bg-dark: #1a1225;
+      --color-bg-dark-2: #251a35;
+      --color-primary-dark: #3d2d55;
+    }
+    [data-theme="natural"] {
+      --color-bg-dark: #0d1a12;
+      --color-bg-dark-2: #152118;
+      --color-primary-dark: #1c2b20;
+    }
+    [data-theme="warm"] {
+      --color-bg-dark: #2a1f1a;
+      --color-bg-dark-2: #3a2a22;
+      --color-primary-dark: #4a3830;
     }
     .login-container {
       background: rgba(255,255,255,0.05);
@@ -32,7 +49,7 @@
       text-align: center;
       margin-bottom: 8px;
     }
-    .logo span { color: #74c69d; }
+    .logo span { color: var(--color-primary, #74c69d); transition: color 0.3s; }
     .subtitle {
       text-align: center;
       color: rgba(255,255,255,0.6);
@@ -59,15 +76,15 @@
     }
     .form-group input:focus {
       outline: none;
-      border-color: #74c69d;
+      border-color: var(--color-primary, #74c69d);
       background: rgba(255,255,255,0.12);
     }
     .form-group input::placeholder { color: rgba(255,255,255,0.4); }
     .btn-login {
       width: 100%;
       padding: 16px;
-      background: #74c69d;
-      color: #1a1a2e;
+      background: var(--color-primary, #74c69d);
+      color: var(--color-text-inverse, #1a1a2e);
       border: none;
       border-radius: 12px;
       font-size: 1rem;
@@ -77,7 +94,7 @@
       margin-top: 8px;
     }
     .btn-login:hover {
-      background: #95d5b2;
+      background: var(--color-primary-light, #95d5b2);
       transform: translateY(-2px);
     }
     .divider {
@@ -123,9 +140,13 @@
       font-size: 0.9rem;
     }
     .register-link a {
-      color: #74c69d;
+      color: var(--color-primary, #74c69d);
       text-decoration: none;
       font-weight: 600;
+      transition: color 0.2s;
+    }
+    .register-link a:hover {
+      color: var(--color-primary-light, #95d5b2);
     }
     .theme-selector {
       display: flex;
@@ -151,12 +172,12 @@
     }
   </style>
 </head>
-<body>
+<body data-theme="natural" data-mode="light">
   <div class="login-container">
     <div class="theme-selector">
-      <button class="theme-btn active" onclick="selectTheme('natural')" style="background: #2d6a4f;" title="自然">🌿</button>
-      <button class="theme-btn" onclick="selectTheme('playful')" style="background: #FF6B9D;" title="俏皮">🎨</button>
-      <button class="theme-btn" onclick="selectTheme('warm')" style="background: #c85a3b;" title="溫暖">🍊</button>
+      <button class="theme-btn" onclick="setTheme('playful')" style="background: #FF6B9D;" title="俏皮">🎨</button>
+      <button class="theme-btn active" onclick="setTheme('natural')" style="background: #2d6a4f;" title="自然">🌿</button>
+      <button class="theme-btn" onclick="setTheme('warm')" style="background: #c85a3b;" title="溫暖">🍊</button>
     </div>
 
     <div class="logo">Calo<span>Scan</span>Ai</div>
@@ -165,11 +186,11 @@
     <form onsubmit="handleLogin(event)">
       <div class="form-group">
         <label>電子郵件</label>
-        <input type="email" placeholder="請輸入電子郵件" required>
+        <input type="email" id="email-input" placeholder="請輸入電子郵件" required>
       </div>
       <div class="form-group">
         <label>密碼</label>
-        <input type="password" placeholder="請輸入密碼" required>
+        <input type="password" id="password-input" placeholder="請輸入密碼" required>
       </div>
       <button type="submit" class="btn-login">登入</button>
     </form>
@@ -180,27 +201,58 @@
   </div>
 
   <script>
-    // Theme selector functionality
-    function selectTheme(theme) {
-      document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
+    // Theme management
+    function setTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      localStorage.setItem('caloscanai_theme', theme);
 
-      // Apply theme colors to this page
-      const colors = {
-        natural: { primary: '#74c69d', bg: '#1a1a2e' },
-        playful: { primary: '#FF6B9D', bg: '#1a1225' },
-        warm: { primary: '#c85a3b', bg: '#2a1f1a' }
-      };
-
-      const color = colors[theme];
-      document.body.style.background = `linear-gradient(135deg, ${color.bg} 0%, ${color.bg} 50%, ${color.primary}22 100%)`;
-      document.querySelector('.btn-login').style.background = color.primary;
+      // Update active button
+      document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.remove('active');
+        const btnTheme = btn.style.background.includes('FF6B9D') ? 'playful' :
+                        btn.style.background.includes('2d6a4f') ? 'natural' : 'warm';
+        if (btnTheme === theme) btn.classList.add('active');
+      });
     }
 
-    function handleLogin(e) {
+    // Initialize theme from localStorage
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = localStorage.getItem('caloscanai_theme') || 'natural';
+      setTheme(savedTheme);
+    });
+
+    async function handleLogin(e) {
       e.preventDefault();
-      // Demo: redirect to dashboard
-      window.location.href = 'dashboard.html';
+      const email = document.getElementById('email-input').value;
+      const password = document.getElementById('password-input').value;
+      const btn = document.querySelector('.btn-login');
+
+      btn.disabled = true;
+      btn.textContent = '登入中...';
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          localStorage.setItem('token', result.data.token);
+          localStorage.setItem('user', JSON.stringify(result.data.user));
+          window.location.href = 'dashboard.html';
+        } else {
+          alert(result.error || '登入失敗');
+          btn.disabled = false;
+          btn.textContent = '登入';
+        }
+      } catch (error) {
+        alert('登入失敗，請稍後再試');
+        btn.disabled = false;
+        btn.textContent = '登入';
+      }
     }
   </script>
 </body>

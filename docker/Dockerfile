@@ -1,31 +1,36 @@
+# CaloScanAi Dockerfile
+# Multi-stage build for smaller production image
+
 # Build stage
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Install dependencies first for better caching
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --ignore-scripts
 
+# Copy source
 COPY . .
-
-RUN npm run build
 
 # Production stage
 FROM node:20-alpine AS production
 
 WORKDIR /app
 
+# Install production dependencies only
+COPY package*.json ./
+RUN npm ci --ignore-scripts --only=production && npm cache clean --force
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Copy built assets
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
+# Copy application files
+COPY --from=builder /app ./
 
-# Set ownership
-RUN chown -R nodejs:nodejs /app
+# Create directories for data and uploads
+RUN mkdir -p /app/data /app/uploads && chown -R nodejs:nodejs /app
 
 USER nodejs
 
@@ -39,4 +44,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
 # Start application
-CMD ["node", "dist/server.js"]
+CMD ["node", "src/server/index.js"]
