@@ -1,0 +1,252 @@
+/* ============================================
+   Warm Theme (溫暖風格)
+   Terracotta, cream, organic, food-inspired
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+
+[data-theme="warm"] {
+  /* Primary Colors */
+  --color-primary: #c85a3b;
+  --color-primary-light: #e07a5f;
+  --color-primary-dark: #a84832;
+  --color-secondary: #81b29a;
+  --color-secondary-light: #a8d5ba;
+  --color-accent: #f4a284;
+  --color-success: #81b29a;
+  --color-error: #c85a3b;
+  --color-warning: #d4a574;
+
+  /* Background & Surface */
+  --color-bg: #faf6f1;
+  --color-surface: #fff9f4;
+  --color-surface-2: #f5ebe0;
+  --color-surface-3: #ede3d8;
+
+  /* Text */
+  --color-text: #3d2c29;
+  --color-text-muted: #8b7355;
+  --color-text-light: #b09d8a;
+  --color-text-inverse: #ffffff;
+
+  /* Border */
+  --color-border: #e8ddd4;
+  --color-border-strong: #d4c4b5;
+
+  /* Typography */
+  --font-family: 'Noto Sans TC', -apple-system, sans-serif;
+  --font-family-display: 'Playfair Display', serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --font-size-5xl: 3rem;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.6;
+  --line-height-relaxed: 1.8;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+
+  /* Border Radius */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-2xl: 36px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 4px 20px rgba(61, 44, 41, 0.06);
+  --shadow-md: 0 8px 32px rgba(61, 44, 41, 0.10);
+  --shadow-lg: 0 16px 48px rgba(61, 44, 41, 0.12);
+  --shadow-xl: 0 24px 64px rgba(61, 44, 41, 0.15);
+
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-Index */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+  --z-tooltip: 500;
+
+  /* Button */
+  --button-padding: var(--space-4) var(--space-10);
+  --button-font-weight: var(--font-weight-medium);
+  --button-border-radius: var(--radius-full);
+  --button-shadow: 0 6px 20px rgba(200, 90, 59, 0.25);
+  --button-hover-shadow: 0 10px 28px rgba(200, 90, 59, 0.35);
+
+  /* Card */
+  --card-padding: var(--space-9);
+  --card-border-radius: var(--radius-lg);
+  --card-shadow: var(--shadow-md);
+  --card-hover-shadow: var(--shadow-lg);
+
+  /* Input */
+  --input-padding: var(--space-4) var(--space-5);
+  --input-border-radius: var(--radius-lg);
+  --input-border-color: var(--color-border);
+  --input-focus-border-color: var(--color-primary);
+  --input-focus-shadow: 0 0 0 3px rgba(200, 90, 59, 0.1);
+
+  /* Navigation */
+  --nav-height: 72px;
+  --nav-bg: rgba(250, 246, 241, 0.92);
+  --nav-border: 1px solid var(--color-border);
+
+  /* Logo */
+  --logo-color: var(--color-primary);
+  --logo-accent: var(--color-secondary);
+
+  /* Feature Cards */
+  --feature-icon-size: 64px;
+  --feature-icon-radius: 18px;
+}
+
+/* Dark Mode */
+[data-theme="warm"][data-mode="dark"] {
+  --color-bg: #2a1f1a;
+  --color-surface: #3a2a22;
+  --color-surface-2: #4a3830;
+  --color-surface-3: #5a4838;
+  --color-primary: #e07a5f;
+  --color-primary-light: #f4a284;
+  --color-primary-dark: #c85a3b;
+  --color-secondary: #81b29a;
+  --color-accent: #f4a284;
+  --color-text: #f5ebe0;
+  --color-text-muted: #c4a882;
+  --color-text-light: #8a7a68;
+  --color-border: #5a4840;
+  --color-border-strong: #6a5848;
+  --shadow-sm: 0 4px 20px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.3);
+  --nav-bg: rgba(42, 31, 26, 0.92);
+}
+
+/* Selection */
+[data-theme="warm"]::selection {
+  background: var(--color-primary-light);
+  color: white;
+}
+
+/* Scrollbar */
+[data-theme="warm"]::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+[data-theme="warm"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-theme="warm"]::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+[data-theme="warm"]::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-light);
+}
+
+/* Focus */
+[data-theme="warm"] :focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Organic Animations */
+[data-theme="warm"] .btn-primary {
+  transition: all var(--transition-base);
+}
+[data-theme="warm"] .btn-primary:hover {
+  background: var(--color-primary-light);
+  transform: translateY(-3px);
+  box-shadow: var(--button-hover-shadow);
+}
+[data-theme="warm"] .btn-primary:active {
+  transform: translateY(-1px);
+}
+
+/* Gentle Float Animation */
+[data-theme="warm"] .food-circle {
+  animation: warm-gentle-float 6s ease-in-out infinite;
+}
+
+@keyframes warm-gentle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Slow Spin */
+[data-theme="warm"] .food-circle::before {
+  content: '';
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  border: 2px dashed var(--color-border-strong);
+  animation: slow-spin 25s linear infinite;
+}
+
+@keyframes slow-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Feature Card Hover */
+[data-theme="warm"] .feature-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--card-shadow);
+  transform: translateY(-5px);
+}
+
+/* Hero Text */
+[data-theme="warm"] .hero h1 em {
+  font-style: italic;
+  color: var(--color-primary);
+}
+
+/* Quote Section Radial Glow */
+[data-theme="warm"] .quote-section::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 360px;
+  height: 360px;
+  background: radial-gradient(circle, rgba(200, 90, 59, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Typography Scale */
+[data-theme="warm"] h1, [data-theme="warm"] h2, [data-theme="warm"] h3 {
+  font-family: var(--font-family-display);
+  font-weight: 600;
+}
+
+[data-theme="warm"] .hero h1 {
+  font-size: clamp(2rem, 4.5vw, 3.4rem);
+  line-height: 1.25;
+}

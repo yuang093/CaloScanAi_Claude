@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaloScanAi - 登入</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🥗%3C/text%3E%3C/svg%3E">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-container {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      padding: 48px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .logo {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .logo span { color: #74c69d; }
+    .subtitle {
+      text-align: center;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 32px;
+      font-size: 0.95rem;
+    }
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+      display: block;
+      color: rgba(255,255,255,0.8);
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #74c69d;
+      background: rgba(255,255,255,0.12);
+    }
+    .form-group input::placeholder { color: rgba(255,255,255,0.4); }
+    .btn-login {
+      width: 100%;
+      padding: 16px;
+      background: #74c69d;
+      color: #1a1a2e;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .btn-login:hover {
+      background: #95d5b2;
+      transform: translateY(-2px);
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 24px 0;
+      color: rgba(255,255,255,0.3);
+      font-size: 0.8rem;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.1);
+    }
+    .social-login {
+      display: flex;
+      gap: 12px;
+    }
+    .btn-social {
+      flex: 1;
+      padding: 12px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-social:hover {
+      background: rgba(255,255,255,0.15);
+      transform: translateY(-2px);
+    }
+    .register-link {
+      text-align: center;
+      margin-top: 24px;
+      color: rgba(255,255,255,0.6);
+      font-size: 0.9rem;
+    }
+    .register-link a {
+      color: #74c69d;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .theme-selector {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .theme-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+    .theme-btn.active {
+      border-color: #fff;
+      transform: scale(1.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="theme-selector">
+      <button class="theme-btn active" onclick="selectTheme('natural')" style="background: #2d6a4f;" title="自然">🌿</button>
+      <button class="theme-btn" onclick="selectTheme('playful')" style="background: #FF6B9D;" title="俏皮">🎨</button>
+      <button class="theme-btn" onclick="selectTheme('warm')" style="background: #c85a3b;" title="溫暖">🍊</button>
+    </div>
+
+    <div class="logo">Calo<span>Scan</span>Ai</div>
+    <p class="subtitle">AI 智慧熱量追蹤，拍照記錄每一餐</p>
+
+    <form onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>電子郵件</label>
+        <input type="email" placeholder="請輸入電子郵件" required>
+      </div>
+      <div class="form-group">
+        <label>密碼</label>
+        <input type="password" placeholder="請輸入密碼" required>
+      </div>
+      <button type="submit" class="btn-login">登入</button>
+    </form>
+
+    <div class="register-link">
+      還沒有帳號？<a href="#">立即註冊</a>
+    </div>
+  </div>
+
+  <script>
+    // Theme selector functionality
+    function selectTheme(theme) {
+      document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      // Apply theme colors to this page
+      const colors = {
+        natural: { primary: '#74c69d', bg: '#1a1a2e' },
+        playful: { primary: '#FF6B9D', bg: '#1a1225' },
+        warm: { primary: '#c85a3b', bg: '#2a1f1a' }
+      };
+
+      const color = colors[theme];
+      document.body.style.background = `linear-gradient(135deg, ${color.bg} 0%, ${color.bg} 50%, ${color.primary}22 100%)`;
+      document.querySelector('.btn-login').style.background = color.primary;
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      // Demo: redirect to dashboard
+      window.location.href = 'dashboard.html';
+    }
+  </script>
+</body>
+</html>
