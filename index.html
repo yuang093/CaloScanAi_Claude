@@ -244,7 +244,8 @@
           localStorage.setItem('user', JSON.stringify(result.data.user));
           window.location.href = 'dashboard.html';
         } else {
-          alert(result.error || '登入失敗');
+          const errMsg = typeof result.error === 'string' ? result.error : (result.error?.message || '登入失敗');
+          alert(errMsg);
           btn.disabled = false;
           btn.textContent = '登入';
         }
