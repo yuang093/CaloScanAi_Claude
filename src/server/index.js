@@ -19,6 +19,11 @@ const PORT = process.env.PORT || 3000;
 const corsOrigins = process.env.APP_URL
   ? process.env.APP_URL.split(',').map(url => url.trim())
   : [];
+
+if (!process.env.APP_URL && process.env.NODE_ENV === 'production') {
+  console.warn('⚠️ APP_URL not set, CORS is open to all origins');
+}
+
 app.use(cors({
   origin: corsOrigins.length > 0 ? corsOrigins : '*',
   credentials: true
