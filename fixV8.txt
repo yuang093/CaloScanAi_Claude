@@ -1,0 +1,19 @@
+最後階段修復 Prompt（請直接複製以下內容）
+專案的初步架構與前端問題已修復，現在請幫我解決以下 3 個隱藏的邏輯與穩定性問題。請直接提供修改後的程式碼或檔案內容：
+
+1. 修復圖片 Base64 儲存損壞問題 (src/routes/food.js)
+目前在 /upload API 中，儲存至資料庫的圖片資料被寫成了 imageData: base64Data.substring(0, 1000) // Store truncated for demo。這會導致 Base64 字串被嚴重截斷，當前端重新呼叫 API 載入食物日誌時，圖片會完全破圖無法顯示。
+
+修改要求：請移除 substring(0, 1000) 的限制，改為完整儲存 Base64 字串（SQLite 的 TEXT 欄位足以容納）；或者將邏輯改為將圖片實體儲存於 /uploads 資料夾，並將檔案路徑存入資料庫。
+
+2. 修正 ESM 語法衝突 (docs/DEPLOY.md)
+文件中「查看資料庫」的測試指令使用了 require('./src/services/database.js')。但本專案在 package.json 中已明確設定為 "type": "module" (ESM)，在終端機執行 CommonJS 的 require 會導致 ERR_REQUIRE_ESM 崩潰。
+
+修改要求：請將文件中的除錯指令，更新為適用的動態 import() 語法，或是直接提供純 SQLite CLI 的查詢指令（例如 sqlite3 ./data/caloscanai.db "SELECT..."）。
+
+3. 補齊開發環境 JWT 密鑰 (src/middleware/auth.js)
+程式目前僅檢查 Production 環境下的 JWT_SECRET 是否存在。若在開發環境未設定 .env，jwt.sign() 會因密鑰為 undefined 而產生不可預期的錯誤。
+
+修改要求：請加上開發環境的 Fallback 密鑰安全機制（例如：const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-for-local';），確保本地端測試不會因為忘記設定環境變數而報錯。
+
+請擬定修改計畫藍圖

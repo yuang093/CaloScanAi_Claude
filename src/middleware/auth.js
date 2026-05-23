@@ -1,9 +1,9 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-for-local-testing';
 const JWT_EXPIRES_IN = '7d';
 
-if (process.env.NODE_ENV === 'production' && !JWT_SECRET) {
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required in production');
 }
 

@@ -82,8 +82,11 @@ git pull && docker-compose up -d --build
 # 進入容器
 docker exec -it caloscanai_app sh
 
-# 查看資料庫
-docker exec -it caloscanai_app node -e "const db = require('./src/services/database.js'); console.log(db.prepare('SELECT COUNT(*) as c FROM users').get());"
+# 查看資料庫（使用 ESM import）
+docker exec -it caloscanai_app node -e "import('./src/services/database.js').then(m => console.log(m.default.prepare('SELECT COUNT(*) as c FROM users').get()));"
+
+# 或使用 SQLite CLI 直接查詢
+docker exec -it caloscanai_app sqlite3 /app/data/caloscanai.db "SELECT COUNT(*) FROM users;"
 ```
 
 ## 資料備份
@@ -106,7 +109,7 @@ docker-compose exec app ls -la
 
 ### 資料庫連線錯誤
 ```bash
-docker-compose exec app node -e "console.log(require('./src/services/database.js').verbose)"
+docker exec -it caloscanai_app node -e "import('./src/services/database.js').then(m => console.log('DB Connected:', !!m.default));"
 ```
 
 ### Nginx 502 錯誤

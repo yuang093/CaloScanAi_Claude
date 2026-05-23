@@ -57,7 +57,7 @@ router.post('/upload', authMiddleware, async (req, res, next) => {
 
     // Store in database
     const logEntry = FoodLogDB.create(req.user.id, {
-      imageData: base64Data.substring(0, 1000), // Store truncated for demo
+      imageData: base64Data, // Store full base64 image
       mealType,
       calories: nutrition.totalCalories || 0,
       protein: nutrition.totalProtein || 0,
