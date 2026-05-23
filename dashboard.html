@@ -900,12 +900,14 @@
     }
 
     function updateProgressTotals(goalCalories = 2000) {
+      console.log('[updateProgressTotals] goalCalories:', goalCalories, 'foodLog length:', foodLog.length);
       const total = foodLog.reduce((acc, item) => ({
         cal: acc.cal + item.calories,
         pro: acc.pro + item.protein,
         carb: acc.carb + item.carbs,
         fat: acc.fat + item.fat
       }), { cal: 0, pro: 0, carb: 0, fat: 0 });
+      console.log('[updateProgressTotals] total:', total);
 
       document.getElementById('total-cal').textContent = total.cal;
       document.getElementById('total-pro').textContent = total.pro + 'g';

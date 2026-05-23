@@ -1,0 +1,271 @@
+CaloScanAi（Node.js 版本）程式碼檢查結果
+
+---
+
+🔴 嚴重問題（需立即修正）
+
+1. src/routes/admin.js — 第 92 行：bcrypt 未引入
+
+// 第 92 行使用了 bcrypt.hashSync，但檔案開頭沒有 import bcrypt
+const hashedPassword = bcrypt.hashSync(password, 10);
+
+
+Prompt for Fix:
+檔案：src/routes/admin.js
+問題：第 1 行缺少 `import bcrypt from 'bcryptjs';`，導致第 92 行 bcrypt.hashSync 執行時會報 ReferenceError。
+
+修改：在第 1 行之前加入：
+import bcrypt from 'bcryptjs';
+
+
+---
+
+2. src/middleware/auth.js — 第 3 行：JWT_SECRET 生產環境漏洞
+
+// 生產環境沒設 JWT_SECRET 時只是 warn，之後仍然用預設值 'dev-secret-key'
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required in production');
+}
+
+
+實際上這段 code 會 throw 錯誤，還算有把關。但 Dockerfile 中只有 npm ci，沒有驗證啟動時是否有 JWT_SECRET，若未設定確實會在 runtime 失敗。
+
+Prompt for Fix:
+檔案：src/middleware/auth.js
+問題：生產環境缺少 JWT_SECRET 會直接 throw error，中斷啟動。但缺點是沒有明確的錯誤訊息告訴使用者如何設定。
+
+建議：保持現有邏輯（throw 是對的），但確認 docker-compose.yml 中 JWT_SECRET 有預設值或預設值夠明顯：
+在 docker-compose.yml 的 environment 區塊，JWT_SECRET 預設值改為一個較長的乱码字串，確保生產部署時一定會被置換。
+
+
+---
+
+🟡 中等問題（建議修正）
+
+3. index.html — 沒有檢查 Token 就直接載入頁面
+
+// handleLogin 成功後才存 token，但頁面沒有 auth guard
+window.location.href = 'dashboard.html';
+
+
+缺點：直接輸入 dashboard.html 網址可以繞過登入。
+
+Prompt for Fix:
+檔案：index.html（加在 handleLogin 之前）
+問題：dashboard.html 沒有登入檢查，直接輸入網址可绕过驗證。
+
+修改：在 index.html 的 <script> 最前面加入：
+
+// Auth guard - 檢查是否已登入
+document.addEventListener('DOMContentLoaded', () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    // 未登入，重新導向到登入頁（已是登入頁所以不用處理）
+  } else {
+    // 已登入但強迫回到首頁浪費時間，應該驗證 token 有效性後再決定
+    // 改為：自動跳過到 dashboard（因為使用者已在登入頁，若已登入代表有 token）
+  }
+});
+
+
+---
+
+4. dashboard.html — 沒有 Auth Guard
+
+// dashboard.html 沒有檢查 token 是否存在、過期
+// 任何人都可以直接開啟 dashboard.html
+
+
+Prompt for Fix:
+檔案：dashboard.html
+問題：dashboard.html 直接載入，沒有檢查 localStorage 的 token 是否存在與有效。
+
+修改：在 dashboard.html 的 <script> 中，在 DOMContentLoaded 時檢查：
+const token = localStorage.getItem('token');
+if (!token) {
+  window.location.href = 'index.html';
+  return;
+}
+
+// 額外：驗證 token 格式（是否為有效 JWT）
+try {
+  const parts = token.split('.');
+  if (parts.length !== 3) throw new Error('Invalid JWT format');
+} catch (e) {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  window.location.href = 'index.html';
+}
+
+
+---
+
+5. src/services/database.js — 密碼驗證時有 Timing Attack 風險
+
+// 第 196-200 行
+verifyPassword(username, password) {
+  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  if (!user) return null;  // 用戶不存在就提早返回
+  if (!bcrypt.compareSync(password, user.password)) return null;  // 密碼錯誤也提早返回
+  return { id: user.id, username: user.username, name: user.name, role: user.role };
+}
+
+
+問題：if (!user) return null; 提早返回可能讓攻擊者根據回應時間推測用戶是否存在（Timing Attack）。建議：不論用戶是否存在，都執行一次 bcrypt.compare，並加上固定的延遲。
+
+Prompt for Fix:
+檔案：src/services/database.js
+問題：verifyPassword 在用戶不存在時提早返回 bcrypt.compare，可能遭受 Timing Attack。
+
+修改：改為固定時間比對：
+
+verifyPassword(username, password) {
+  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  
+  // 固定用一個假的密碼 hash 來比對（不論用戶是否存在都執行）
+  // 這樣可以避免 timing attack 推測用戶是否存在
+  const fakeHash = '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+  const dummyResult = bcrypt.compareSync(password || '', fakeHash);
+  
+  if (!user) return null;
+  
+  if (!bcrypt.compareSync(password, user.password)) return null;
+  return { id: user.id, username: user.username, name: user.name, role: user.role };
+}
+
+
+---
+
+🟢 輕微問題（建議改進）
+
+6. package.json — 缺少 scripts 項目
+
+"scripts": {
+  "start": "node src/server/index.js",
+  "dev": "node --watch src/server/index.js",
+  "test": "echo \"Tests not configured yet\""
+}
+
+
+Prompt for Fix:
+檔案：package.json
+建議：加入其他常用 scripts：
+
+"scripts": {
+  "start": "node src/server/index.js",
+  "dev": "node --watch src/server/index.js",
+  "test": "node --test",
+  "backup": "node scripts/backup.js"
+}
+
+然後在根目錄建立 scripts/backup.js 做資料庫備份。
+
+ (1/2)
+---
+
+7. docker-compose.yml — 沒有預設 ADMIN_PASSWORD
+
+ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}  # 預設密碼太弱
+
+
+Prompt for Fix:
+檔案：docker-compose.yml
+建議：ADMIN_PASSWORD 預設值應該是強密碼，並在 .env.example 中註明需更換：
+
+ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Chang3Me!@Admin123}
+
+並在 .env.example 中加入：
+# 管理員密碼（請在生產環境變更）
+ADMIN_PASSWORD=your-strong-password-here
+
+
+---
+
+8. src/routes/food.js — 分析 endpoint 無 Auth
+
+// POST /api/food/analyze - 這個端點不需要驗證
+router.post('/analyze', async (req, res, next) => {
+
+
+任何人可以無限呼叫 MiniMax API，消耗你的額度。
+
+Prompt for Fix:
+檔案：src/routes/food.js
+問題：/api/food/analyze 公開，攻擊者可以不斷上傳圖片消耗 MiniMax API 額度。
+
+建議：兩種方案：
+A. 加入簡單的 rate limiting（每 IP 每分鐘最多 5 次）
+B. 或者讓此端點需要驗證（但這會讓一般遊客無法使用預覽功能）
+
+建議採用方案 A，安裝 express-rate-limit，並套用到 /api/food/analyze
+
+
+---
+
+📋 總結需要修正的項目
+
+🔴
+
+• 優先級: 🔴
+
+• 檔案: src/routes/admin.js
+
+• 問題: bcrypt 未 import
+
+🔴
+
+• 優先級: 🔴
+
+• 檔案: docker-compose.yml
+
+• 問題: JWT_SECRET 預設值需加強
+
+🟡
+
+• 優先級: 🟡
+
+• 檔案: dashboard.html
+
+• 問題: 缺少 Auth Guard
+
+🟡
+
+• 優先級: 🟡
+
+• 檔案: index.html
+
+• 問題: 建議加入 Auth check
+
+🟡
+
+• 優先級: 🟡
+
+• 檔案: src/services/database.js
+
+• 問題: Timing Attack 風險
+
+🟡
+
+• 優先級: 🟡
+
+• 檔案: src/routes/food.js
+
+• 問題: /analyze 無 rate limit
+
+🟢
+
+• 優先級: 🟢
+
+• 檔案: package.json
+
+• 問題: 缺少備份 script
+
+🟢
+
+• 優先級: 🟢
+
+• 檔案: docker-compose.yml
+
+• 問題: ADMIN_PASSWORD 預設太弱
+
+需要我幫你逐一修正嗎？ (2/2)

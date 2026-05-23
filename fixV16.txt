@@ -1,0 +1,24 @@
+企業級營運優化 Prompt（請直接複製以下內容）
+系統已經成功在 VPS 部署運行！為了確保系統長期的穩定性與效能，請幫我針對以下 2 個企業級營運細節進行最後的修正。請直接提供修改後的程式碼：
+
+1. 實作 Node.js 與 SQLite 的優雅關機 (Graceful Shutdown) (src/server/index.js)
+
+問題點：當我們在 VPS 執行 docker compose down 或重啟系統時，Docker 會發送 SIGTERM 訊號給 Node.js。目前程式碼並沒有捕捉這個訊號，這會導致 Node.js 被強制砍斷，SQLite 的 WAL 模式檔案可能來不及正確寫入與閉合，增加資料庫損壞的風險。
+
+修改要求：請在 src/server/index.js 的最底部，加入監聽 process.on('SIGTERM') 與 process.on('SIGINT') 的事件。在接收到訊號時，優雅地執行 server.close()，並確保呼叫 db.close() 安全關閉資料庫連線後，再執行 process.exit(0)。
+
+2. 完善 Nginx 反向代理標頭與靜態快取 (nginx/conf.d/calo.conf)
+
+問題點 1 (真實 IP 遺失)：目前 Nginx 轉發給 Express 時，沒有帶上真實使用者的 IP 標頭。如果 Express 未來要做 Rate Limit (流量限制) 或日誌記錄，所有請求的 IP 都會變成 Nginx 容器的內部 IP (如 172.x.x.x)。
+
+問題點 2 (效能浪費)：目前沒有針對靜態檔案 (.css, .js, .html) 設定瀏覽器快取，導致每次載入畫面都在消耗 VPS 頻寬。
+
+修改要求：
+
+請在轉發給 API 的 location / 區塊中，補上 proxy_set_header X-Real-IP $remote_addr; 與 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;。
+
+請新增一個針對靜態資源 (如 ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$) 的 location 區塊，設定 expires 7d; 與 add_header Cache-Control "public, no-transform"; 來大幅節省頻寬。
+
+加上這兩道防護，您的系統就擁有真正「不怕隨時重啟」的韌性，且網頁載入速度會因為 Nginx 快取而大幅提升。
+
+請擬定修改計畫藍圖

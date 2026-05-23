@@ -61,6 +61,7 @@ try {
       fat REAL DEFAULT 0,
       description TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
@@ -171,6 +172,19 @@ try {
   }
 } catch (err) {
   console.warn('⚠️ user_profiles.custom_bmr 欄位遷移警告:', err.message);
+}
+
+// Migration: ensure updated_at column exists in food_logs
+try {
+  const foodLogPragma = db.prepare("PRAGMA table_info(food_logs)").all();
+  const foodLogColumns = foodLogPragma.map(c => c.name);
+
+  if (!foodLogColumns.includes('updated_at')) {
+    db.exec("ALTER TABLE food_logs ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP");
+    console.log('✅ 資料庫遷移完成: 新增 food_logs.updated_at 欄位');
+  }
+} catch (err) {
+  console.warn('⚠️ food_logs.updated_at 欄位遷移警告:', err.message);
 }
 
 // Create indexes
