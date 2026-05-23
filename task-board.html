@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaloScanAi 任務總覽</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 8px;
+      color: #74c69d;
+    }
+    .subtitle {
+      text-align: center;
+      color: #aaa;
+      margin-bottom: 24px;
+      font-size: 0.9rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .columns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .column {
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 16px;
+      min-height: 400px;
+    }
+    .column h2 {
+      font-size: 1rem;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid;
+    }
+    .column.p1 h2 { border-color: #ff6b6b; }
+    .column.p2 h2 { border-color: #ffd93d; }
+    .column.p3 h2 { border-color: #74c69d; }
+    .cards {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 300px;
+    }
+    .card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: grab;
+      transition: all 0.2s;
+      border-left: 4px solid transparent;
+    }
+    .card:hover {
+      background: rgba(255,255,255,0.15);
+      transform: translateY(-2px);
+    }
+    .card.dragging {
+      opacity: 0.5;
+      transform: scale(0.95);
+    }
+    .card.drag-over {
+      border-top: 3px dashed #74c69d;
+    }
+    .card-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+    .card-desc {
+      font-size: 0.75rem;
+      color: #aaa;
+      line-height: 1.4;
+    }
+    .card.p1 { border-left-color: #ff6b6b; }
+    .card.p2 { border-left-color: #ffd93d; }
+    .card.p3 { border-left-color: #74c69d; }
+    .submit-btn {
+      display: block;
+      margin: 24px auto;
+      padding: 14px 40px;
+      background: #74c69d;
+      color: #1a1a2e;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .submit-btn:hover {
+      background: #95d5b2;
+      transform: translateY(-2px);
+    }
+    .output {
+      display: none;
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .output textarea {
+      width: 100%;
+      height: 200px;
+      background: rgba(0,0,0,0.3);
+      color: #74c69d;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.85rem;
+      resize: vertical;
+    }
+    .copy-btn {
+      margin-top: 12px;
+      padding: 10px 24px;
+      background: #2d6a4f;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    @media (max-width: 768px) {
+      .columns { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>CaloScanAi 任務總覽</h1>
+    <p class="subtitle">拖曳卡片調整優先順序，完成後按「產生 Prompt」</p>
+
+    <div class="columns">
+      <div class="column p1" data-priority="1">
+        <h2>第一優先 🔴</h2>
+        <div class="cards" data-priority="1"></div>
+      </div>
+      <div class="column p2" data-priority="2">
+        <h2>第二優先 🟡</h2>
+        <div class="cards" data-priority="2"></div>
+      </div>
+      <div class="column p3" data-priority="3">
+        <h2>第三優先 🟢</h2>
+        <div class="cards" data-priority="3"></div>
+      </div>
+    </div>
+
+    <button class="submit-btn" onclick="generatePrompt()">產生 Prompt</button>
+
+    <div class="output" id="output">
+      <p style="margin-bottom:12px; color:#aaa;">複製以下 Prompt 貼回給 AI 助手：</p>
+      <textarea id="prompt-text" readonly></textarea>
+      <button class="copy-btn" onclick="copyPrompt()">複製</button>
+    </div>
+  </div>
+
+  <script>
+    const tasks = [
+      {
+        id: 'fix-analyze',
+        priority: 1,
+        title: '1. 分析失敗顯示 success',
+        desc: 'API 回傳格式錯誤，修復 /api/food/analyze 的 success/error 處理'
+      },
+      {
+        id: 'admin-back-nav',
+        priority: 2,
+        title: '2. 管理後臺增加返回按鈕',
+        desc: 'admin.html 新增「返回食物日誌」導航按鈕'
+      },
+      {
+        id: 'ocr-scan',
+        priority: 2,
+        title: '3. 掃描營養標籤文字',
+        desc: '掃描圖片上的文字，自動辨識蛋白質、碳水、脂肪、卡路里'
+      },
+      {
+        id: 'profile-page',
+        priority: 2,
+        title: '4. 新增個人資料頁面',
+        desc: '設定體重、身高、年齡、性別，選擇活動量（久坐/輕度/中度/重度）'
+      },
+      {
+        id: 'tdee-calc',
+        priority: 2,
+        title: '5. TDEE 熱量計算',
+        desc: '依據 BMR + 活動係數計算 TDEE，顯示：BMR、安全底線、減脂目標、增肥紅線'
+      },
+      {
+        id: 'calorie-warning',
+        priority: 2,
+        title: '6. 熱量警告系統',
+        desc: '80% 警告、90% 強烈警告、100% 超過提醒'
+      },
+      {
+        id: 'recommend-plan',
+        priority: 3,
+        title: '7. 減脂推薦方案',
+        desc: '根據每日進度推薦調整建議與階段目標'
+      },
+      {
+        id: 'admin-btn-role',
+        priority: 1,
+        title: '8. 管理介面按鈕顯示邏輯',
+        desc: '確認 role=admin 時才顯示管理介面按鈕'
+      }
+    ];
+
+    let draggedCard = null;
+
+    function renderCards() {
+      tasks.forEach(task => {
+        const card = document.createElement('div');
+        card.className = `card p${task.priority}`;
+        card.draggable = true;
+        card.dataset.id = task.id;
+        card.innerHTML = `
+          <div class="card-title">${task.title}</div>
+          <div class="card-desc">${task.desc}</div>
+        `;
+
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragend', handleDragEnd);
+
+        const col = document.querySelector(`.cards[data-priority="${task.priority}"]`);
+        col.appendChild(card);
+      });
+    }
+
+    function handleDragStart(e) {
+      draggedCard = this;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleDragEnd(e) {
+      this.classList.remove('dragging');
+      document.querySelectorAll('.card').forEach(c => c.classList.remove('drag-over'));
+    }
+
+    document.querySelectorAll('.cards').forEach(col => {
+      col.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      });
+
+      col.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+      });
+
+      col.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (draggedCard) {
+          col.appendChild(draggedCard);
+          // Update task priority
+          const taskId = draggedCard.dataset.id;
+          const newPriority = col.dataset.priority;
+          const task = tasks.find(t => t.id === taskId);
+          if (task) task.priority = parseInt(newPriority);
+        }
+      });
+    });
+
+    function generatePrompt() {
+      const ordered = [...tasks].sort((a, b) => {
+        if (a.priority !== b.priority) return a.priority - b.priority;
+        return 0;
+      });
+
+      let prompt = '以下是 CaloScanAi 的任務優先順序（已調整）：\n\n';
+
+      let currentPriority = 0;
+      ordered.forEach(task => {
+        if (task.priority !== currentPriority) {
+          currentPriority = task.priority;
+          const pname = currentPriority === 1 ? '第一優先' : currentPriority === 2 ? '第二優先' : '第三優先';
+          prompt += `\n【${pname}】\n`;
+        }
+        prompt += `- ${task.title}\n  說明：${task.desc}\n`;
+      });
+
+      prompt += '\n請按照此優先順序完成所有任務。';
+
+      document.getElementById('prompt-text').value = prompt;
+      document.getElementById('output').style.display = 'block';
+    }
+
+    function copyPrompt() {
+      const text = document.getElementById('prompt-text');
+      text.select();
+      document.execCommand('copy');
+      alert('已複製！');
+    }
+
+    renderCards();
+  </script>
+</body>
+</html>
