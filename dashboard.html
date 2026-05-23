@@ -1384,6 +1384,9 @@
         document.getElementById('nutrition-preview').style.display = 'block';
 
         // Send for parsing
+        document.getElementById('nutrition-parse-result').textContent = '🔄 分析中...';
+        document.getElementById('submit-nutrition-btn').textContent = '分析中...';
+
         const response = await fetch('/api/barcode/create-from-nutrition', {
           method: 'POST',
           headers: {
@@ -1397,6 +1400,7 @@
         });
 
         const result = await response.json();
+        console.log('Nutrition API response:', result);
 
         if (result.success) {
           // Update barcodeProductData with parsed values
@@ -1416,7 +1420,8 @@
           // Auto add to log
           addBarcodeToLog();
         } else {
-          document.getElementById('nutrition-parse-result').textContent = '❌ 解析失敗：' + (result.error || '請重試');
+          const errMsg = typeof result.error === 'string' ? result.error : (result.error?.message || JSON.stringify(result.error));
+          document.getElementById('nutrition-parse-result').textContent = '❌ 解析失敗：' + errMsg;
           btn.disabled = false;
           btn.textContent = '確認建立';
           btn.style.display = 'block';
