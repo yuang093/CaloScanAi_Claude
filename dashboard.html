@@ -962,6 +962,8 @@
     // Fetch progress data from API
     async function fetchProgressData() {
       try {
+        console.log('[fetchProgressData] Starting...');
+
         // Fetch both progress and profile in parallel
         const [progressRes, profileRes] = await Promise.all([
           fetch('/api/progress/daily', {
@@ -972,8 +974,11 @@
           })
         ]);
 
+        console.log('[fetchProgressData] progressRes status:', progressRes.status);
+
         const progressResult = await progressRes.json();
         const profileResult = await profileRes.json();
+        console.log('[fetchProgressData] progressResult:', JSON.stringify(progressResult));
 
         let goalCalories = 2000;
 
