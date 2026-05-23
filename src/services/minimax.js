@@ -220,25 +220,39 @@ export async function analyzeNutritionLabel(imageBase64) {
 - 蛋白質（單位 g）
 - 碳水化合物（單位 g）
 - 脂肪（單位 g）
-- 可能也會有鈉、糖、膳食纖維等
 
-請以 JSON 格式回覆：
+請以 JSON 格式回覆，包含以下欄位（只回傳 JSON，不要其他文字）：
 {
-  "name": "產品名稱（如果圖片有顯示）",
-  "brand": "品牌名稱（如果圖片有顯示）",
-  "servingSize": "每份份量（如 '30g'、'250ml'）",
-  "calories": 數字（每份熱量，單位 kcal）,
-  "protein": 數字（每份蛋白質，單位 g）,
-  "carbs": 數字（每份碳水化合物，單位 g）,
-  "fat": 數字（每份脂肪，單位 g）
-}
-
-如果無法辨識某個欄位，請設為 null。不要虛構資料，只回傳 JSON。`;
+  "name": "產品名稱",
+  "brand": "品牌",
+  "servingSize": "份量",
+  "calories": 數字,
+  "protein": 數字,
+  "carbs": 數字,
+  "fat": 數字
+}`;
 
   console.log('[Minimax] Calling analyzeFoodImage...');
   const result = await analyzeFoodImage(imageBase64, prompt);
   console.log('[Minimax] analyzeFoodImage returned:', JSON.stringify(result));
-  return result;
+
+  if (!result.success) {
+    console.log('[Minimax] AI call failed:', result.error);
+    return result;
+  }
+
+  // Parse the content
+  const content = result.data?.content || '';
+  console.log('[Minimax] Raw content from AI:', content);
+
+  const parsed = parseNutritionOCRResult(content);
+  console.log('[Minimax] Parsed result:', JSON.stringify(parsed));
+
+  // Return in the same format as analyzeFoodImage for consistency
+  return {
+    success: true,
+    data: { content: JSON.stringify(parsed) }
+  };
 }
 
 /**

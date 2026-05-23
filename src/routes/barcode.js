@@ -201,17 +201,31 @@ router.post('/create-from-nutrition', authMiddleware, async (req, res, next) => 
 
     // Analyze nutrition label image
     console.log('[Barcode] Calling analyzeNutritionLabel...');
-    const result = await analyzeNutritionLabel(image);
-    console.log('[Barcode] analyzeNutritionLabel result:', JSON.stringify(result));
+    const aiResult = await analyzeNutritionLabel(image);
+    console.log('[Barcode] analyzeNutritionLabel aiResult:', JSON.stringify(aiResult));
 
-    if (!result.success) {
-      console.log('[Barcode] AI analysis failed:', result.error);
-      return res.status(500).json({ error: result.error || '營養標示解析失敗' });
+    if (!aiResult.success) {
+      console.log('[Barcode] AI analysis failed:', aiResult.error);
+      return res.status(500).json({ error: aiResult.error || '營養標示解析失敗' });
     }
 
-    // Parse the AI response
-    const parsed = parseNutritionOCRResult(result.data.content);
-    console.log('[Barcode] Parsed nutrition data:', JSON.stringify(parsed));
+    // Parse the AI response (analyzeNutritionLabel already parses it, but we need to re-parse from JSON string)
+    let parsed;
+    try {
+      const content = aiResult.data?.content || '';
+      console.log('[Barcode] AI content:', content);
+      parsed = parseNutritionOCRResult(content);
+      console.log('[Barcode] Parsed nutrition data:', JSON.stringify(parsed));
+    } catch (e) {
+      console.error('[Barcode] Parse error:', e.message);
+      return res.status(500).json({ error: '無法解析營養標示資料' });
+    }
+
+    // Validate we got numeric values
+    if (parsed.calories === 0 && parsed.protein === 0 && parsed.carbs === 0 && parsed.fat === 0) {
+      console.log('[Barcode] All nutrition values are 0, may be OCR failure');
+      // Still allow creation but warn
+    }
 
     // Create barcode record
     const barcodeData = {
