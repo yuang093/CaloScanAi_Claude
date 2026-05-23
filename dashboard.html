@@ -437,17 +437,26 @@
       <div class="analysis-result">
         <h3>🍽️ 餐次摘要</h3>
         <div id="meal-summary" style="display:flex; flex-direction:column; gap:12px;">
-          <div style="display:flex; justify-content:space-between; padding:12px; background:var(--color-bg); border-radius:12px;">
-            <span>🌅 早餐</span>
-            <strong id="meal-breakfast-cal" style="color:var(--color-primary);">0 kcal</strong>
+          <div style="display:flex; flex-direction:column; padding:12px; background:var(--color-bg); border-radius:12px;">
+            <div style="display:flex; justify-content:space-between;">
+              <span>🌅 早餐</span>
+              <strong id="meal-breakfast-cal" style="color:var(--color-primary);">0 kcal</strong>
+            </div>
+            <div id="meal-breakfast-foods" style="font-size:0.85rem; color:var(--color-text-muted); margin-top:4px;"></div>
           </div>
-          <div style="display:flex; justify-content:space-between; padding:12px; background:var(--color-bg); border-radius:12px;">
-            <span>☀️ 午餐</span>
-            <strong id="meal-lunch-cal" style="color:var(--color-primary);">0 kcal</strong>
+          <div style="display:flex; flex-direction:column; padding:12px; background:var(--color-bg); border-radius:12px;">
+            <div style="display:flex; justify-content:space-between;">
+              <span>☀️ 午餐</span>
+              <strong id="meal-lunch-cal" style="color:var(--color-primary);">0 kcal</strong>
+            </div>
+            <div id="meal-lunch-foods" style="font-size:0.85rem; color:var(--color-text-muted); margin-top:4px;"></div>
           </div>
-          <div style="display:flex; justify-content:space-between; padding:12px; background:var(--color-bg); border-radius:12px;">
-            <span>🌙 晚餐</span>
-            <strong id="meal-dinner-cal" style="color:var(--color-primary);">0 kcal</strong>
+          <div style="display:flex; flex-direction:column; padding:12px; background:var(--color-bg); border-radius:12px;">
+            <div style="display:flex; justify-content:space-between;">
+              <span>🌙 晚餐</span>
+              <strong id="meal-dinner-cal" style="color:var(--color-primary);">0 kcal</strong>
+            </div>
+            <div id="meal-dinner-foods" style="font-size:0.85rem; color:var(--color-text-muted); margin-top:4px;"></div>
           </div>
         </div>
       </div>
@@ -1002,17 +1011,29 @@
           const todayLogsResult = await todayLogsRes.json();
           const todayLogs = todayLogsResult.data?.logs || [];
 
-          // Calculate meal totals
+          // Calculate meal totals and food names
           let breakfastCal = 0, lunchCal = 0, dinnerCal = 0;
+          let breakfastFoods = [], lunchFoods = [], dinnerFoods = [];
           todayLogs.forEach(log => {
             const hour = new Date(log.created_at).getHours();
-            if (hour < 11) breakfastCal += log.calories || 0;
-            else if (hour < 17) lunchCal += log.calories || 0;
-            else dinnerCal += log.calories || 0;
+            const foodName = log.description || '未命名食物';
+            if (hour < 11) {
+              breakfastCal += log.calories || 0;
+              breakfastFoods.push(foodName);
+            } else if (hour < 17) {
+              lunchCal += log.calories || 0;
+              lunchFoods.push(foodName);
+            } else {
+              dinnerCal += log.calories || 0;
+              dinnerFoods.push(foodName);
+            }
           });
           document.getElementById('meal-breakfast-cal').textContent = breakfastCal + ' kcal';
           document.getElementById('meal-lunch-cal').textContent = lunchCal + ' kcal';
           document.getElementById('meal-dinner-cal').textContent = dinnerCal + ' kcal';
+          document.getElementById('meal-breakfast-foods').textContent = breakfastFoods.join('、') || '尚無記錄';
+          document.getElementById('meal-lunch-foods').textContent = lunchFoods.join('、') || '尚無記錄';
+          document.getElementById('meal-dinner-foods').textContent = dinnerFoods.join('、') || '尚無記錄';
 
           document.getElementById('goal-cal-display').textContent = goalCalories;
 

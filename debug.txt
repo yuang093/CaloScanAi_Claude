@@ -1,12 +1,26 @@
-root@localhost:/opt/caloscanai_claude# grep -A10 "getTodayStats" src/services/database.js
-  getTodayStats(userId) {
-    const today = getLocalDate();
-    const stmt = db.prepare(`
-      SELECT
-        COALESCE(SUM(calories), 0) as total_calories,
-        COALESCE(SUM(protein), 0) as total_protein,
-        COALESCE(SUM(carbs), 0) as total_carbs,
-        COALESCE(SUM(fat), 0) as total_fat,
-        COUNT(*) as meal_count
-      FROM food_logs
-      WHERE user_id = ? AND date(created_at) = ?
+每日進度
+2026年5月24日
+
+🔥 今日攝取
+1779
+卡路里 (kcal)
+40.4g
+蛋白質
+250.2g
+碳水化合物
+68.2g
+脂肪
+目標攝取：2266 kcal
+
+剩餘 487 kcal
+
+"瑜伽讓身心靈平衡。" — 佚名
+💡 減脂建議
+今日進度良好，建議：「繼續保持這樣的節奏！建議晚餐均衡攝取蛋白質和蔬菜，飯量維持在半碗以內。」 蛋白質攝取偏低，建議多吃雞胸肉、蛋、豆製品。 依據您的 TDEE (2666 kcal)，今日攝取偏低，建議適度增加熱量以維持基礎代謝。
+🍽️ 餐次摘要
+🌅 早餐
+0 kcal
+☀️ 午餐
+0 kcal
+🌙 晚餐
+1779 kcal
