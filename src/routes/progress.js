@@ -9,10 +9,16 @@ const router = express.Router();
 router.get('/daily', authMiddleware, async (req, res, next) => {
   try {
     const today = getLocalDate();
+    console.log('[progress/daily] today (local):', today);
+    console.log('[progress/daily] userId:', req.user.id);
 
     // Get today's stats from food logs
     const todayStats = FoodLogDB.getTodayStats(req.user.id);
     console.log('[progress/daily] todayStats:', todayStats);
+
+    // Check if there are any logs at all for this user
+    const allLogs = db.prepare('SELECT created_at, calories FROM food_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 5').all(req.user.id);
+    console.log('[progress/daily] recent logs for user:', allLogs);
 
     // Get user's profile for goalCalories
     const profile = UserProfileDB.findByUserId(req.user.id);
