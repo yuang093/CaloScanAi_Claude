@@ -272,6 +272,39 @@
         <div class="section-header">
           <h2 class="section-title">食物日誌</h2>
         </div>
+
+        <!-- Edit Form -->
+        <div id="edit-food-form" style="display:none; background:#f9f9f9; padding:20px; border-radius:12px; margin-bottom:20px;">
+          <h3 style="margin-bottom:16px;">編輯食物記錄</h3>
+          <input type="hidden" id="edit-food-id">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div style="margin-bottom:12px;">
+              <label style="display:block; margin-bottom:4px;">食物名稱</label>
+              <input type="text" id="edit-food-name" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div style="margin-bottom:12px;">
+              <label style="display:block; margin-bottom:4px;">熱量 (kcal)</label>
+              <input type="number" id="edit-food-calories" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div style="margin-bottom:12px;">
+              <label style="display:block; margin-bottom:4px;">蛋白質 (g)</label>
+              <input type="number" id="edit-food-protein" step="0.1" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div style="margin-bottom:12px;">
+              <label style="display:block; margin-bottom:4px;">碳水 (g)</label>
+              <input type="number" id="edit-food-carbs" step="0.1" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div style="margin-bottom:12px;">
+              <label style="display:block; margin-bottom:4px;">脂肪 (g)</label>
+              <input type="number" id="edit-food-fat" step="0.1" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <button onclick="submitEditFoodLog()" class="btn btn-primary">儲存</button>
+            <button onclick="hideEditFoodForm()" class="btn btn-secondary">取消</button>
+          </div>
+        </div>
+
         <table>
           <thead>
             <tr>
@@ -282,6 +315,7 @@
               <th>蛋白質</th>
               <th>碳水</th>
               <th>脂肪</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody id="logs-table-body">
@@ -537,10 +571,8 @@
                 <td>${log.protein}g</td>
                 <td>${log.carbs}g</td>
                 <td>${log.fat}g</td>
-                <td>
-                  <button class="btn btn-secondary btn-small" onclick="editFoodLog(${log.id}, ${JSON.stringify(foodName).replace(/"/g, '&quot;')}, ${log.calories}, ${log.protein}, ${log.carbs}, ${log.fat})">修改</button>
-                  <button class="btn btn-danger btn-small" onclick="deleteFoodLog(${log.id})">刪除</button>
-                </td>
+                <td><button class="btn btn-secondary btn-small" onclick="showEditFoodForm(${log.id}, ${JSON.stringify(foodName).replace(/"/g, '&quot;')}, ${log.calories}, ${log.protein}, ${log.carbs}, ${log.fat})">修改</button>
+                  <button class="btn btn-danger btn-small" onclick="deleteFoodLog(${log.id})">刪除</button></td>
               </tr>
             `}).join('');
           }
@@ -550,21 +582,27 @@
       }
     }
 
-    async function editFoodLog(id, name, calories, protein, carbs, fat) {
-      const newName = prompt('食物名稱:', name);
-      if (newName === null) return;
+    async function showEditFoodForm(id, name, calories, protein, carbs, fat) {
+      document.getElementById('edit-food-id').value = id;
+      document.getElementById('edit-food-name').value = name;
+      document.getElementById('edit-food-calories').value = calories;
+      document.getElementById('edit-food-protein').value = protein;
+      document.getElementById('edit-food-carbs').value = carbs;
+      document.getElementById('edit-food-fat').value = fat;
+      document.getElementById('edit-food-form').style.display = 'block';
+    }
 
-      const newCalories = prompt('熱量 (kcal):', calories);
-      if (newCalories === null) return;
+    function hideEditFoodForm() {
+      document.getElementById('edit-food-form').style.display = 'none';
+    }
 
-      const newProtein = prompt('蛋白質 (g):', protein);
-      if (newProtein === null) return;
-
-      const newCarbs = prompt('碳水化合物 (g):', carbs);
-      if (newCarbs === null) return;
-
-      const newFat = prompt('脂肪 (g):', fat);
-      if (newFat === null) return;
+    async function submitEditFoodLog() {
+      const id = document.getElementById('edit-food-id').value;
+      const description = document.getElementById('edit-food-name').value;
+      const calories = document.getElementById('edit-food-calories').value;
+      const protein = document.getElementById('edit-food-protein').value;
+      const carbs = document.getElementById('edit-food-carbs').value;
+      const fat = document.getElementById('edit-food-fat').value;
 
       try {
         const response = await fetch('/api/admin/food-logs/' + id, {
@@ -574,17 +612,18 @@
             'Authorization': 'Bearer ' + localStorage.getItem('token')
           },
           body: JSON.stringify({
-            description: newName,
-            calories: parseInt(newCalories) || 0,
-            protein: parseFloat(newProtein) || 0,
-            carbs: parseFloat(newCarbs) || 0,
-            fat: parseFloat(newFat) || 0
+            description,
+            calories: parseInt(calories) || 0,
+            protein: parseFloat(protein) || 0,
+            carbs: parseFloat(carbs) || 0,
+            fat: parseFloat(fat) || 0
           })
         });
 
         const result = await response.json();
         if (result.success) {
           alert('已更新');
+          hideEditFoodForm();
           loadFoodLogs();
         } else {
           alert(result.error || '更新失敗');
