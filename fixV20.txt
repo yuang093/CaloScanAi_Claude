@@ -1,0 +1,23 @@
+剛才的 RWD 設定沒錯，但手機版被「頂部導覽列太長，導致橫向撐破螢幕」的問題給抵銷了。這使得手機瀏覽器強制縮小 (Zoom out) 整個網頁，導致排版看起來像沒變。請幫我針對這個排版致命傷進行修正：
+
+1. 改造 dashboard.html 導覽列 (改為雙列排版)
+請在 @media (max-width: 768px) 中，針對 .nav 與其內部元素加上以下 CSS：
+
+.nav：加上 flex-wrap: wrap; height: auto; padding: 12px 16px; gap: 8px;
+
+.logo：加上 flex: 1; (將同列右側的斗內與登出按鈕往右推)
+
+.nav-links：加上 order: 3; width: 100%; justify-content: flex-start; margin-top: 8px; (強制把選單擠到第二行，並保留橫向滑動與隱藏捲軸的設定)。
+
+2. 修正 admin.html 導覽列防破版
+同樣在 @media (max-width: 768px) 中，將 .nav 加上 flex-wrap: wrap; height: auto; padding: 12px 16px; gap: 12px;，確保當手機螢幕太窄時，右側的「返回」與「登出」按鈕群可以自然換行，而不會撐破畫面。
+
+3. 全域防溢出 (Flex/Grid 子元素壓縮保護)
+
+在各個檔案的 @media (max-width: 768px) 區塊中，為所有的卡片與容器（如 .card, .analysis-result, .nutrition-grid, .upload-zone）加上 min-width: 0;。這能強制覆蓋 Flexbox 預設的 min-width: auto，確保內部內容不會向外撐破版面。
+
+在 dashboard.html 的 .analysis-text 加上 word-wrap: break-word; overflow-wrap: break-word;，避免 AI 偶爾產生的連續長英文字串或網址破壞手機寬度限制。
+
+請執行上述修改，確保手機版的寬度被嚴格限制在 100vw 內。
+
+套用完這組設定後，網頁就不會再被「強制縮小」了，您將會看到導覽列變成精緻的上下兩行，且所有的卡片比例都會變得非常順眼！

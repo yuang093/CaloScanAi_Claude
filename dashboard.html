@@ -317,20 +317,31 @@
       .nutrition-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 8px;
+        min-width: 0;
       }
       .nutrition-value {
         font-size: 1.2rem;
       }
       .nutrition-item {
         padding: 12px 4px;
+        min-width: 0;
       }
       .nav {
+        display: flex;
+        flex-wrap: wrap;
+        height: auto;
         padding: 12px 16px;
+        gap: 8px;
       }
       .logo {
+        flex: 1;
         font-size: 1.2rem;
       }
       .nav-links {
+        order: 3;
+        width: 100%;
+        justify-content: flex-start;
+        margin-top: 8px;
         overflow-x: auto;
         white-space: nowrap;
         padding-bottom: 4px;
@@ -346,8 +357,14 @@
       }
       .card,
       .analysis-result,
-      .upload-zone {
+      .upload-zone,
+      .stat-card {
         padding: 16px;
+        min-width: 0;
+      }
+      .analysis-text {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
       .modal-content,
       .modal > div {

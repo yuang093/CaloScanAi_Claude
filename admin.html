@@ -194,8 +194,8 @@
     .theme-option-text { font-weight: var(--font-weight-medium); color: var(--color-text); }
 
     @media (max-width: 768px) {
-      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-      .nav { padding: 0 var(--space-4); }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; min-width: 0; }
+      .nav { display: flex; flex-wrap: wrap; height: auto; padding: 12px 16px; gap: 12px; }
       .container { padding: var(--space-8) 16px; }
       .table-wrapper {
         overflow-x: auto;
@@ -211,6 +211,7 @@
       .card,
       .analysis-result {
         padding: 16px;
+        min-width: 0;
       }
       .nav-links {
         scrollbar-width: none;

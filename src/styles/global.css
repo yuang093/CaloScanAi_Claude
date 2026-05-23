@@ -571,3 +571,15 @@ a:hover {
     padding: 16px;
   }
 }
+
+/* RWD - max-width: 768px - Flex/Grid min-width protection */
+@media (max-width: 768px) {
+  .card,
+  .analysis-result,
+  .upload-zone,
+  .stat-card,
+  .nutrition-grid,
+  .nutrition-item {
+    min-width: 0;
+  }
+}
