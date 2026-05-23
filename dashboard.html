@@ -551,17 +551,58 @@
     function handleFileSelect(event) {
       const file = event.target.files[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          currentPreview = e.target.result;
+        compressImage(file).then(base64 => {
+          currentPreview = 'data:image/jpeg;base64,' + base64;
           document.getElementById('preview-image').src = currentPreview;
           document.getElementById('upload-placeholder').style.display = 'none';
           document.getElementById('preview-container').style.display = 'block';
           document.getElementById('analyze-btn').disabled = false;
           document.getElementById('analysis-result').style.display = 'none';
+          currentImage = base64;
+        });
+      }
+    }
+
+    // Compress image before upload (max 1200px width, JPEG 0.8 quality, target < 500KB)
+    function compressImage(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxWidth = 1200;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Try quality 0.8 first, then reduce if needed
+            let quality = 0.8;
+            const tryCompress = () => {
+              const base64 = canvas.toDataURL('image/jpeg', quality).split(',')[1];
+              const sizeKB = (base64.length * 3) / 4 / 1024;
+              if (sizeKB > 500 && quality > 0.4) {
+                quality -= 0.1;
+                tryCompress();
+              } else {
+                resolve(base64);
+              }
+            };
+            tryCompress();
+          };
+          img.src = e.target.result;
         };
         reader.readAsDataURL(file);
-      }
+      });
     }
 
     // Drag and drop

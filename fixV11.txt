@@ -1,0 +1,14 @@
+完工前最後防護 Prompt（請直接複製以下內容）
+專案的 API 邏輯與架構已經非常完善，請幫我進行最後兩項「生產環境 (Production)」的防護修正。請直接提供修改後的程式碼或設定檔：
+
+1. 實作前端圖片壓縮機制 (dashboard.html)
+雖然我們放寬了 Nginx 與 Express 的 20MB 限制，但在前端直接將原圖轉換為 Base64 丟給後端與 MiniMax AI API，很容易觸發 AI 服務商的 Payload 限制（通常為 5MB~10MB），且會造成嚴重的頻寬浪費。
+
+修改要求：請在 dashboard.html 的 handleFileSelect 或上傳邏輯中，加入原生的 Canvas 圖片壓縮功能。在上傳給後端前，將圖片自動縮放（例如：最大寬度 1200px，轉為 JPEG 格式，品質 0.8），將圖片大小控制在 500KB 以下，再轉換為 Base64 進行分析。
+
+2. 修正 Docker Volume 掛載的 SQLite 寫入權限問題 (docker-compose.yml 或 docker/Dockerfile)
+目前 Dockerfile 中使用了非 root 用戶 nodejs (uid 1001) 來增強安全性。但是，當 docker-compose.yml 掛載本機的 app_data 或 ./uploads 到容器內時，Docker 預設會將這些 Volume 的擁有者設為 root。這會導致容器內的 nodejs 用戶沒有權限寫入 /app/data/caloscanai.db，引發 SQLITE_CANTOPEN 唯讀崩潰。
+
+修改要求：請提供一個優雅的解法來修復這個權限衝突。例如：在 docker-compose.yml 中指定 user: "1001:1001" 並確保外部掛載點權限正確，或者在 Dockerfile 中寫入一個輕量的 entrypoint.sh，在啟動 Node 伺服器前先 chown 修正資料夾權限。
+
+請擬定修改計畫藍圖
