@@ -147,6 +147,19 @@ try {
   console.warn('⚠️ 資料庫遷移警告:', err.message);
 }
 
+// Migration: ensure custom_bmr column exists in user_profiles
+try {
+  const profilePragma = db.prepare("PRAGMA table_info(user_profiles)").all();
+  const profileColumns = profilePragma.map(c => c.name);
+
+  if (!profileColumns.includes('custom_bmr')) {
+    db.exec("ALTER TABLE user_profiles ADD COLUMN custom_bmr REAL");
+    console.log('✅ 資料庫遷移完成: 新增 custom_bmr 欄位');
+  }
+} catch (err) {
+  console.warn('⚠️ user_profiles.custom_bmr 欄位遷移警告:', err.message);
+}
+
 // Create indexes
 try {
   db.exec(`

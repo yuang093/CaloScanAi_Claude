@@ -210,25 +210,25 @@
 
   <!-- Register Modal -->
   <div id="register-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:var(--color-surface, #fff); border-radius:24px; padding:40px; max-width:400px; width:90%; color:var(--color-text, #333);">
-      <h2 style="text-align:center; margin-bottom:24px;">建立新帳號</h2>
+    <div style="background:#fff; border-radius:24px; padding:40px; max-width:400px; width:90%;">
+      <h2 style="text-align:center; margin-bottom:24px; color:#333;">建立新帳號</h2>
       <form onsubmit="handleRegister(event)">
         <div class="form-group">
-          <label>名稱</label>
-          <input type="text" id="register-name" placeholder="您的名稱" required style="width:100%; padding:14px; border:1px solid var(--color-border, #ddd); border-radius:12px; font-size:1rem;">
+          <label style="color:#333;">名稱</label>
+          <input type="text" id="register-name" placeholder="您的名稱" required style="width:100%; padding:14px; border:1px solid #ddd; border-radius:12px; font-size:1rem; color:#333; background:#fff;">
         </div>
         <div class="form-group">
-          <label>帳號</label>
-          <input type="text" id="register-username" placeholder="設定帳號" required style="width:100%; padding:14px; border:1px solid var(--color-border, #ddd); border-radius:12px; font-size:1rem;">
+          <label style="color:#333;">帳號</label>
+          <input type="text" id="register-username" placeholder="設定帳號" required style="width:100%; padding:14px; border:1px solid #ddd; border-radius:12px; font-size:1rem; color:#333; background:#fff;">
         </div>
         <div class="form-group">
-          <label>密碼</label>
-          <input type="password" id="register-password" placeholder="設定密碼（至少6字元）" required minlength="6" style="width:100%; padding:14px; border:1px solid var(--color-border, #ddd); border-radius:12px; font-size:1rem;">
+          <label style="color:#333;">密碼</label>
+          <input type="password" id="register-password" placeholder="設定密碼（至少6字元）" required minlength="6" style="width:100%; padding:14px; border:1px solid #ddd; border-radius:12px; font-size:1rem; color:#333; background:#fff;">
         </div>
         <button type="submit" class="btn-login">註冊</button>
       </form>
       <div style="text-align:center; margin-top:16px;">
-        <a href="#" onclick="closeRegisterModal(); return false;" style="color:var(--color-text-muted, #666); text-decoration:none;">返回登入</a>
+        <a href="#" onclick="closeRegisterModal(); return false;" style="color:#666; text-decoration:none;">返回登入</a>
       </div>
     </div>
   </div>
