@@ -65,13 +65,6 @@ router.post('/upload', authMiddleware, async (req, res, next) => {
     console.log('[Food/upload] AI content:', content);
     const nutrition = parseNutritionalData(content);
 
-    if (!result.success) {
-      return res.status(500).json({ error: result.error });
-    }
-
-    const content = result.data.content;
-    const nutrition = parseNutritionalData(content);
-
     // Store in database
     const logEntry = FoodLogDB.create(req.user.id, {
       imageData: base64Data, // Store full base64 image
