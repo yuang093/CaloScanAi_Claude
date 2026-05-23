@@ -143,6 +143,19 @@ try {
     }
     console.log('✅ 資料庫遷移完成: 新增 username 欄位');
   }
+
+  // 如果有 email 欄位為 NOT NULL，修復它
+  if (columns.includes('email')) {
+    // 確保 email 可以為 NULL
+    db.exec("UPDATE users SET email = NULL WHERE email = '' OR email = 'undefined'");
+  }
+
+  // 確保 username 不是 NULL
+  const userCheck = db.prepare("SELECT COUNT(*) as cnt FROM users WHERE username IS NULL").get();
+  if (userCheck && userCheck.cnt > 0) {
+    console.warn('⚠️ 發現 ' + userCheck.cnt + ' 筆 username 為 NULL 的資料，正在修復...');
+    db.exec("UPDATE users SET username = 'user_' || id WHERE username IS NULL");
+  }
 } catch (err) {
   console.warn('⚠️ 資料庫遷移警告:', err.message);
 }
