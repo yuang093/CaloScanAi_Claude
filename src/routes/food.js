@@ -16,13 +16,17 @@ router.post('/analyze', async (req, res, next) => {
     }
 
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+    console.log('[Food/analyze] Calling analyzeFoodImage, image length:', base64Data?.length);
     const result = await analyzeFoodImage(base64Data, prompt);
+    console.log('[Food/analyze] analyzeFoodImage result:', JSON.stringify(result));
 
     if (!result.success) {
+      console.log('[Food/analyze] Failed:', result.error);
       return res.status(500).json({ error: result.error });
     }
 
     const content = result.data.content;
+    console.log('[Food/analyze] AI content:', content);
     const nutrition = parseNutritionalData(content);
 
     res.json({
@@ -33,6 +37,7 @@ router.post('/analyze', async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('[Food/analyze] Catch error:', error);
     next(error);
   }
 });
@@ -47,7 +52,18 @@ router.post('/upload', authMiddleware, async (req, res, next) => {
     }
 
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+    console.log('[Food/upload] Calling analyzeFoodImage, image length:', base64Data?.length);
     const result = await analyzeFoodImage(base64Data, prompt);
+    console.log('[Food/upload] analyzeFoodImage result:', JSON.stringify(result));
+
+    if (!result.success) {
+      console.log('[Food/upload] Failed:', result.error);
+      return res.status(500).json({ error: result.error });
+    }
+
+    const content = result.data.content;
+    console.log('[Food/upload] AI content:', content);
+    const nutrition = parseNutritionalData(content);
 
     if (!result.success) {
       return res.status(500).json({ error: result.error });
