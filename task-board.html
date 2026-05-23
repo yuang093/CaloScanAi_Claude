@@ -166,53 +166,62 @@
 
   <script>
     const tasks = [
+      // === 第一優先 ===
       {
-        id: 'fix-analyze',
+        id: 'bug-analyze',
         priority: 1,
-        title: '1. 分析失敗顯示 success',
-        desc: 'API 回傳格式錯誤，修復 /api/food/analyze 的 success/error 處理'
+        title: 'Bug: 圖片上傳分析偶爾失敗',
+        desc: '圖片上傳分析有時會失敗，需要增加重試機制或錯誤處理'
       },
       {
         id: 'admin-back-nav',
-        priority: 2,
+        priority: 1,
         title: '2. 管理後臺增加返回按鈕',
         desc: 'admin.html 新增「返回食物日誌」導航按鈕'
       },
+      // === 第二優先 ===
       {
         id: 'ocr-scan',
         priority: 2,
-        title: '3. 掃描營養標籤文字',
+        title: '3. 掃描營養標籤文字（OCR）',
         desc: '掃描圖片上的文字，自動辨識蛋白質、碳水、脂肪、卡路里'
+      },
+      {
+        id: 'quote-carousel',
+        priority: 2,
+        title: '4. 首頁語錄輪播',
+        desc: '實作首頁鼓勵語錄輪播功能'
       },
       {
         id: 'profile-page',
         priority: 2,
-        title: '4. 新增個人資料頁面',
-        desc: '設定體重、身高、年齡、性別，選擇活動量（久坐/輕度/中度/重度）'
+        title: '5. 新增個人資料頁面',
+        desc: '設定體重、身高、年齡，性別，選擇活動量（久坐/輕度/中度/重度）'
       },
       {
         id: 'tdee-calc',
         priority: 2,
-        title: '5. TDEE 熱量計算',
+        title: '6. TDEE 熱量計算',
         desc: '依據 BMR + 活動係數計算 TDEE，顯示：BMR、安全底線、減脂目標、增肥紅線'
       },
       {
         id: 'calorie-warning',
         priority: 2,
-        title: '6. 熱量警告系統',
+        title: '7. 熱量警告系統',
         desc: '80% 警告、90% 強烈警告、100% 超過提醒'
+      },
+      // === 第三優先 ===
+      {
+        id: 'donation-btn',
+        priority: 3,
+        title: '1. 斗內 (Donation) 按鈕',
+        desc: '實作贊助按鈕，顯示在首頁或設定頁面'
       },
       {
         id: 'recommend-plan',
         priority: 3,
-        title: '7. 減脂推薦方案',
+        title: '8. 減脂推薦方案',
         desc: '根據每日進度推薦調整建議與階段目標'
-      },
-      {
-        id: 'admin-btn-role',
-        priority: 1,
-        title: '8. 管理介面按鈕顯示邏輯',
-        desc: '確認 role=admin 時才顯示管理介面按鈕'
       }
     ];
 
@@ -262,7 +271,6 @@
         e.preventDefault();
         if (draggedCard) {
           col.appendChild(draggedCard);
-          // Update task priority
           const taskId = draggedCard.dataset.id;
           const newPriority = col.dataset.priority;
           const task = tasks.find(t => t.id === taskId);

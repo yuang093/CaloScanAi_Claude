@@ -24,6 +24,21 @@
 - **內部端口**：3002（http://frontend:3002）
 - **VPS SSH**：需要登入時，使用 `sudo` 權限操作 Docker
 
+## 做決策
+假設我有很多工作要重新排優先序
+讓你做一個網頁 放到HTML網站
+把每個工作變成可以拖的卡片
+分第一優先、第二、第三
+依照你的傳頁判斷優先順序
+你審核完成以後
+我可以拖曳改變
+調整完後按確定提交
+這各網站就會把整個結果轉成一段prompt
+我就可以把prompt 貼回去給你
+讓你理解我的決策並繼續完成任務
+任務看板是 放到https://claude-html.vercel.app/
+上傳到https://github.com/yuang093/Claude_HTML.git
+
 ### 版本管理
 - **每次 commit 前必須更新版本號**（Header.jsx 中的 Vxx.x）
 - 版本格式：V1.1 → V1.2 → V1.3 ...
