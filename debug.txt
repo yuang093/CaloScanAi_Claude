@@ -1,45 +1,21 @@
-root@localhost:/opt/caloscanai_claude# docker logs caloscanai_app --tail 30
-
-SyntaxError: Identifier 'content' has already been declared
-    at compileSourceTextModule (node:internal/modules/esm/utils:346:16)
-    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:146:18)
-    at #translate (node:internal/modules/esm/loader:497:12)
-    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:544:27)
-
-Node.js v20.20.2
-file:///app/src/routes/food.js:72
-    const content = result.data.content;
-          ^
-
-SyntaxError: Identifier 'content' has already been declared
-    at compileSourceTextModule (node:internal/modules/esm/utils:346:16)
-    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:146:18)
-    at #translate (node:internal/modules/esm/loader:497:12)
-    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:544:27)
-
-Node.js v20.20.2
-file:///app/src/routes/food.js:72
-    const content = result.data.content;
-          ^
-
-SyntaxError: Identifier 'content' has already been declared
-    at compileSourceTextModule (node:internal/modules/esm/utils:346:16)
-    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:146:18)
-    at #translate (node:internal/modules/esm/loader:497:12)
-    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:544:27)
-
-Node.js v20.20.2
-root@localhost:/opt/caloscanai_claude# docker ps -a
-CONTAINER ID   IMAGE                           COMMAND                  CREATED          STATUS                          PORTSNAMES
-884a5b400cb9   nginx:alpine                    "/docker-entrypoint.…"   53 seconds ago   Up 53 seconds                   0.0.0.0:443->443/tcp, [::]:443->443/tcp, 0.0.0.0:3080->80/tcp, [::]:3080->80/tcpcaloscanai_nginx
-994902b4bbb9   caloscanai_claude-app           "docker-entrypoint.s…"   53 seconds ago   Restarting (1) 25 seconds agocaloscanai_app
-fb237a7a033a   cloudflare/cloudflared:latest   "cloudflared --no-au…"   26 hours ago     Up 26 hourscaloscanai_cloudflared
-2521294d139d   cloudflare/cloudflared:latest   "cloudflared --no-au…"   26 hours ago     Exited (0) 26 hours agozealous_turing
-803ac208e81b   smartcard-v2-frontend           "docker-entrypoint.s…"   8 days ago       Up 8 days                       127.0.0.1:3000->3000/tcpsmartcard_v2_frontend
-12980ab0f97a   smartcard-v2-backend            "/entrypoint.sh"         8 days ago       Up 8 days                       127.0.0.1:8001->8000/tcpsmartcard_v2_backend
-32b989c8906d   cloudflare/cloudflared:latest   "cloudflared --no-au…"   8 days ago       Up 8 dayssmartcard_v2_cloudflared
-500a515af726   postgres:16-alpine              "docker-entrypoint.s…"   8 days ago       Up 8 days (healthy)             5432/tcpsmartcard_v2_postgres
-7b1dbea29cca   app-frontend                    "/docker-entrypoint.…"   9 days ago       Up 9 days                       80/tcp, 0.0.0.0:80->5173/tcp, [::]:80->5173/tcpschweb-frontend
-2aaaa43171a7   app-backend                     "uvicorn main:app --…"   9 days ago       Up 9 days                       0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcpschweb-backend
-f4b69a94ffba   postgres:15-alpine              "docker-entrypoint.s…"   5 weeks ago      Up 5 weeks (healthy)            5432/tcpschwab_db
-root@localhost:/opt/caloscanai_claude# 
+root@localhost:/opt/caloscanai_claude# cd /opt/caloscanai_claude
+root@localhost:/opt/caloscanai_claude# git pull origin main
+From https://github.com/yuang093/CaloScanAi_Claude
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+root@localhost:/opt/caloscanai_claude# docker compose down
+[+] Running 3/3
+ ✔ Container caloscanai_nginx                    Removed                                                                                                                                               0.2s 
+ ✔ Container caloscanai_app                      Removed                                                                                                                                               0.1s 
+ ! Network caloscanai_claude_caloscanai_network  Resource is still in use                                                                                                                              0.0s 
+root@localhost:/opt/caloscanai_claude# docker compose up --build -d
+[+] Building 0.0s (0/0)                                                                                                                                                                                     
+[+] Running 3/3
+ ✔ app                         Built                                                                                                                                                                   0.0s 
+ ✔ Container caloscanai_app    Started                                                                                                                                                                 0.4s 
+ ✔ Container caloscanai_nginx  Started                                                                                                                                                                 0.7s 
+root@localhost:/opt/caloscanai_claude# docker compose logs -f app
+caloscanai_app  | ⚠️ food_logs.updated_at 欄位遷移警告: Cannot add a column with non-constant default
+caloscanai_app  | ⚠️ APP_URL not set, CORS is open to all origins
+caloscanai_app  | 🚀 CaloScanAi API running on port 3000
+caloscanai_app  | 📊 Health check: http://localhost:3000/health

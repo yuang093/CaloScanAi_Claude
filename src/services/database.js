@@ -180,7 +180,9 @@ try {
   const foodLogColumns = foodLogPragma.map(c => c.name);
 
   if (!foodLogColumns.includes('updated_at')) {
-    db.exec("ALTER TABLE food_logs ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP");
+    db.exec("ALTER TABLE food_logs ADD COLUMN updated_at TEXT");
+    // 設定現有資料的 updated_at
+    db.exec("UPDATE food_logs SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL");
     console.log('✅ 資料庫遷移完成: 新增 food_logs.updated_at 欄位');
   }
 } catch (err) {
