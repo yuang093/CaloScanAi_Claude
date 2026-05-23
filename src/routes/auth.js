@@ -12,21 +12,21 @@ router.post('/register', async (req, res, next) => {
 
     // Validation
     if (!username || !password || !name) {
-      return res.status(400).json({ error: '請填寫所有必填欄位' });
+      return res.status(400).json({ success: false, error: '請填寫所有必填欄位' });
     }
 
     if (username.length < 3) {
-      return res.status(400).json({ error: '帳號至少需要 3 個字元' });
+      return res.status(400).json({ success: false, error: '帳號至少需要 3 個字元' });
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ error: '密碼至少需要 6 個字元' });
+      return res.status(400).json({ success: false, error: '密碼至少需要 6 個字元' });
     }
 
     // Check if user exists
     const existingUser = UserDB.findByUsername(username);
     if (existingUser) {
-      return res.status(409).json({ error: '此帳號已被註冊' });
+      return res.status(409).json({ success: false, error: '此帳號已被註冊' });
     }
 
     // Create user
@@ -63,13 +63,13 @@ router.post('/login', async (req, res, next) => {
 
     // Validation
     if (!username || !password) {
-      return res.status(400).json({ error: '請填寫帳號和密碼' });
+      return res.status(400).json({ success: false, error: '請填寫帳號和密碼' });
     }
 
     // Verify password
     const user = UserDB.verifyPassword(username, password);
     if (!user) {
-      return res.status(401).json({ error: '帳號或密碼錯誤' });
+      return res.status(401).json({ success: false, error: '帳號或密碼錯誤' });
     }
 
     // Generate token
@@ -102,7 +102,7 @@ router.get('/me', authMiddleware, async (req, res, next) => {
   try {
     const user = UserDB.findById(req.user.id);
     if (!user) {
-      return res.status(404).json({ error: '用戶不存在' });
+      return res.status(404).json({ success: false, error: '用戶不存在' });
     }
 
     res.json({

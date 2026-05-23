@@ -301,7 +301,8 @@
           document.getElementById('username-input').value = username;
           document.getElementById('password-input').value = '';
         } else {
-          alert(result.error || '註冊失敗');
+          const errMsg = typeof result.error === 'string' ? result.error : (result.error?.message || JSON.stringify(result.error));
+          alert(errMsg);
         }
       } catch (error) {
         alert('註冊失敗，請稍後再試');
@@ -352,7 +353,7 @@
           localStorage.setItem('user', JSON.stringify(result.data.user));
           window.location.href = 'dashboard.html';
         } else {
-          const errMsg = typeof result.error === 'string' ? result.error : (result.error?.message || '登入失敗');
+          const errMsg = typeof result.error === 'string' ? result.error : (result.error?.message || JSON.stringify(result.error));
           alert(errMsg);
           btn.disabled = false;
           btn.textContent = '登入';

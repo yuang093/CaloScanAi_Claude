@@ -2,10 +2,9 @@ export function errorHandler(err, req, res, next) {
   console.error('❌ Error:', err.message);
   console.error('Stack:', err.stack);
 
+  // Return error message as a string for consistent frontend handling
   res.status(err.status || 500).json({
-    error: {
-      message: err.message || 'Internal server error',
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-    }
+    success: false,
+    error: err.message || '伺服器錯誤'
   });
 }
