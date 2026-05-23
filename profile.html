@@ -241,14 +241,27 @@
       .form-row,
       .activity-options {
         grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .tdee-value {
+        font-size: 1.25rem;
       }
       .nav-links {
         overflow-x: auto;
         white-space: nowrap;
         padding-bottom: 4px;
+        scrollbar-width: none;
       }
       .nav-links::-webkit-scrollbar {
         display: none;
+      }
+      .modal-content {
+        width: 95% !important;
+        max-width: none !important;
+        padding: 16px !important;
+      }
+      .form-group input {
+        padding: 10px 12px;
       }
     }
   </style>

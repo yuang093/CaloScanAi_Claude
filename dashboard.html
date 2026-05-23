@@ -311,8 +311,18 @@
 
     /* RWD - max-width: 768px */
     @media (max-width: 768px) {
+      .main-content {
+        padding: 0 16px;
+      }
       .nutrition-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      .nutrition-value {
+        font-size: 1.2rem;
+      }
+      .nutrition-item {
+        padding: 12px 4px;
       }
       .nav {
         padding: 12px 16px;
@@ -325,6 +335,7 @@
         white-space: nowrap;
         padding-bottom: 4px;
         gap: 4px;
+        scrollbar-width: none;
       }
       .nav-links::-webkit-scrollbar {
         display: none;
@@ -333,17 +344,23 @@
         padding: 6px 12px;
         font-size: 0.9rem;
       }
+      .card,
+      .analysis-result,
+      .upload-zone {
+        padding: 16px;
+      }
       .modal-content,
       .modal > div {
-        max-width: 95% !important;
+        width: 95% !important;
+        max-width: none !important;
         padding: 16px !important;
-      }
-      .analysis-result {
-        padding: 16px;
       }
       .food-log-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
+        gap: 8px;
+      }
+      .form-group input {
+        padding: 10px 12px;
       }
     }
   </style>

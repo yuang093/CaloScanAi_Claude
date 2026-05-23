@@ -194,9 +194,9 @@
     .theme-option-text { font-weight: var(--font-weight-medium); color: var(--color-text); }
 
     @media (max-width: 768px) {
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
       .nav { padding: 0 var(--space-4); }
-      .container { padding: var(--space-8) var(--space-4); }
+      .container { padding: var(--space-8) 16px; }
       .table-wrapper {
         overflow-x: auto;
         display: block;
@@ -204,6 +204,27 @@
       }
       table {
         min-width: 600px;
+      }
+      .stat-value {
+        font-size: 1.75rem;
+      }
+      .card,
+      .analysis-result {
+        padding: 16px;
+      }
+      .nav-links {
+        scrollbar-width: none;
+      }
+      .nav-links::-webkit-scrollbar {
+        display: none;
+      }
+      .modal-content {
+        width: 95% !important;
+        max-width: none !important;
+        padding: 16px !important;
+      }
+      .form-group input {
+        padding: 10px 12px;
       }
     }
   </style>

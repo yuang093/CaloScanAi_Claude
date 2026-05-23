@@ -557,3 +557,17 @@ a:hover {
   }
   html { scroll-behavior: auto; }
 }
+/* RWD - max-width: 768px */
+@media (max-width: 768px) {
+  .main-content,
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .card,
+  .analysis-result,
+  .upload-zone,
+  .stat-card {
+    padding: 16px;
+  }
+}

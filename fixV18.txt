@@ -1,0 +1,33 @@
+為了讓手機版 (max-width: 768px) 的視覺體驗更寬敞、不擁擠，請幫我針對 global.css (或各主題檔)、dashboard.html、admin.html、profile.html 與 index.html 的 @media (max-width: 768px) 區塊進行以下「版面瘦身」與微調：
+
+1. 縮減全域與容器留白 (Padding/Gap)
+
+將 .main-content, .container 的左右 padding 縮小至 16px。
+
+將 .card, .analysis-result, .upload-zone, .stat-card 的內部 padding 統一下修至 16px（原本為 24px~32px）。
+
+將所有 Grid (.nutrition-grid, .stats-grid, .tdee-results, .form-row) 的 gap 縮小至 8px。
+
+2. 縮小巨型數值字體 (Font-size)
+
+admin.html：將 .stat-value 的字體大小從 3rem 縮小至 1.75rem。
+
+dashboard.html：將 .nutrition-value 縮小至 1.2rem，.nutrition-item padding 減至 12px 4px。
+
+profile.html：將 .tdee-value 縮小至 1.25rem。
+
+3. 隱藏導覽列的橫向捲軸
+
+在 .nav-links 的響應式設定中，除了保留 overflow-x: auto 與 white-space: nowrap，請務必加上 scrollbar-width: none; (Firefox) 以及 &::-webkit-scrollbar { display: none; } (Chrome/Safari) 以隱藏醜陋的捲軸。
+
+4. 彈出視窗 (Modal) 滿版優化
+
+將所有 .modal-content 或 Modal 內的白色背景容器，在手機版時設定 width: 95%; max-width: none; padding: 16px;，確保輸入框有足夠的寬度可以點擊。
+
+5. 輸入框高度微調
+
+將 .input, .form-group input 的 padding 在手機版微調為 10px 12px，避免佔用過多垂直空間。
+
+請確保以上修改僅作用於 @media (max-width: 768px)，不要影響到桌面版的排版。
+
+套用這組 Prompt 之後，手機版的畫面會瞬間變得輕盈很多，按鈕與卡片的比例也會更符合手指觸控的人體工學！
