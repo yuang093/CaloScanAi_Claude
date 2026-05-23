@@ -170,6 +170,9 @@
       border-color: #fff;
       transform: scale(1.15);
     }
+    #quote-text {
+      transition: opacity 0.3s ease;
+    }
   </style>
 </head>
 <body data-theme="natural" data-mode="light">
@@ -182,6 +185,11 @@
 
     <div class="logo">Calo<span>Scan</span>Ai</div>
     <p class="subtitle">AI 智慧熱量追蹤，拍照記錄每一餐</p>
+
+    <div id="quote-carousel" style="text-align: center; margin-bottom: 32px; min-height: 60px;">
+      <p id="quote-text" style="color: rgba(255,255,255,0.7); font-style: italic; font-size: 0.95rem; line-height: 1.6;"></p>
+      <p id="quote-author" style="color: rgba(255,255,255,0.5); font-size: 0.85rem; margin-top: 8px;"></p>
+    </div>
 
     <form onsubmit="handleLogin(event)">
       <div class="form-group">
@@ -201,6 +209,44 @@
   </div>
 
   <script>
+    // Quote carousel
+    let quotes = [];
+    let currentQuoteIndex = 0;
+
+    async function loadQuotes() {
+      try {
+        const response = await fetch('/api/progress/quotes');
+        const result = await response.json();
+        if (result.success && result.data && result.data.length > 0) {
+          quotes = result.data;
+          showQuote(0);
+          if (quotes.length > 1) {
+            setInterval(() => {
+              currentQuoteIndex = (currentQuoteIndex + 1) % quotes.length;
+              showQuote(currentQuoteIndex);
+            }, 5000);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load quotes:', error);
+      }
+    }
+
+    function showQuote(index) {
+      const quote = quotes[index];
+      if (!quote) return;
+
+      const textEl = document.getElementById('quote-text');
+      const authorEl = document.getElementById('quote-author');
+
+      textEl.style.opacity = 0;
+      setTimeout(() => {
+        textEl.textContent = '"' + quote.quote + '"';
+        authorEl.textContent = quote.author || '佚名';
+        textEl.style.opacity = 1;
+      }, 300);
+    }
+
     // Theme management
     function setTheme(theme) {
       document.body.setAttribute('data-theme', theme);
@@ -219,6 +265,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       const savedTheme = localStorage.getItem('caloscanai_theme') || 'natural';
       setTheme(savedTheme);
+      loadQuotes();
     });
 
     async function handleLogin(e) {

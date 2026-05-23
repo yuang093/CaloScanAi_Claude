@@ -7,6 +7,7 @@ import authRouter from '../routes/auth.js';
 import progressRouter from '../routes/progress.js';
 import barcodeRouter from '../routes/barcode.js';
 import adminRouter from '../routes/admin.js';
+import profileRouter from '../routes/profile.js';
 import { errorHandler } from '../middleware/errorHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -42,6 +43,7 @@ app.use('/api/food', foodRouter);
 app.use('/api/progress', progressRouter);
 app.use('/api/barcode', barcodeRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/profile', profileRouter);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -317,6 +317,7 @@
     <div class="nav-links">
       <button class="nav-link active" onclick="switchPage('food-log')">食物日誌</button>
       <button class="nav-link" onclick="switchPage('progress')">每日進度</button>
+      <button class="nav-link" onclick="window.location.href='profile.html'">個人資料</button>
       <button class="nav-link" id="admin-btn" onclick="window.location.href='admin.html'" style="display:none;">管理介面</button>
     </div>
     <button class="nav-link" onclick="logout()">登出</button>
@@ -415,13 +416,14 @@
           </div>
         </div>
         <div style="text-align:center; margin-top:16px;">
-          <p style="color:var(--color-text-muted);">目標攝取：2000 kcal</p>
+          <p style="color:var(--color-text-muted);">目標攝取：<span id="goal-cal-display">2000</span> kcal</p>
           <p style="font-size:1.2rem; margin-top:8px;">
             剩餘 <strong id="remaining-cal">2000</strong> kcal
           </p>
           <div class="progress-bar" style="height:12px; background:var(--color-border); border-radius:6px; margin-top:12px; overflow:hidden;">
-            <div class="progress-bar-fill" style="height:100%; background:var(--color-primary); width:0%; transition:width 0.3s;"></div>
+            <div class="progress-bar-fill" id="progress-bar-fill" style="height:100%; background:var(--color-primary); width:0%; transition:width 0.3s;"></div>
           </div>
+          <div id="calorie-warning" style="display:none; margin-top:8px; padding:8px 16px; border-radius:8px; font-size:0.85rem; font-weight:500;"></div>
         </div>
         <div id="daily-quote" style="text-align:center; margin-top:16px; font-style:italic; color:var(--color-text-muted);"></div>
       </div>
@@ -872,15 +874,23 @@
     // Fetch progress data from API
     async function fetchProgressData() {
       try {
-        const response = await fetch('/api/progress/daily', {
-          headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('token')
-          }
-        });
-        const result = await response.json();
+        // Fetch both progress and profile in parallel
+        const [progressRes, profileRes] = await Promise.all([
+          fetch('/api/progress/daily', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+          }),
+          fetch('/api/profile', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+          })
+        ]);
 
-        if (result.success) {
-          const { stats, goals, quote } = result.data;
+        const progressResult = await progressRes.json();
+        const profileResult = await profileRes.json();
+
+        let goalCalories = 2000;
+
+        if (progressResult.success) {
+          const { stats, goals, quote } = progressResult.data;
 
           // Update nutrition values
           document.getElementById('total-cal').textContent = stats.calories;
@@ -889,10 +899,41 @@
           document.getElementById('total-fat').textContent = stats.fat + 'g';
           document.getElementById('remaining-cal').textContent = goals.remaining;
 
-          // Update progress bar if exists
-          const progressBar = document.querySelector('.progress-bar-fill');
+          // Use profile goal if available
+          if (profileResult.success && profileResult.data && profileResult.data.goal_calories) {
+            goalCalories = profileResult.data.goal_calories;
+          }
+
+          document.getElementById('goal-cal-display').textContent = goalCalories;
+
+          // Update progress bar
+          const progressPercent = Math.min((stats.calories / goalCalories) * 100, 100);
+          const progressBar = document.getElementById('progress-bar-fill');
           if (progressBar) {
-            progressBar.style.width = goals.caloriesPercent + '%';
+            progressBar.style.width = progressPercent + '%';
+          }
+
+          // Calorie warning system
+          const warningEl = document.getElementById('calorie-warning');
+          if (warningEl) {
+            if (progressPercent >= 100) {
+              warningEl.style.display = 'block';
+              warningEl.style.background = '#f8d7da';
+              warningEl.style.color = '#721c24';
+              warningEl.textContent = '⚠️ 已超過每日目標熱量！';
+            } else if (progressPercent >= 90) {
+              warningEl.style.display = 'block';
+              warningEl.style.background = '#fff3cd';
+              warningEl.style.color = '#856404';
+              warningEl.textContent = '🔥 攝取已達 90%，注意別超標！';
+            } else if (progressPercent >= 80) {
+              warningEl.style.display = 'block';
+              warningEl.style.background = '#fff3cd';
+              warningEl.style.color = '#856404';
+              warningEl.textContent = '📢 攝取已達 80%，注意熱量攝取';
+            } else {
+              warningEl.style.display = 'none';
+            }
           }
 
           // Show quote if element exists

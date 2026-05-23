@@ -98,6 +98,20 @@ try {
       serving_size TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS user_profiles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE,
+      weight REAL,
+      height REAL,
+      age INTEGER,
+      gender TEXT DEFAULT 'unspecified',
+      activity_level TEXT DEFAULT 'sedentary',
+      goal_calories INTEGER DEFAULT 2000,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
   `);
 } catch (err) {
   console.error('❌ 資料庫結構初始化失敗:', err.message);
@@ -375,6 +389,59 @@ export const BarcodeDB = {
       this.create(data);
     }
     return this.findByBarcode(data.barcode);
+  }
+};
+
+// User profile operations
+export const UserProfileDB = {
+  upsert(userId, data) {
+    const stmt = db.prepare(`
+      INSERT INTO user_profiles (user_id, weight, height, age, gender, activity_level, goal_calories)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        weight = excluded.weight,
+        height = excluded.height,
+        age = excluded.age,
+        gender = excluded.gender,
+        activity_level = excluded.activity_level,
+        goal_calories = excluded.goal_calories,
+        updated_at = CURRENT_TIMESTAMP
+    `);
+    stmt.run(
+      userId,
+      data.weight || null,
+      data.height || null,
+      data.age || null,
+      data.gender || 'unspecified',
+      data.activityLevel || 'sedentary',
+      data.goalCalories || 2000
+    );
+    return this.findByUserId(userId);
+  },
+
+  findByUserId(userId) {
+    return db.prepare('SELECT * FROM user_profiles WHERE user_id = ?').get(userId);
+  },
+
+  calculateBMR(profile) {
+    if (!profile.weight || !profile.height || !profile.age) return null;
+
+    if (profile.gender === 'male') {
+      return 10 * profile.weight + 6.25 * profile.height - 5 * profile.age + 5;
+    } else if (profile.gender === 'female') {
+      return 10 * profile.weight + 6.25 * profile.height - 5 * profile.age - 161;
+    }
+    return 10 * profile.weight + 6.25 * profile.height - 5 * profile.age;
+  },
+
+  calculateTDEE(bmr, activityLevel) {
+    const multipliers = {
+      sedentary: 1.2,
+      light: 1.375,
+      moderate: 1.55,
+      active: 1.725
+    };
+    return Math.round(bmr * (multipliers[activityLevel] || 1.2));
   }
 };
 

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaloScanAi - 個人資料</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🥗%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="src/styles/global.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --color-bg: #faf6f1;
+      --color-surface: #fff9f4;
+      --color-primary: #c85a3b;
+      --color-primary-light: #e07a5f;
+      --color-text: #3d2c29;
+      --color-text-muted: #8b7355;
+      --color-border: #e8ddd4;
+      --color-success: #2d6a4f;
+      --color-warning: #e07a5f;
+      --color-danger: #c82333;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      --font-family: 'Noto Sans TC', -apple-system, sans-serif;
+    }
+    [data-theme="playful"] {
+      --color-bg: #fef6e9;
+      --color-surface: #ffffff;
+      --color-primary: #FF6B9D;
+      --color-primary-light: #FFB3C6;
+      --color-text: #2d2d2d;
+      --color-text-muted: #666;
+      --color-border: #f0e6d9;
+    }
+    [data-theme="natural"] {
+      --color-bg: #f4f9f4;
+      --color-surface: #ffffff;
+      --color-primary: #2d6a4f;
+      --color-primary-light: #74c69d;
+      --color-text: #1a3a1a;
+      --color-text-muted: #5a5a5a;
+      --color-border: #d4e8d4;
+    }
+    [data-mode="dark"] {
+      --color-bg: #1a1a2e;
+      --color-surface: #252540;
+      --color-text: #ffffff;
+      --color-text-muted: #aaa;
+      --color-border: #3a3a5a;
+    }
+    body[data-mode="dark"] {
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+    body {
+      font-family: var(--font-family);
+      background: var(--color-bg);
+      color: var(--color-text);
+      min-height: 100vh;
+    }
+    .nav {
+      position: sticky;
+      top: 0;
+      height: 64px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      z-index: 100;
+    }
+    .logo {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: var(--color-primary);
+    }
+    .logo span { color: var(--color-primary-light); }
+    .nav-link {
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      color: var(--color-text-muted);
+      transition: all 0.2s;
+    }
+    .nav-link:hover { background: var(--color-primary); color: white; }
+    .main-content {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+    .page-title {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .page-title h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+    .page-title p {
+      color: var(--color-text-muted);
+    }
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      margin-bottom: 6px;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      font-size: 1rem;
+      background: var(--color-bg);
+      color: var(--color-text);
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover {
+      background: var(--color-primary-light);
+      transform: translateY(-2px);
+    }
+
+    /* TDEE Results */
+    .tdee-results {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .tdee-item {
+      text-align: center;
+      padding: 16px;
+      background: var(--color-bg);
+      border-radius: 14px;
+    }
+    .tdee-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--color-primary);
+    }
+    .tdee-label {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      margin-top: 4px;
+    }
+    .tdee-item.warning .tdee-value { color: var(--color-warning); }
+    .tdee-item.danger .tdee-value { color: var(--color-danger); }
+    .tdee-item.success .tdee-value { color: var(--color-success); }
+
+    .save-success {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--color-success);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      z-index: 1000;
+      animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    .activity-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .activity-option {
+      padding: 12px;
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+    }
+    .activity-option:hover { border-color: var(--color-primary); }
+    .activity-option.selected {
+      background: var(--color-primary);
+      color: white;
+      border-color: var(--color-primary);
+    }
+    .activity-option small {
+      display: block;
+      font-size: 0.75rem;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body data-theme="natural">
+  <nav class="nav">
+    <div class="logo">Calo<span>Scan</span>Ai</div>
+    <button class="nav-link" onclick="window.location.href='dashboard.html'">返回</button>
+  </nav>
+
+  <main class="main-content">
+    <div class="page-title">
+      <h1>👤 個人資料</h1>
+      <p>設定你的身體數據以獲得個人化建議</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 基本資料</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>體重 (kg)</label>
+          <input type="number" id="weight" placeholder="例如：65" min="30" max="300">
+        </div>
+        <div class="form-group">
+          <label>身高 (cm)</label>
+          <input type="number" id="height" placeholder="例如：170" min="100" max="250">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>年齡</label>
+          <input type="number" id="age" placeholder="例如：25" min="10" max="120">
+        </div>
+        <div class="form-group">
+          <label>性別</label>
+          <select id="gender">
+            <option value="unspecified">未指定</option>
+            <option value="male">男性</option>
+            <option value="female">女性</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>活動程度</label>
+        <div class="activity-options">
+          <div class="activity-option" data-value="sedentary" onclick="selectActivity(this)">
+            久坐
+            <small>很少運動</small>
+          </div>
+          <div class="activity-option" data-value="light" onclick="selectActivity(this)">
+            輕度
+            <small>偶爾走動</small>
+          </div>
+          <div class="activity-option" data-value="moderate" onclick="selectActivity(this)">
+            中度
+            <small>經常運動</small>
+          </div>
+          <div class="activity-option" data-value="active" onclick="selectActivity(this)">
+            重度
+            <small>每天運動</small>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="saveProfile()" style="margin-top: 20px;">儲存資料</button>
+    </div>
+
+    <div class="card" id="tdee-card" style="display: none;">
+      <div class="card-title">🔥 熱量計算結果</div>
+      <div class="tdee-results">
+        <div class="tdee-item">
+          <div class="tdee-value" id="bmr-value">--</div>
+          <div class="tdee-label">基礎代謝 BMR</div>
+        </div>
+        <div class="tdee-item success">
+          <div class="tdee-value" id="tdee-value">--</div>
+          <div class="tdee-label">每日總消耗 TDEE</div>
+        </div>
+        <div class="tdee-item">
+          <div class="tdee-value" id="deficit-value">--</div>
+          <div class="tdee-label">減脂目標</div>
+        </div>
+        <div class="tdee-item danger">
+          <div class="tdee-value" id="surplus-value">--</div>
+          <div class="tdee-label">增肥紅線</div>
+        </div>
+      </div>
+      <p style="text-align: center; font-size: 0.85rem; color: var(--color-text-muted); margin-top: 16px;">
+        減脂目標為 TDEE 的 85%~90%，增肥紅線為 TDEE
+      </p>
+    </div>
+  </main>
+
+  <script>
+    let currentActivity = 'sedentary';
+
+    function selectActivity(el) {
+      document.querySelectorAll('.activity-option').forEach(opt => opt.classList.remove('selected'));
+      el.classList.add('selected');
+      currentActivity = el.dataset.value;
+    }
+
+    async function loadProfile() {
+      try {
+        const response = await fetch('/api/profile', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          const profile = result.data;
+          document.getElementById('weight').value = profile.weight || '';
+          document.getElementById('height').value = profile.height || '';
+          document.getElementById('age').value = profile.age || '';
+          document.getElementById('gender').value = profile.gender || 'unspecified';
+          currentActivity = profile.activity_level || 'sedentary';
+
+          // Update activity selection UI
+          document.querySelectorAll('.activity-option').forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.value === currentActivity);
+          });
+
+          // Calculate and show TDEE if we have enough data
+          if (profile.weight && profile.height && profile.age) {
+            calculateTDEE(profile);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+      }
+    }
+
+    function calculateTDEE(profile) {
+      const weight = parseFloat(profile.weight);
+      const height = parseFloat(profile.height);
+      const age = parseInt(profile.age);
+      const gender = profile.gender;
+      const activityLevel = profile.activity_level || 'sedentary';
+
+      let bmr;
+      if (gender === 'male') {
+        bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+      } else if (gender === 'female') {
+        bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+      } else {
+        bmr = 10 * weight + 6.25 * height - 5 * age;
+      }
+
+      const multipliers = {
+        sedentary: 1.2,
+        light: 1.375,
+        moderate: 1.55,
+        active: 1.725
+      };
+
+      const tdee = Math.round(bmr * (multipliers[activityLevel] || 1.2));
+      const deficit = Math.round(tdee * 0.85); // 85% for fat loss
+
+      document.getElementById('bmr-value').textContent = Math.round(bmr);
+      document.getElementById('tdee-value').textContent = tdee;
+      document.getElementById('deficit-value').textContent = deficit;
+      document.getElementById('surplus-value').textContent = tdee;
+
+      document.getElementById('tdee-card').style.display = 'block';
+    }
+
+    async function saveProfile() {
+      const weight = parseFloat(document.getElementById('weight').value);
+      const height = parseFloat(document.getElementById('height').value);
+      const age = parseInt(document.getElementById('age').value);
+      const gender = document.getElementById('gender').value;
+
+      if (!weight || !height || !age) {
+        alert('請填寫體重、身高和年齡');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify({
+            weight,
+            height,
+            age,
+            gender,
+            activityLevel: currentActivity,
+            goalCalories: 2000
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showSuccess('儲存成功！');
+
+          const profile = { weight, height, age, gender, activity_level: currentActivity };
+          calculateTDEE(profile);
+        } else {
+          alert(result.error || '儲存失敗');
+        }
+      } catch (error) {
+        alert('儲存失敗，請稍後再試');
+      }
+    }
+
+    function showSuccess(message) {
+      const existing = document.querySelector('.save-success');
+      if (existing) existing.remove();
+
+      const div = document.createElement('div');
+      div.className = 'save-success';
+      div.textContent = message;
+      document.body.appendChild(div);
+
+      setTimeout(() => div.remove(), 3000);
+    }
+
+    // Check auth
+    function checkAuth() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = 'index.html';
+        return false;
+      }
+      return true;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!checkAuth()) return;
+      loadProfile();
+    });
+  </script>
+</body>
+</html>
