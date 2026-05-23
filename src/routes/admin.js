@@ -123,6 +123,26 @@ router.put('/users/:id/promote', adminMiddleware, (req, res) => {
   });
 });
 
+// PUT /api/admin/users/:id/demote - 將管理員降為會員 (admin only)
+router.put('/users/:id/demote', adminMiddleware, (req, res) => {
+  const userId = parseInt(req.params.id);
+
+  if (userId === req.user.id) {
+    return res.status(400).json({ error: '無法將自己降為會員' });
+  }
+
+  const result = db.prepare("UPDATE users SET role = 'user' WHERE id = ?").run(userId);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: '用戶不存在' });
+  }
+
+  res.json({
+    success: true,
+    message: '已降為會員'
+  });
+});
+
 // GET /api/admin/stats - Get system statistics (admin only)
 router.get('/stats', adminMiddleware, (req, res) => {
   const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get().count;

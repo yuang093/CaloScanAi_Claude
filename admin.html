@@ -108,6 +108,8 @@
     .btn-primary:hover { background: var(--color-primary-light); box-shadow: var(--button-hover-shadow); transform: translateY(-2px); }
     .btn-danger { background: var(--color-error); color: white; }
     .btn-danger:hover { background: #c82333; }
+    .btn-warning { background: #f0ad4e; color: white; }
+    .btn-warning:hover { background: #ec971f; }
     .btn-small { padding: var(--space-2) var(--space-3); font-size: var(--font-size-sm); }
 
     .tab-container { margin-bottom: var(--space-6); display: flex; gap: var(--space-2); }
@@ -493,7 +495,7 @@
                 <td>${new Date(user.created_at).toLocaleDateString('zh-TW')}</td>
                 <td>
                   <button class="btn btn-secondary btn-small" onclick="editPassword(${user.id}, '${user.name}')">修改密碼</button>
-                  ${user.role !== 'admin' ? `<button class="btn btn-primary btn-small" onclick="promoteUser(${user.id}, '${user.name}')">提升為管理員</button>` : ''}
+                  ${user.role === 'admin' ? `<button class="btn btn-warning btn-small" onclick="demoteUser(${user.id}, '${user.name}')">降為會員</button>` : `<button class="btn btn-primary btn-small" onclick="promoteUser(${user.id}, '${user.name}')">提升為管理員</button>`}
                   <button class="btn btn-danger btn-small" onclick="deleteUser(${user.id})">刪除</button>
                 </td>
               </tr>
@@ -643,6 +645,30 @@
 
         if (result.success) {
           alert('已提升為管理員');
+          loadUsers();
+        } else {
+          alert(result.error || '操作失敗');
+        }
+      } catch (error) {
+        alert('操作失敗');
+      }
+    }
+
+    async function demoteUser(id, name) {
+      if (!confirm(`確定要將「${name}」降為會員嗎？`)) return;
+
+      try {
+        const response = await fetch('/api/admin/users/' + id + '/demote', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          }
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          alert('已降為會員');
           loadUsers();
         } else {
           alert(result.error || '操作失敗');
