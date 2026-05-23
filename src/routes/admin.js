@@ -103,6 +103,26 @@ router.put('/users/:id/password', adminMiddleware, (req, res) => {
   });
 });
 
+// PUT /api/admin/users/:id/promote - 提升用戶為管理員 (admin only)
+router.put('/users/:id/promote', adminMiddleware, (req, res) => {
+  const userId = parseInt(req.params.id);
+
+  if (userId === req.user.id) {
+    return res.status(400).json({ error: '無法將自己降為管理員' });
+  }
+
+  const result = db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(userId);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: '用戶不存在' });
+  }
+
+  res.json({
+    success: true,
+    message: '已提升為管理員'
+  });
+});
+
 // GET /api/admin/stats - Get system statistics (admin only)
 router.get('/stats', adminMiddleware, (req, res) => {
   const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get().count;

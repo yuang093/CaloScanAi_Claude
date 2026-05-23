@@ -257,7 +257,7 @@
             </tr>
           </thead>
           <tbody id="users-table-body">
-            <tr><td colspan="5" class="loading">載入中...</td></tr>
+            <tr><td colspan="6" class="loading">載入中...</td></tr>
           </tbody>
         </table>
       </div>
@@ -480,16 +480,18 @@
         if (result.success) {
           const tbody = document.getElementById('users-table-body');
           if (result.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">尚無會員資料</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999;">尚無會員資料</td></tr>';
           } else {
             tbody.innerHTML = result.data.map(user => `
               <tr>
                 <td>${user.id}</td>
                 <td>${user.name}</td>
                 <td>${user.username}</td>
+                <td>${user.role === 'admin' ? '<span style="color:#e3f2fd; background:#1565c0; padding:2px 8px; border-radius:10px; font-size:12px;">管理員</span>' : '會員'}</td>
                 <td>${new Date(user.created_at).toLocaleDateString('zh-TW')}</td>
                 <td>
                   <button class="btn btn-secondary btn-small" onclick="editPassword(${user.id}, '${user.name}')">修改密碼</button>
+                  ${user.role !== 'admin' ? `<button class="btn btn-primary btn-small" onclick="promoteUser(${user.id}, '${user.name}')">提升為管理員</button>` : ''}
                   <button class="btn btn-danger btn-small" onclick="deleteUser(${user.id})">刪除</button>
                 </td>
               </tr>
@@ -497,7 +499,7 @@
           }
         }
       } catch (error) {
-        document.getElementById('users-table-body').innerHTML = '<tr><td colspan="5" class="error">載入失敗</td></tr>';
+        document.getElementById('users-table-body').innerHTML = '<tr><td colspan="6" class="error">載入失敗</td></tr>';
       }
     }
 
@@ -621,6 +623,30 @@
         }
       } catch (error) {
         alert('刪除失敗');
+      }
+    }
+
+    async function promoteUser(id, name) {
+      if (!confirm(`確定要將「${name}」提升為管理員嗎？`)) return;
+
+      try {
+        const response = await fetch('/api/admin/users/' + id + '/promote', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          }
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          alert('已提升為管理員');
+          loadUsers();
+        } else {
+          alert(result.error || '操作失敗');
+        }
+      } catch (error) {
+        alert('操作失敗');
       }
     }
 
