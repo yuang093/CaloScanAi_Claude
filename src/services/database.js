@@ -689,7 +689,15 @@ export const FoodLogDB = {
   },
 
   getTodayStats(userId) {
-    const today = getLocalDate();
+    // Use explicit date calculation for Taiwan timezone
+    const now = new Date();
+    const taiwanOffset = 8 * 60; // Taiwan is UTC+8
+    const localOffset = now.getTimezoneOffset();
+    const diff = (localOffset + taiwanOffset) * 60000;
+    const taiwanDate = new Date(now.getTime() + diff);
+    const today = taiwanDate.toISOString().split('T')[0];
+    console.log('[getTodayStats] today:', today, 'userId:', userId);
+
     const stmt = db.prepare(`
       SELECT
         COALESCE(SUM(calories), 0) as total_calories,
@@ -700,7 +708,9 @@ export const FoodLogDB = {
       FROM food_logs
       WHERE user_id = ? AND date(created_at) = ?
     `);
-    return stmt.get(userId, today);
+    const result = stmt.get(userId, today);
+    console.log('[getTodayStats] result:', result);
+    return result;
   }
 };
 

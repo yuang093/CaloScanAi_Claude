@@ -1,21 +1,12 @@
-root@localhost:/opt/caloscanai_claude# cd /opt/caloscanai_claude && docker compose logs app --tail=20
-caloscanai_app  | [progress/daily] userId: 2
-caloscanai_app  | [progress/daily] todayStats: {
-caloscanai_app  |   total_calories: 0,
-caloscanai_app  |   total_protein: 0,
-caloscanai_app  |   total_carbs: 0,
-caloscanai_app  |   total_fat: 0,
-caloscanai_app  |   meal_count: 0
-caloscanai_app  | }
-caloscanai_app  | ❌ Error: db is not defined
-caloscanai_app  | Stack: ReferenceError: db is not defined
-caloscanai_app  |     at file:///app/src/routes/progress.js:20:21
-caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-caloscanai_app  |     at next (/app/node_modules/express/lib/router/route.js:149:13)
-caloscanai_app  |     at authMiddleware (file:///app/src/middleware/auth.js:37:3)
-caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-caloscanai_app  |     at next (/app/node_modules/express/lib/router/route.js:149:13)
-caloscanai_app  |     at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
-caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-caloscanai_app  |     at /app/node_modules/express/lib/router/index.js:284:15
-caloscanai_app  |     at Function.process_params (/app/node_modules/express/lib/router/index.js:346:12)
+root@localhost:/opt/caloscanai_claude# grep -A10 "getTodayStats" src/services/database.js
+  getTodayStats(userId) {
+    const today = getLocalDate();
+    const stmt = db.prepare(`
+      SELECT
+        COALESCE(SUM(calories), 0) as total_calories,
+        COALESCE(SUM(protein), 0) as total_protein,
+        COALESCE(SUM(carbs), 0) as total_carbs,
+        COALESCE(SUM(fat), 0) as total_fat,
+        COUNT(*) as meal_count
+      FROM food_logs
+      WHERE user_id = ? AND date(created_at) = ?
