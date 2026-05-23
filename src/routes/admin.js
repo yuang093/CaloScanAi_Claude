@@ -246,6 +246,35 @@ router.put('/food-logs/:id', adminMiddleware, (req, res) => {
   });
 });
 
+// DELETE /api/admin/food-logs/:id - Delete food log (admin only)
+router.delete('/food-logs/:id', adminMiddleware, (req, res) => {
+  const log = FoodLogDB.findById(parseInt(req.params.id));
+  if (!log) {
+    return res.status(404).json({ error: '食物記錄不存在' });
+  }
+
+  const result = db.prepare('DELETE FROM food_logs WHERE id = ?').run(req.params.id);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: '食物記錄不存在' });
+  }
+
+  // Update daily progress
+  const today = getLocalDate();
+  const todayStats = FoodLogDB.getTodayStats(log.user_id);
+  DailyProgressDB.upsert(log.user_id, today, {
+    totalCalories: todayStats.total_calories,
+    totalProtein: todayStats.total_protein,
+    totalCarbs: todayStats.total_carbs,
+    totalFat: todayStats.total_fat
+  });
+
+  res.json({
+    success: true,
+    message: '食物記錄已刪除'
+  });
+});
+
 // GET /api/admin/quotes - Get all quotes (admin only)
 router.get('/quotes', adminMiddleware, (req, res) => {
   const quotes = QuoteDB.getAll();
