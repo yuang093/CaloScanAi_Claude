@@ -1,4 +1,5 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import { UserDB, FoodLogDB, DailyProgressDB, QuoteDB } from '../services/database.js';
 import { verifyToken } from '../middleware/auth.js';
 import db from '../services/database.js';
