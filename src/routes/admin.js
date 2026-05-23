@@ -37,7 +37,7 @@ const adminMiddleware = async (req, res, next) => {
 
 // GET /api/admin/users - Get all users (admin only)
 router.get('/users', adminMiddleware, (req, res) => {
-  const users = db.prepare('SELECT id, username, name, created_at FROM users ORDER BY created_at DESC').all();
+  const users = db.prepare('SELECT id, username, name, role, created_at FROM users ORDER BY created_at DESC').all();
 
   res.json({
     success: true,
