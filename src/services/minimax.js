@@ -79,7 +79,8 @@ export async function analyzeFoodImage(imageBase64, prompt, retryCount = 0) {
             } else {
               resolve({ success: false, error: parsed.base_resp.status_msg });
             }
-          } else if (parsed.status_msg) {
+          } else if (parsed.status_msg && parsed.status_msg !== 'success') {
+            console.log('[Minimax] status_msg error:', parsed.status_msg);
             if (retryCount < MAX_RETRIES) {
               handleRetry(resolve, 'API error: ' + parsed.status_msg);
             } else {
@@ -93,6 +94,8 @@ export async function analyzeFoodImage(imageBase64, prompt, retryCount = 0) {
               resolve({ success: false, error: 'Server error: ' + res.statusCode });
             }
           } else {
+            // Everything else, treat as success
+            console.log('[Minimax] Success fallback, content preview:', data.substring(0, 100));
             resolve({ success: true, data: { content: data } });
           }
         } catch (e) {
