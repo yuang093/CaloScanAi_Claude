@@ -2,16 +2,9 @@ import express from 'express';
 import { analyzeFoodImage, parseNutritionalData } from '../services/minimax.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { FoodLogDB, DailyProgressDB } from '../services/database.js';
+import { getLocalDate } from '../utils/date.js';
 
 const router = express.Router();
-
-// 取得本地時區的今天日期 (YYYY-MM-DD)
-function getLocalDate() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60000;
-  const localDate = new Date(now.getTime() - offset);
-  return localDate.toISOString().split('T')[0];
-}
 
 // POST /api/food/analyze - Analyze food image (public endpoint)
 router.post('/analyze', async (req, res, next) => {

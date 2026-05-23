@@ -1,16 +1,9 @@
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import { FoodLogDB, DailyProgressDB, QuoteDB } from '../services/database.js';
+import { getLocalDate, getLocalDateDaysAgo } from '../utils/date.js';
 
 const router = express.Router();
-
-// 取得本地時區的今天日期 (YYYY-MM-DD)
-function getLocalDate() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60000;
-  const localDate = new Date(now.getTime() - offset);
-  return localDate.toISOString().split('T')[0];
-}
 
 // GET /api/progress/daily - Get today's progress (authenticated)
 router.get('/daily', authMiddleware, async (req, res, next) => {
@@ -68,13 +61,8 @@ router.get('/daily', authMiddleware, async (req, res, next) => {
 // GET /api/progress/weekly - Get weekly progress (authenticated)
 router.get('/weekly', authMiddleware, async (req, res, next) => {
   try {
-    const todayStr = getLocalDate();
-    const today = new Date(todayStr);
-    const weekAgo = new Date(today);
-    weekAgo.setDate(weekAgo.getDate() - 7);
-
-    const startDate = weekAgo.toISOString().split('T')[0];
-    const endDate = todayStr;
+    const endDate = getLocalDate();
+    const startDate = getLocalDateDaysAgo(7);
 
     // Get daily progress for the week
     const weeklyData = DailyProgressDB.findByUserId(req.user.id, {

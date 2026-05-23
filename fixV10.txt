@@ -1,0 +1,28 @@
+隱藏的報錯與遺漏
+1. 致命錯誤：getLocalDate 未定義 (src/routes/food.js, src/routes/progress.js)
+
+錯誤原因：您在程式碼中優雅地使用了 const today = getLocalDate();，但這兩個檔案中完全沒有定義 getLocalDate 這個函式，也沒有從其他工具檔 import 進來。這會導致 Node.js 拋出 ReferenceError 並讓伺服器當機。
+
+2. 遺漏的時區轉換：每週進度 API (src/routes/progress.js)
+
+錯誤原因：在 /weekly 路由中，計算 startDate 和 endDate 的邏輯依然使用的是舊版的 toISOString().split('T')[0]。這會導致「每週進度」的圖表或數據在半夜時段依然有時區錯亂的問題。
+
+⚠️ 備份提醒 (Safety First)
+因為這次修正完畢後，您可能需要重新打包並重啟容器（例如執行 docker-compose down 然後重新 build）。在執行任何涉及刪除容器或移除檔案的指令前，請務必先將目前的資料庫與整個專案資料夾進行妥善的本地備份。
+
+📝 最終補強 Prompt（請直接複製以下內容）
+請將這段 Prompt 交給您的 AI 助手，它能幫您把這個未定義的錯誤乾淨俐落地補齊：
+
+前一次的修改很棒，但程式碼中產生了未定義的 ReferenceError 以及一處遺漏的時區問題。請幫我修正以下 2 個項目，並直接提供修改後的程式碼：
+
+1. 實作並補齊 getLocalDate 函式
+在 src/routes/food.js 與 src/routes/progress.js 中使用了 getLocalDate()，但並未定義。
+
+修改要求：請建立一個共用的時間工具檔（例如 src/utils/date.js），在裡面實作出正確考慮本地時區偏移量的 getLocalDate() 函式（包含處理一般日期與倒退 N 天的邏輯），並在 food.js 和 progress.js 的開頭正確 import 它。
+
+2. 統一 /weekly API 的時區邏輯 (src/routes/progress.js)
+在 progress.js 的 router.get('/weekly', ...) 中，weekAgo 與 today 依然在使用舊的 toISOString().split('T')[0]。
+
+修改要求：請將這裡的 startDate 和 endDate 產生邏輯，一併替換為新寫好的 getLocalDate 工具函式（支援傳入特定 Date 物件或直接產出本地時間格式），確保整個後端的時區邏輯完全一致。
+
+請擬定修改計畫藍圖
