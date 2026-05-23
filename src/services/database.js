@@ -26,6 +26,9 @@ if (!fs.existsSync(dataDir)) {
 let db;
 try {
   db = new Database(dbPath);
+  // Enable WAL mode for better concurrency
+  db.pragma('journal_mode = WAL');
+  db.pragma('busy_timeout = 5000');
 } catch (err) {
   console.error('❌ 無法建立資料庫連線:', err.message);
   process.exit(1);

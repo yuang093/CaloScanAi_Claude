@@ -1,0 +1,21 @@
+滿分上線 Prompt（請直接複製以下內容）
+確認備份完成後，請將這段最後的 Prompt 交給您的 AI 助手，補齊這最後的三道防護網：
+
+專案已經幾乎完美了！為了應對真實使用者的極端操作與高併發場景，請幫我加上最後 3 道防呆與效能優化機制。請直接提供修改後的程式碼：
+
+1. 防堵 iOS HEIC 格式崩潰 (dashboard.html)
+iPhone 預設的 .heic 格式會讓 Canvas 繪製失敗。
+
+修改要求：請修改 <input type="file" id="file-input"> 的 accept 屬性，明確限制為 image/jpeg, image/png, image/webp。並在 HTML 介面（例如 upload-placeholder 內）加上一行明顯的提示字語：「⚠️ iOS 用戶請上傳 JPEG 格式（暫不支援 HEIC 照片）」。
+
+2. 修復 Async 壓縮的 UI 競態條件 (dashboard.html)
+由於圖片壓縮改為非同步，使用者可能會在壓縮完成前按下分析。
+
+修改要求：請在 handleFileSelect 觸發時，立刻將預覽區顯示為「圖片處理中...」，並確保 analyze-btn 處於 disabled=true 的狀態。必須等待 await compressImage() 徹底回傳 Base64 結果並渲染到畫面後，才能解除按鈕的鎖定。
+
+3. 開啟 SQLite WAL 高併發模式 (src/services/database.js)
+為了避免多使用者同時操作導致的 database is locked 錯誤。
+
+修改要求：請在 database.js 初始化 db = new Database(dbPath); 之後，立刻加上 db.pragma('journal_mode = WAL'); 與 db.pragma('busy_timeout = 5000');，以開啟預寫式日誌並增加超時等待寬容度，確保商業營運時的資料庫讀寫穩定性。
+
+請擬定修改計畫藍圖

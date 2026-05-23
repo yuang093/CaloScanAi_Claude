@@ -342,13 +342,14 @@
           <div class="upload-icon">📷</div>
           <p>點擊上傳或拖曳圖片</p>
           <span>支援 JPEG、PNG、WebP</span>
+          <p style="color:#e07a5f; font-size:0.8rem; margin-top:4px;">⚠️ iOS 用戶請上傳 JPEG 格式（暫不支援 HEIC）</p>
         </div>
         <div id="preview-container" style="display:none;">
           <img id="preview-image" class="preview-image" alt="Preview">
           <button class="change-btn" onclick="event.stopPropagation(); document.getElementById('file-input').click()">更換圖片</button>
         </div>
       </div>
-      <input type="file" id="file-input" accept="image/*" style="display:none;" onchange="handleFileSelect(event)">
+      <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="handleFileSelect(event)">
 
       <button id="analyze-btn" class="btn-primary" onclick="analyzeImage()" disabled>
         分析食物
@@ -548,18 +549,25 @@
     }
 
     // File handling
-    function handleFileSelect(event) {
+    async function handleFileSelect(event) {
       const file = event.target.files[0];
       if (file) {
-        compressImage(file).then(base64 => {
-          currentPreview = 'data:image/jpeg;base64,' + base64;
-          document.getElementById('preview-image').src = currentPreview;
-          document.getElementById('upload-placeholder').style.display = 'none';
-          document.getElementById('preview-container').style.display = 'block';
-          document.getElementById('analyze-btn').disabled = false;
-          document.getElementById('analysis-result').style.display = 'none';
-          currentImage = base64;
-        });
+        // Show loading state immediately
+        document.getElementById('upload-placeholder').style.display = 'none';
+        document.getElementById('preview-container').style.display = 'flex';
+        document.getElementById('preview-image').src = '';
+        document.getElementById('preview-container').innerHTML = '<div style="text-align:center; padding:40px;"><div style="font-size:2rem;">⏳</div><p>圖片處理中...</p></div>';
+        document.getElementById('analyze-btn').disabled = true;
+
+        const base64 = await compressImage(file);
+        currentPreview = 'data:image/jpeg;base64,' + base64;
+        document.getElementById('preview-container').innerHTML = `
+          <img id="preview-image" class="preview-image" src="${currentPreview}" alt="Preview">
+          <button class="change-btn" onclick="event.stopPropagation(); document.getElementById('file-input').click()">更換圖片</button>
+        `;
+        document.getElementById('analyze-btn').disabled = false;
+        document.getElementById('analysis-result').style.display = 'none';
+        currentImage = base64;
       }
     }
 
