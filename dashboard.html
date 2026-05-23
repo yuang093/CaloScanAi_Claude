@@ -1370,66 +1370,62 @@
       const file = event.target.files[0];
       if (!file) return;
 
-      // Compress image
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const compressed = await compressImage(e.target.result, 1200, 0.85);
-          currentNutritionImage = compressed.split(',')[1]; // Remove data URL prefix
+      // Compress image - pass File object directly
+      const btn = document.getElementById('submit-nutrition-btn');
+      btn.disabled = true;
+      btn.textContent = '解析中...';
 
-          // Show preview
-          document.getElementById('nutrition-preview-img').src = compressed;
-          document.getElementById('nutrition-preview').style.display = 'block';
+      try {
+        const base64 = await compressImage(file);
+        currentNutritionImage = base64;
 
-          // Send for parsing
-          const btn = document.getElementById('submit-nutrition-btn');
-          btn.disabled = true;
-          btn.textContent = '解析中...';
+        // Show preview
+        document.getElementById('nutrition-preview-img').src = 'data:image/jpeg;base64,' + base64;
+        document.getElementById('nutrition-preview').style.display = 'block';
 
-          const response = await fetch('/api/barcode/create-from-nutrition', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + localStorage.getItem('token')
-            },
-            body: JSON.stringify({
-              barcode: currentNutritionBarcode,
-              image: currentNutritionImage
-            })
-          });
+        // Send for parsing
+        const response = await fetch('/api/barcode/create-from-nutrition', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify({
+            barcode: currentNutritionBarcode,
+            image: currentNutritionImage
+          })
+        });
 
-          const result = await response.json();
+        const result = await response.json();
 
-          if (result.success) {
-            // Update barcodeProductData with parsed values
-            barcodeProductData = result.data.barcode;
-            document.getElementById('barcode-product-name').textContent = barcodeProductData.name;
-            document.getElementById('barcode-product-brand').textContent = (barcodeProductData.brand || '未知') + ' • ' + (barcodeProductData.servingSize || '');
-            document.getElementById('barcode-calories').textContent = barcodeProductData.calories || 0;
-            document.getElementById('barcode-protein').textContent = (barcodeProductData.protein || 0) + 'g';
-            document.getElementById('barcode-carbs').textContent = (barcodeProductData.carbs || 0) + 'g';
-            document.getElementById('barcode-fat').textContent = (barcodeProductData.fat || 0) + 'g';
+        if (result.success) {
+          // Update barcodeProductData with parsed values
+          barcodeProductData = result.data.barcode;
+          document.getElementById('barcode-product-name').textContent = barcodeProductData.name;
+          document.getElementById('barcode-product-brand').textContent = (barcodeProductData.brand || '未知') + ' • ' + (barcodeProductData.servingSize || '');
+          document.getElementById('barcode-calories').textContent = barcodeProductData.calories || 0;
+          document.getElementById('barcode-protein').textContent = (barcodeProductData.protein || 0) + 'g';
+          document.getElementById('barcode-carbs').textContent = (barcodeProductData.carbs || 0) + 'g';
+          document.getElementById('barcode-fat').textContent = (barcodeProductData.fat || 0) + 'g';
 
-            document.getElementById('nutrition-parse-result').textContent = '✅ 解析成功！';
-            document.getElementById('nutrition-upload-zone').style.display = 'none';
-            document.getElementById('barcode-result').style.display = 'block';
-            document.getElementById('add-barcode-btn').style.display = 'block';
+          document.getElementById('nutrition-parse-result').textContent = '✅ 解析成功！';
+          document.getElementById('nutrition-upload-zone').style.display = 'none';
+          document.getElementById('barcode-result').style.display = 'block';
+          document.getElementById('add-barcode-btn').style.display = 'block';
 
-            // Auto add to log
-            addBarcodeToLog();
-          } else {
-            document.getElementById('nutrition-parse-result').textContent = '❌ 解析失敗：' + (result.error || '請重試');
-            btn.disabled = false;
-            btn.textContent = '確認建立';
-            btn.style.display = 'block';
-          }
-        } catch (error) {
-          document.getElementById('nutrition-parse-result').textContent = '❌ 錯誤：' + error.message;
-          document.getElementById('submit-nutrition-btn').disabled = false;
-          document.getElementById('submit-nutrition-btn').textContent = '確認建立';
+          // Auto add to log
+          addBarcodeToLog();
+        } else {
+          document.getElementById('nutrition-parse-result').textContent = '❌ 解析失敗：' + (result.error || '請重試');
+          btn.disabled = false;
+          btn.textContent = '確認建立';
+          btn.style.display = 'block';
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        document.getElementById('nutrition-parse-result').textContent = '❌ 錯誤：' + error.message;
+        btn.disabled = false;
+        btn.textContent = '確認建立';
+      }
     }
 
     // Enter key for barcode input
