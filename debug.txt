@@ -1,39 +1,52 @@
-root@localhost:/opt/caloscanai_claude# cd /opt/caloscanai_claude && git pull && docker compose restart
-remote: Enumerating objects: 15, done.
-remote: Counting objects: 100% (15/15), done.
-remote: Compressing objects: 100% (4/4), done.
-remote: Total 9 (delta 5), reused 9 (delta 5), pack-reused 0 (from 0)
-Unpacking objects: 100% (9/9), 1.57 KiB | 201.00 KiB/s, done.
-From https://github.com/yuang093/CaloScanAi_Claude
-   670d621..bd5b78f  main       -> origin/main
-Updating 670d621..bd5b78f
-Fast-forward
- dashboard.html           |  10 ++++++++
- debug.txt                | 110 ++++++++++++++++++++++++++++++++++++++-------------------------------------------
- src/services/database.js |   5 ++--
- 3 files changed, 63 insertions(+), 62 deletions(-)
-[+] Restarting 2/2
- ✔ Container caloscanai_app    Started                                                                      10.3s 
- ✔ Container caloscanai_nginx  Started                                                                       0.4s 
-root@localhost:/opt/caloscanai_claude# docker logs caloscanai_app --tail 20
-    at file:///app/src/routes/auth.js:70:25
-    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-    at next (/app/node_modules/express/lib/router/route.js:149:13)
-    at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
-    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-    at /app/node_modules/express/lib/router/index.js:284:15
-    at Function.process_params (/app/node_modules/express/lib/router/index.js:346:12)
-    at next (/app/node_modules/express/lib/router/index.js:280:10)
-❌ Error: no such column: username
-Stack: SqliteError: no such column: username
-    at Database.prepare (/app/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
-    at Object.verifyPassword (file:///app/src/services/database.js:153:21)
-    at file:///app/src/routes/auth.js:70:25
-    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-    at next (/app/node_modules/express/lib/router/route.js:149:13)
-    at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
-    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-    at /app/node_modules/express/lib/router/index.js:284:15
-    at Function.process_params (/app/node_modules/express/lib/router/index.js:346:12)
-    at next (/app/node_modules/express/lib/router/index.js:280:10)
+root@localhost:/opt/caloscanai_claude# docker logs caloscanai_app --tail 50
+ → /app/node_modules/better-sqlite3/out/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/default/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/compiled/20.20.2/linux/x64/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/release/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/debug/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/default/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/lib/binding/node-v115-linux-x64/better_sqlite3.node
+❌ 無法建立資料庫連線: Could not locate the bindings file. Tried:
+ → /app/node_modules/better-sqlite3/build/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/out/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/out/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/default/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/compiled/20.20.2/linux/x64/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/release/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/debug/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/default/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/lib/binding/node-v115-linux-x64/better_sqlite3.node
+❌ 無法建立資料庫連線: Could not locate the bindings file. Tried:
+ → /app/node_modules/better-sqlite3/build/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/out/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/out/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/default/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/compiled/20.20.2/linux/x64/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/release/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/debug/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/default/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/lib/binding/node-v115-linux-x64/better_sqlite3.node
+❌ 無法建立資料庫連線: Could not locate the bindings file. Tried:
+ → /app/node_modules/better-sqlite3/build/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/out/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/out/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/default/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/compiled/20.20.2/linux/x64/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/release/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/debug/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/default/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/lib/binding/node-v115-linux-x64/better_sqlite3.node
 root@localhost:/opt/caloscanai_claude# 
