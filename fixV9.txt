@@ -1,0 +1,19 @@
+最終上線前優化 Prompt（請直接複製以下內容）
+專案的基礎架構已經很棒了，為了確保實際上線後的穩定性，請幫我修正以下 3 個營運層面的隱患。請直接提供修改後的程式碼：
+
+1. 修正「每日進度」的 UTC 時區跨日 Bug (src/routes/food.js, src/routes/progress.js)
+目前後端使用 new Date().toISOString().split('T')[0] 來取得「今天」的日期。這會產生 UTC 時間，導致在亞洲時區（如 UTC+8），使用者的每日卡路里額度要到早上 8 點才會重置（因為 8 點前 UTC 還是昨天）。
+
+修改要求：請將所有使用 toISOString() 取得日期的邏輯，改寫為支援本地時區的寫法，或者直接加上時區偏移量轉換，確保「換日」邏輯與使用者的實際午夜 12 點一致。
+
+2. 放寬 Nginx 上傳大小限制 (nginx/conf.d/calo.conf)
+由於我們現在完整儲存圖片的 Base64 字串，Payload 體積會顯著增加。Nginx 預設的 client_max_body_size 僅有 1MB，這會導致照片稍微清晰一點就觸發 413 Payload Too Large 錯誤而被阻擋。
+
+修改要求：請在 Nginx 設定檔的 server 區塊中，加入 client_max_body_size 20M;（或適當的大小），確保大體積的 Base64 請求能順利通過。
+
+3. 強化 CORS 寬容度設定 (src/server/index.js)
+雖然目前有吃 process.env.APP_URL，但若未來使用 Cloudflare 代理或有帶 Port 的測試環境，很容易因為末尾斜線或協議不符引發 CORS 錯誤。
+
+修改要求：請確保 CORS 的 origin 設定邏輯夠強健，或者在 .env.example 中清楚備註 APP_URL 必須包含完整的對外網域（如 https://calo_C.yuang093.cc），確保前端 API 請求不會被瀏覽器攔截。
+
+請擬定修改計畫藍圖

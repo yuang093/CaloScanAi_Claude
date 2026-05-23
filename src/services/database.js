@@ -8,6 +8,14 @@ const __dirname = dirname(__filename);
 
 const dbPath = join(__dirname, '../../data/caloscanai.db');
 
+// 取得本地時區的今天日期 (YYYY-MM-DD)
+function getLocalDate() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  const localDate = new Date(now.getTime() - offset);
+  return localDate.toISOString().split('T')[0];
+}
+
 // Ensure data directory exists
 import fs from 'fs';
 const dataDir = join(__dirname, '../../data');
@@ -252,7 +260,7 @@ export const FoodLogDB = {
   },
 
   getTodayStats(userId) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDate();
     const stmt = db.prepare(`
       SELECT
         COALESCE(SUM(calories), 0) as total_calories,

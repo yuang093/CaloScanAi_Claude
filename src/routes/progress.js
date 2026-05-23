@@ -4,10 +4,18 @@ import { FoodLogDB, DailyProgressDB, QuoteDB } from '../services/database.js';
 
 const router = express.Router();
 
+// 取得本地時區的今天日期 (YYYY-MM-DD)
+function getLocalDate() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  const localDate = new Date(now.getTime() - offset);
+  return localDate.toISOString().split('T')[0];
+}
+
 // GET /api/progress/daily - Get today's progress (authenticated)
 router.get('/daily', authMiddleware, async (req, res, next) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDate();
 
     // Get today's stats from food logs
     const todayStats = FoodLogDB.getTodayStats(req.user.id);
@@ -60,12 +68,13 @@ router.get('/daily', authMiddleware, async (req, res, next) => {
 // GET /api/progress/weekly - Get weekly progress (authenticated)
 router.get('/weekly', authMiddleware, async (req, res, next) => {
   try {
-    const today = new Date();
+    const todayStr = getLocalDate();
+    const today = new Date(todayStr);
     const weekAgo = new Date(today);
     weekAgo.setDate(weekAgo.getDate() - 7);
 
     const startDate = weekAgo.toISOString().split('T')[0];
-    const endDate = today.toISOString().split('T')[0];
+    const endDate = todayStr;
 
     // Get daily progress for the week
     const weeklyData = DailyProgressDB.findByUserId(req.user.id, {
@@ -148,7 +157,7 @@ router.put('/goals', authMiddleware, async (req, res, next) => {
       return res.status(400).json({ error: '熱量目標需在 500-5000 之間' });
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDate();
     const todayStats = FoodLogDB.getTodayStats(req.user.id);
 
     const progress = DailyProgressDB.upsert(req.user.id, today, {

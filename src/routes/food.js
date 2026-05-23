@@ -5,6 +5,14 @@ import { FoodLogDB, DailyProgressDB } from '../services/database.js';
 
 const router = express.Router();
 
+// 取得本地時區的今天日期 (YYYY-MM-DD)
+function getLocalDate() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  const localDate = new Date(now.getTime() - offset);
+  return localDate.toISOString().split('T')[0];
+}
+
 // POST /api/food/analyze - Analyze food image (public endpoint)
 router.post('/analyze', async (req, res, next) => {
   try {
@@ -67,7 +75,7 @@ router.post('/upload', authMiddleware, async (req, res, next) => {
     });
 
     // Update daily progress
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDate();
     const todayStats = FoodLogDB.getTodayStats(req.user.id);
     DailyProgressDB.upsert(req.user.id, today, {
       totalCalories: todayStats.total_calories,
@@ -134,7 +142,7 @@ router.put('/logs/:id', authMiddleware, async (req, res) => {
   });
 
   // Update daily progress
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDate();
   const todayStats = FoodLogDB.getTodayStats(req.user.id);
   DailyProgressDB.upsert(req.user.id, today, {
     totalCalories: todayStats.total_calories,
@@ -161,7 +169,7 @@ router.delete('/logs/:id', authMiddleware, async (req, res) => {
 
   if (deleted) {
     // Update daily progress
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDate();
     const todayStats = FoodLogDB.getTodayStats(req.user.id);
     DailyProgressDB.upsert(req.user.id, today, {
       totalCalories: todayStats.total_calories,
