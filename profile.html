@@ -312,7 +312,28 @@
         <label>我的基礎代謝 (BMR) kcal</label>
         <input type="number" id="custom-bmr" placeholder="例如：1600" min="500" max="5000">
       </div>
-      <button class="btn-primary" onclick="saveCustomBmr()" style="background: var(--color-text-muted);">只更新 BMR</button>
+      <div style="margin-top: 16px;">
+        <label style="display: block; margin-bottom: 8px; color: var(--color-text);">活動量</label>
+        <div class="activity-options">
+          <div class="activity-option" data-value="sedentary" onclick="selectActivity(this)">
+            <div class="activity-option-title">久坐</div>
+            <small>很少或沒有運動</small>
+          </div>
+          <div class="activity-option" data-value="light" onclick="selectActivity(this)">
+            <div class="activity-option-title">輕度</div>
+            <small>輕鬆運動 1-3 天/週</small>
+          </div>
+          <div class="activity-option" data-value="moderate" onclick="selectActivity(this)">
+            <div class="activity-option-title">中度</div>
+            <small>中等運動 3-5 天/週</small>
+          </div>
+          <div class="activity-option" data-value="active" onclick="selectActivity(this)">
+            <div class="activity-option-title">積極</div>
+            <small>激烈運動 6-7 天/週</small>
+          </div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveCustomBmr()" style="margin-top: 16px; background: var(--color-text-muted);">儲存 BMR 並計算</button>
     </div>
 
     <div class="card" id="tdee-card" style="display: none;">
@@ -433,6 +454,11 @@
         return;
       }
 
+      // Calculate TDEE
+      const multipliers = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725 };
+      const tdee = Math.round(customBmr * (multipliers[currentActivity] || 1.2));
+      const goalCalories = Math.round(tdee * 0.85);
+
       try {
         const response = await fetch('/api/profile', {
           method: 'POST',
@@ -443,7 +469,7 @@
           body: JSON.stringify({
             customBmr,
             activityLevel: currentActivity,
-            goalCalories: 2000
+            goalCalories
           })
         });
 
@@ -451,7 +477,7 @@
 
         if (result.success) {
           showSuccess('BMR 已更新！');
-          // Recalculate with custom BMR
+          // Update display
           calculateTDEE({ activity_level: currentActivity }, customBmr);
         } else {
           alert(result.error || '儲存失敗');
