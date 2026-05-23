@@ -202,3 +202,82 @@ export function parseNutritionalData(content) {
     totalFat: 0
   };
 }
+
+/**
+ * Analyze nutrition label image using MiniMax Vision API
+ * @param {string} imageBase64 - Base64 encoded nutrition label image
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+export async function analyzeNutritionLabel(imageBase64) {
+  const prompt = `請仔細辨識這張營養標示圖片中的所有文字資訊。
+台灣的營養標示通常包含：
+- 產品名稱
+- 品牌/製造商
+- 每份份量（含單位，如 g、ml）
+- 熱量（單位 kcal）
+- 蛋白質（單位 g）
+- 碳水化合物（單位 g）
+- 脂肪（單位 g）
+- 可能也會有鈉、糖、膳食纖維等
+
+請以 JSON 格式回覆：
+{
+  "name": "產品名稱（如果圖片有顯示）",
+  "brand": "品牌名稱（如果圖片有顯示）",
+  "servingSize": "每份份量（如 '30g'、'250ml'）",
+  "calories": 數字（每份熱量，單位 kcal）,
+  "protein": 數字（每份蛋白質，單位 g）,
+  "carbs": 數字（每份碳水化合物，單位 g）,
+  "fat": 數字（每份脂肪，單位 g）
+}
+
+如果無法辨識某個欄位，請設為 null。不要虛構資料，只回傳 JSON。`;
+
+  return analyzeFoodImage(imageBase64, prompt);
+}
+
+/**
+ * Parse nutrition label OCR result
+ * @param {string} content - The response content from MiniMax
+ * @returns {object} Parsed nutrition data
+ */
+export function parseNutritionOCRResult(content) {
+  if (!content || typeof content !== 'string') {
+    return { name: null, brand: null, servingSize: null, calories: 0, protein: 0, carbs: 0, fat: 0 };
+  }
+
+  // Try to extract JSON from content
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const data = JSON.parse(jsonMatch[0]);
+      return {
+        name: data.name || null,
+        brand: data.brand || null,
+        servingSize: data.servingSize || null,
+        calories: typeof data.calories === 'number' ? data.calories : 0,
+        protein: typeof data.protein === 'number' ? data.protein : 0,
+        carbs: typeof data.carbs === 'number' ? data.carbs : 0,
+        fat: typeof data.fat === 'number' ? data.fat : 0
+      };
+    } catch (e) {
+      // JSON parse failed
+    }
+  }
+
+  // Fallback: basic regex extraction
+  const calorieMatch = content.match(/熱量[:：]?\s*(\d+)/i);
+  const proteinMatch = content.match(/蛋白質[:：]?\s*([\d.]+)/i);
+  const carbsMatch = content.match(/碳水化合物[:：]?\s*([\d.]+)/i);
+  const fatMatch = content.match(/脂肪[:：]?\s*([\d.]+)/i);
+
+  return {
+    name: null,
+    brand: null,
+    servingSize: null,
+    calories: calorieMatch ? parseInt(calorieMatch[1]) : 0,
+    protein: proteinMatch ? parseFloat(proteinMatch[1]) : 0,
+    carbs: carbsMatch ? parseFloat(carbsMatch[1]) : 0,
+    fat: fatMatch ? parseFloat(fatMatch[1]) : 0
+  };
+}

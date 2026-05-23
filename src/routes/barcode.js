@@ -1,7 +1,7 @@
 import express from 'express';
-import { BarcodeDB } from '../services/database.js';
+import { BarcodeDB, FoodLogDB } from '../services/database.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { analyzeFoodImage } from '../services/minimax.js';
+import { analyzeFoodImage, analyzeNutritionLabel, parseNutritionOCRResult } from '../services/minimax.js';
 
 const router = express.Router();
 
@@ -174,6 +174,71 @@ router.post('/add', authMiddleware, (req, res) => {
       servingSize: result.serving_size
     }
   });
+});
+
+// POST /api/barcode/create-from-nutrition - Create barcode from nutrition label photo
+router.post('/create-from-nutrition', authMiddleware, async (req, res, next) => {
+  try {
+    const { barcode, image } = req.body;
+
+    if (!barcode || !image) {
+      return res.status(400).json({ error: '條碼和營養標示圖片為必填欄位' });
+    }
+
+    // Check if already exists
+    const existing = BarcodeDB.findByBarcode(barcode);
+    if (existing) {
+      return res.status(409).json({
+        error: '此條碼已存在於資料庫',
+        data: existing
+      });
+    }
+
+    // Analyze nutrition label image
+    const result = await analyzeNutritionLabel(image);
+    if (!result.success) {
+      return res.status(500).json({ error: result.error || '營養標示解析失敗' });
+    }
+
+    // Parse the AI response
+    const parsed = parseNutritionOCRResult(result.data.content);
+
+    // Create barcode record
+    const barcodeData = {
+      barcode,
+      name: parsed.name || '未知產品',
+      brand: parsed.brand || '未知',
+      calories: parsed.calories || 0,
+      protein: parsed.protein || 0,
+      carbs: parsed.carbs || 0,
+      fat: parsed.fat || 0,
+      servingSize: parsed.servingSize || '未知'
+    };
+
+    const newBarcode = BarcodeDB.create(barcodeData);
+
+    // Create food log entry for user
+    const foodLogEntry = FoodLogDB.create(req.user.id, {
+      imageData: image,
+      mealType: 'general',
+      calories: parsed.calories || 0,
+      protein: parsed.protein || 0,
+      carbs: parsed.carbs || 0,
+      fat: parsed.fat || 0,
+      description: `條碼建立: ${barcodeData.name}`
+    });
+
+    res.json({
+      success: true,
+      message: '產品資料已建立並加入日誌',
+      data: {
+        barcode: newBarcode,
+        foodLog: foodLogEntry
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 export default router;

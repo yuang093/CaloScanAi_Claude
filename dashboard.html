@@ -476,6 +476,24 @@
           <div><span id="barcode-fat" style="font-weight:bold;">0g</span><br><small>脂肪</small></div>
         </div>
       </div>
+      <div id="nutrition-create-zone" style="display:none; padding:16px; background:#fff3cd; border-radius:12px; margin:16px 0; text-align:center;">
+        <p style="color:#856404; margin-bottom:12px;">查無此產品資料</p>
+        <p style="color:#856404; font-size:0.85rem; margin-bottom:12px;">可以拍攝營養標示來建立資料</p>
+        <button onclick="openNutritionPhotoCapture()" class="btn" style="background:#c85a3b; color:white; padding:12px 24px; border:none; border-radius:10px; cursor:pointer;">
+          📷 拍攝營養標示
+        </button>
+      </div>
+      <div id="nutrition-upload-zone" style="display:none; padding:16px; background:var(--color-bg); border-radius:12px; margin:16px 0; text-align:center;">
+        <p style="margin-bottom:12px; color:var(--color-text);">請拍攝營養標示照片</p>
+        <div id="nutrition-preview" style="display:none; margin-bottom:12px;">
+          <img id="nutrition-preview-img" style="max-width:100%; max-height:200px; border-radius:8px;">
+          <p id="nutrition-parse-result" style="font-size:0.85rem; margin-top:8px; color:var(--color-text-muted);"></p>
+        </div>
+        <input type="file" id="nutrition-photo-input" accept="image/*" capture="environment" onchange="handleNutritionPhotoSelect(event)" style="display:none;">
+        <button onclick="document.getElementById('nutrition-photo-input').click()" class="btn btn-secondary" style="flex:1;">選擇照片</button>
+        <button id="submit-nutrition-btn" onclick="submitNutritionPhoto()" class="btn btn-primary" style="display:none; flex:1;">確認建立</button>
+        <button onclick="closeNutritionUpload()" class="btn btn-secondary" style="margin-top:8px; width:100%;">取消</button>
+      </div>
       <div style="display:flex; gap:12px;">
         <button id="camera-btn" onclick="toggleCameraScan()" class="btn btn-secondary" style="flex:1;">📷 相機掃描</button>
         <button onclick="lookupBarcode()" class="btn btn-primary" style="flex:1;">查詢</button>
@@ -1169,6 +1187,8 @@
       document.getElementById('barcode-input').value = '';
       document.getElementById('barcode-result').style.display = 'none';
       document.getElementById('add-barcode-btn').style.display = 'none';
+      document.getElementById('nutrition-create-zone').style.display = 'none';
+      document.getElementById('nutrition-upload-zone').style.display = 'none';
       stopCameraScan();
     }
 
@@ -1287,6 +1307,7 @@
           document.getElementById('barcode-fat').textContent = (result.data.fat || 0) + 'g';
           document.getElementById('barcode-result').style.display = 'block';
           document.getElementById('add-barcode-btn').style.display = 'block';
+          document.getElementById('nutrition-create-zone').style.display = 'none';
         } else {
           barcodeProductData = result.data;
           document.getElementById('barcode-product-name').textContent = result.data.name;
@@ -1297,6 +1318,9 @@
           document.getElementById('barcode-fat').textContent = '0g';
           document.getElementById('barcode-result').style.display = 'block';
           document.getElementById('add-barcode-btn').style.display = 'block';
+          // 顯示營養標示拍攝選項
+          document.getElementById('nutrition-create-zone').style.display = 'block';
+          currentNutritionBarcode = barcode;
         }
       } catch (error) {
         alert('查詢失敗，請稍後再試');
@@ -1321,6 +1345,90 @@
       renderFoodLog();
       updateProgressTotals();
       closeBarcodeModal();
+    }
+
+    let currentNutritionBarcode = null;
+    let currentNutritionImage = null;
+
+    function openNutritionPhotoCapture() {
+      document.getElementById('nutrition-create-zone').style.display = 'none';
+      document.getElementById('nutrition-upload-zone').style.display = 'block';
+      document.getElementById('nutrition-preview').style.display = 'none';
+      document.getElementById('submit-nutrition-btn').style.display = 'none';
+      document.getElementById('nutrition-parse-result').textContent = '';
+    }
+
+    function closeNutritionUpload() {
+      document.getElementById('nutrition-upload-zone').style.display = 'none';
+      document.getElementById('nutrition-create-zone').style.display = 'none';
+      currentNutritionBarcode = null;
+      currentNutritionImage = null;
+    }
+
+    async function handleNutritionPhotoSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Compress image
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const compressed = await compressImage(e.target.result, 1200, 0.85);
+          currentNutritionImage = compressed.split(',')[1]; // Remove data URL prefix
+
+          // Show preview
+          document.getElementById('nutrition-preview-img').src = compressed;
+          document.getElementById('nutrition-preview').style.display = 'block';
+
+          // Send for parsing
+          const btn = document.getElementById('submit-nutrition-btn');
+          btn.disabled = true;
+          btn.textContent = '解析中...';
+
+          const response = await fetch('/api/barcode/create-from-nutrition', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify({
+              barcode: currentNutritionBarcode,
+              image: currentNutritionImage
+            })
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            // Update barcodeProductData with parsed values
+            barcodeProductData = result.data.barcode;
+            document.getElementById('barcode-product-name').textContent = barcodeProductData.name;
+            document.getElementById('barcode-product-brand').textContent = (barcodeProductData.brand || '未知') + ' • ' + (barcodeProductData.servingSize || '');
+            document.getElementById('barcode-calories').textContent = barcodeProductData.calories || 0;
+            document.getElementById('barcode-protein').textContent = (barcodeProductData.protein || 0) + 'g';
+            document.getElementById('barcode-carbs').textContent = (barcodeProductData.carbs || 0) + 'g';
+            document.getElementById('barcode-fat').textContent = (barcodeProductData.fat || 0) + 'g';
+
+            document.getElementById('nutrition-parse-result').textContent = '✅ 解析成功！';
+            document.getElementById('nutrition-upload-zone').style.display = 'none';
+            document.getElementById('barcode-result').style.display = 'block';
+            document.getElementById('add-barcode-btn').style.display = 'block';
+
+            // Auto add to log
+            addBarcodeToLog();
+          } else {
+            document.getElementById('nutrition-parse-result').textContent = '❌ 解析失敗：' + (result.error || '請重試');
+            btn.disabled = false;
+            btn.textContent = '確認建立';
+            btn.style.display = 'block';
+          }
+        } catch (error) {
+          document.getElementById('nutrition-parse-result').textContent = '❌ 錯誤：' + error.message;
+          document.getElementById('submit-nutrition-btn').disabled = false;
+          document.getElementById('submit-nutrition-btn').textContent = '確認建立';
+        }
+      };
+      reader.readAsDataURL(file);
     }
 
     // Enter key for barcode input
