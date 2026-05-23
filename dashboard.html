@@ -1297,7 +1297,8 @@
         const response = await fetch('/api/barcode/lookup/' + barcode);
         const result = await response.json();
 
-        if (result.success || result.data) {
+        // 找到產品（success: true）或 API 回傳 404 但有產品資料
+        if (result.success && result.data && result.data.name !== '未知產品') {
           barcodeProductData = result.data;
           document.getElementById('barcode-product-name').textContent = result.data.name;
           document.getElementById('barcode-product-brand').textContent = (result.data.brand || '未知') + ' • ' + (result.data.servingSize || '');
@@ -1310,7 +1311,7 @@
           document.getElementById('nutrition-create-zone').style.display = 'none';
         } else {
           barcodeProductData = result.data;
-          document.getElementById('barcode-product-name').textContent = result.data.name;
+          document.getElementById('barcode-product-name').textContent = result.data?.name || '未知產品';
           document.getElementById('barcode-product-brand').textContent = '未知商品';
           document.getElementById('barcode-calories').textContent = 0;
           document.getElementById('barcode-protein').textContent = '0g';
