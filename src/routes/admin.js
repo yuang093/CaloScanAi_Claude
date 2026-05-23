@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import { UserDB, FoodLogDB, DailyProgressDB, QuoteDB } from '../services/database.js';
 import { verifyToken } from '../middleware/auth.js';
+import { getLocalDate } from '../utils/date.js';
 import db from '../services/database.js';
 
 const router = express.Router();
@@ -204,6 +205,44 @@ router.get('/food-logs', adminMiddleware, (req, res) => {
       limit: parseInt(limit),
       offset: parseInt(offset)
     }
+  });
+});
+
+// PUT /api/admin/food-logs/:id - Update food log (admin only)
+router.put('/food-logs/:id', adminMiddleware, (req, res) => {
+  const { calories, protein, carbs, fat, description } = req.body;
+
+  if (calories === undefined || protein === undefined || carbs === undefined || fat === undefined) {
+    return res.status(400).json({ error: '營養資料為必填欄位' });
+  }
+
+  const stmt = db.prepare(`
+    UPDATE food_logs
+    SET calories = ?, protein = ?, carbs = ?, fat = ?, description = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `);
+  const result = stmt.run(calories, protein, carbs, fat, description || null, req.params.id);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: '食物記錄不存在' });
+  }
+
+  const updated = FoodLogDB.findById(parseInt(req.params.id));
+
+  // Update daily progress
+  const today = getLocalDate();
+  const todayStats = FoodLogDB.getTodayStats(updated.user_id);
+  DailyProgressDB.upsert(updated.user_id, today, {
+    totalCalories: todayStats.total_calories,
+    totalProtein: todayStats.total_protein,
+    totalCarbs: todayStats.total_carbs,
+    totalFat: todayStats.total_fat
+  });
+
+  res.json({
+    success: true,
+    message: '食物記錄已更新',
+    data: updated
   });
 });
 

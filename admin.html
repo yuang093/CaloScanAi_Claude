@@ -285,7 +285,7 @@
             </tr>
           </thead>
           <tbody id="logs-table-body">
-            <tr><td colspan="7" class="loading">載入中...</td></tr>
+            <tr><td colspan="8" class="loading">載入中...</td></tr>
           </tbody>
         </table>
       </div>
@@ -517,23 +517,68 @@
         if (result.success) {
           const tbody = document.getElementById('logs-table-body');
           if (result.data.logs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#999;">尚無食物記錄</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#999;">尚無食物記錄</td></tr>';
           } else {
             tbody.innerHTML = result.data.logs.map(log => `
               <tr>
                 <td>${log.id}</td>
                 <td>${log.user_name}</td>
-                <td>${(log.description || '未知食物').substring(0, 30)}</td>
+                <td>${(log.description || '未知食物').substring(0, 20)}</td>
                 <td>${log.calories} kcal</td>
                 <td>${log.protein}g</td>
                 <td>${log.carbs}g</td>
                 <td>${log.fat}g</td>
+                <td><button class="btn btn-secondary btn-small" onclick="editFoodLog(${log.id}, '${(log.description || '').replace(/'/g, "\\'")}', ${log.calories}, ${log.protein}, ${log.carbs}, ${log.fat})">修改</button></td>
               </tr>
             `).join('');
           }
         }
       } catch (error) {
-        document.getElementById('logs-table-body').innerHTML = '<tr><td colspan="7" class="error">載入失敗</td></tr>';
+        document.getElementById('logs-table-body').innerHTML = '<tr><td colspan="8" class="error">載入失敗</td></tr>';
+      }
+    }
+
+    async function editFoodLog(id, description, calories, protein, carbs, fat) {
+      const newDesc = prompt('食物名稱:', description);
+      if (newDesc === null) return;
+
+      const newCalories = prompt('熱量 (kcal):', calories);
+      if (newCalories === null) return;
+
+      const newProtein = prompt('蛋白質 (g):', protein);
+      if (newProtein === null) return;
+
+      const newCarbs = prompt('碳水化合物 (g):', carbs);
+      if (newCarbs === null) return;
+
+      const newFat = prompt('脂肪 (g):', fat);
+      if (newFat === null) return;
+
+      try {
+        const response = await fetch('/api/admin/food-logs/' + id, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify({
+            description: newDesc,
+            calories: parseInt(newCalories) || 0,
+            protein: parseFloat(newProtein) || 0,
+            carbs: parseFloat(newCarbs) || 0,
+            fat: parseFloat(newFat) || 0
+          })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          alert('已更新');
+          loadFoodLogs();
+        } else {
+          alert(result.error || '更新失敗');
+        }
+      } catch (error) {
+        alert('更新失敗');
       }
     }
 
