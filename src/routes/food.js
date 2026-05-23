@@ -1,7 +1,7 @@
 import express from 'express';
 import { analyzeFoodImage, parseNutritionalData } from '../services/minimax.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { FoodLogDB, DailyProgressDB } from '../services/database.js';
+import { FoodLogDB, DailyProgressDB, UserProfileDB } from '../services/database.js';
 import { getLocalDate } from '../utils/date.js';
 
 const router = express.Router();
@@ -67,14 +67,42 @@ router.post('/upload', authMiddleware, async (req, res, next) => {
       description: content.substring(0, 500)
     });
 
-    // Update daily progress
+    console.log('[Food] Food log created:', {
+      id: logEntry?.id,
+      hasImage: !!base64Data,
+      imageLength: base64Data?.length
+    });
+
+    // Update daily progress with TDEE goal
     const today = getLocalDate();
     const todayStats = FoodLogDB.getTodayStats(req.user.id);
+
+    // Get user's TDEE from profile for goal_calories
+    let goalCalories = 2000;
+    try {
+      const userProfile = UserProfileDB.findByUserId(req.user.id);
+      if (userProfile) {
+        const { custom_bmr, activity_level, weight, height, age, gender } = userProfile;
+        let bmr = custom_bmr;
+        if (!bmr) {
+          if (gender === 'male') bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+          else if (gender === 'female') bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+          else bmr = 10 * weight + 6.25 * height - 5 * age;
+        }
+        const multipliers = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725 };
+        const tdee = Math.round(bmr * (multipliers[activity_level] || 1.2));
+        goalCalories = Math.round(tdee * 0.85);
+      }
+    } catch (e) {
+      console.error('Failed to get TDEE for goal:', e.message);
+    }
+
     DailyProgressDB.upsert(req.user.id, today, {
       totalCalories: todayStats.total_calories,
       totalProtein: todayStats.total_protein,
       totalCarbs: todayStats.total_carbs,
-      totalFat: todayStats.total_fat
+      totalFat: todayStats.total_fat,
+      goalCalories
     });
 
     res.json({

@@ -1,7 +1,8 @@
 import express from 'express';
-import { BarcodeDB, FoodLogDB } from '../services/database.js';
+import { BarcodeDB, FoodLogDB, DailyProgressDB, UserProfileDB } from '../services/database.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { analyzeFoodImage, analyzeNutritionLabel, parseNutritionOCRResult } from '../services/minimax.js';
+import { getLocalDate } from '../utils/date.js';
 
 const router = express.Router();
 
@@ -236,6 +237,39 @@ router.post('/create-from-nutrition', authMiddleware, async (req, res, next) => 
       fat: parsed.fat || 0,
       description: `條碼建立: ${barcodeData.name}`
     });
+
+    // Update daily progress with TDEE goal
+    const today = getLocalDate();
+    const todayStats = FoodLogDB.getTodayStats(req.user.id);
+
+    let goalCalories = 2000;
+    try {
+      const userProfile = UserProfileDB.findByUserId(req.user.id);
+      if (userProfile) {
+        const { custom_bmr, activity_level, weight, height, age, gender } = userProfile;
+        let bmr = custom_bmr;
+        if (!bmr) {
+          if (gender === 'male') bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+          else if (gender === 'female') bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+          else bmr = 10 * weight + 6.25 * height - 5 * age;
+        }
+        const multipliers = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725 };
+        const tdee = Math.round(bmr * (multipliers[activity_level] || 1.2));
+        goalCalories = Math.round(tdee * 0.85);
+      }
+    } catch (e) {
+      console.error('Failed to get TDEE for goal:', e.message);
+    }
+
+    DailyProgressDB.upsert(req.user.id, today, {
+      totalCalories: todayStats.total_calories,
+      totalProtein: todayStats.total_protein,
+      totalCarbs: todayStats.total_carbs,
+      totalFat: todayStats.total_fat,
+      goalCalories
+    });
+
+    console.log('[Barcode] Food log and progress updated with goal:', goalCalories);
 
     res.json({
       success: true,
