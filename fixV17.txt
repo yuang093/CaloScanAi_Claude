@@ -1,0 +1,25 @@
+請幫我針對專案進行 RWD (響應式網頁設計) 最佳化，讓網頁能在手機上完美觀看。請修改 index.html、dashboard.html、profile.html 以及 admin.html，具體需求如下：
+
+1. 全域網格與版面 (針對 max-width: 768px)
+
+在 dashboard.html 中，將 .nutrition-grid 以及 barcode-result 的 4 欄配置，改為 2 欄 (grid-template-columns: repeat(2, 1fr))，並微調內部 padding。
+
+在 profile.html 中，將 .form-row 和 .activity-options 的 2 欄配置改為 1 欄 (grid-template-columns: 1fr)。
+
+在 index.html 中，將 .login-container 的 padding 從 48px 縮小至 24px。
+
+2. 導覽列優化 (dashboard.html, profile.html)
+
+針對手機版，請將頂部導覽列 .nav-links 修改為可橫向滑動 (overflow-x: auto; white-space: nowrap; padding-bottom: 4px;)，隱藏捲軸，確保按鈕不會互相重疊與強制換行。
+
+適度縮小 .logo 的字體大小。
+
+3. 彈出視窗 (Modal)
+
+確保所有頁面的 Modal（如條碼掃描、食物詳情、捐款框）在手機版的 max-width 設為 95%，並將內部的 padding 從 24px/32px 適度縮減至 16px。
+
+4. 表格響應式 (admin.html)
+
+將所有 <table> 外層包上一個具有 overflow-x: auto; display: block; 或 width: 100%; 特性的容器，確保管理員在手機查看數據時，可以左右滑動表格而不會撐破整個網頁排版。
+
+請直接在對應 HTML 檔案的 <style> 區塊內補上 @media (max-width: 768px) 樣式設定，不要破壞現有的桌面版排版。

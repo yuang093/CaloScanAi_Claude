@@ -308,6 +308,44 @@
       padding: 40px;
       color: var(--color-text-muted);
     }
+
+    /* RWD - max-width: 768px */
+    @media (max-width: 768px) {
+      .nutrition-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .nav {
+        padding: 12px 16px;
+      }
+      .logo {
+        font-size: 1.2rem;
+      }
+      .nav-links {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 4px;
+        gap: 4px;
+      }
+      .nav-links::-webkit-scrollbar {
+        display: none;
+      }
+      .nav-link {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+      }
+      .modal-content,
+      .modal > div {
+        max-width: 95% !important;
+        padding: 16px !important;
+      }
+      .analysis-result {
+        padding: 16px;
+      }
+      .food-log-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+    }
   </style>
 </head>
 <body data-theme="natural">
