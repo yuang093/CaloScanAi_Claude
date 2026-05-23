@@ -539,11 +539,15 @@
   <div id="barcode-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div class="modal-content" style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:400px; width:90%;">
       <h3 style="margin-bottom:16px;">📱 條碼掃描</h3>
-      <div id="barcode-camera-container" style="display:none; margin-bottom:16px; position:relative;">
-        <video id="barcode-video" style="width:100%; border-radius:12px; background:#000;"></video>
-        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); border:2px solid var(--color-primary); width:200px; height:100px; border-radius:8px; pointer-events:none;"></div>
-        <div style="text-align:center; margin-top:8px; font-size:0.85rem; color:var(--color-text-muted);">將條碼置於框內</div>
-        <button id="capture-barcode-btn" onclick="captureBarcodePhoto()" class="btn btn-primary" style="margin-top:12px; width:100%;">📷 拍攝</button>
+      <div id="barcode-upload-zone" onclick="document.getElementById('barcode-file-input').click()" style="border:2px dashed var(--color-border); border-radius:12px; padding:32px; text-align:center; cursor:pointer; margin-bottom:16px;">
+        <div style="font-size:2rem; margin-bottom:12px;">📷</div>
+        <div style="color:var(--color-text-muted); font-size:0.9rem;">點擊上傳或拖曳圖片</div>
+        <div style="color:var(--color-text-muted); font-size:0.8rem; margin-top:8px;">或拍攝營養標示 / 條碼照片</div>
+      </div>
+      <input type="file" id="barcode-file-input" accept="image/*" style="display:none;" onchange="handleBarcodeFileSelect(event)">
+      <div id="barcode-preview-container" style="display:none; margin-bottom:16px;">
+        <img id="barcode-preview-img" style="width:100%; border-radius:12px; background:#000;">
+        <button id="analyze-barcode-btn" onclick="reAnalyzeBarcode()" class="btn btn-secondary" style="margin-top:8px; width:100%;">重新分析</button>
       </div>
       <div id="barcode-input-container">
         <input type="text" id="barcode-input" placeholder="或輸入條碼號碼" class="input" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px;">
@@ -577,7 +581,6 @@
         <button onclick="closeNutritionUpload()" class="btn btn-secondary" style="margin-top:8px; width:100%;">取消</button>
       </div>
       <div style="display:flex; gap:12px;">
-        <button id="camera-btn" onclick="toggleCameraScan()" class="btn btn-secondary" style="flex:1;">📷 相機掃描</button>
         <button onclick="lookupBarcode()" class="btn btn-primary" style="flex:1;">查詢</button>
       </div>
       <button id="add-barcode-btn" class="btn btn-primary" style="display:none; margin-top:12px; width:100%;" onclick="addBarcodeToLog()">加入日誌</button>
@@ -1380,7 +1383,13 @@
       document.getElementById('add-barcode-btn').style.display = 'none';
       document.getElementById('nutrition-create-zone').style.display = 'none';
       document.getElementById('nutrition-upload-zone').style.display = 'none';
-      stopCameraScan();
+      document.getElementById('barcode-upload-zone').style.display = 'block';
+      document.getElementById('barcode-preview-container').style.display = 'none';
+      document.getElementById('barcode-file-input').value = '';
+    }
+
+    function stopCameraScan() {
+      // No-op: camera stream removed
     }
 
     function openDonationModal() {
@@ -1429,90 +1438,44 @@
       }
     }
 
-    let cameraStream = null;
+    async function handleBarcodeFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
 
-    async function toggleCameraScan() {
-      const video = document.getElementById('barcode-video');
-      const container = document.getElementById('barcode-camera-container');
-      const inputContainer = document.getElementById('barcode-input-container');
-      const cameraBtn = document.getElementById('camera-btn');
-      const captureBtn = document.getElementById('capture-barcode-btn');
-
-      if (cameraStream) {
-        stopCameraScan();
-        container.style.display = 'none';
-        inputContainer.style.display = 'block';
-        cameraBtn.textContent = '📷 相機掃描';
-        captureBtn.style.display = 'none';
-        return;
+      const btn = document.getElementById('analyze-barcode-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '🔄 分析中...';
       }
 
       try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' }
-        });
-        video.srcObject = cameraStream;
-        video.play();
-        container.style.display = 'block';
-        inputContainer.style.display = 'none';
-        cameraBtn.textContent = '⌨️ 輸入模式';
-        captureBtn.style.display = 'block';
-      } catch (err) {
-        alert('無法開啟相機，請確認已授權相機權限');
-        console.error(err);
-      }
-    }
+        const base64 = await compressImage(file);
 
-    function stopCameraScan() {
-      if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-        cameraStream = null;
-      }
-    }
+        // Show preview
+        document.getElementById('barcode-preview-img').src = 'data:image/jpeg;base64,' + base64;
+        document.getElementById('barcode-upload-zone').style.display = 'none';
+        document.getElementById('barcode-preview-container').style.display = 'block';
 
-    async function captureBarcodePhoto() {
-      const video = document.getElementById('barcode-video');
-      if (!video || video.readyState < 2) {
-        alert('相機尚未準備完成，請稍後');
-        return;
-      }
-
-      const captureBtn = document.getElementById('capture-barcode-btn');
-      captureBtn.disabled = true;
-      captureBtn.textContent = '🔄 分析中...';
-
-      // Create canvas to capture frame
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-
-      // Convert to base64
-      const imageData = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-
-      try {
-        // Send to API to scan barcode using AI Vision
+        // Send for barcode analysis
         const response = await fetch('/api/barcode/scan', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + localStorage.getItem('token')
           },
-          body: JSON.stringify({ image: imageData })
+          body: JSON.stringify({ image: base64 })
         });
 
         const result = await response.json();
-        captureBtn.disabled = false;
-        captureBtn.textContent = '📷 拍攝';
+
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '分析';
+        }
 
         if (result.success && result.data.barcode) {
-          stopCameraScan();
-          barcodeCapturedImage = imageData; // Save for food log
+          barcodeCapturedImage = base64; // Save the image
           document.getElementById('barcode-input').value = result.data.barcode;
-          document.getElementById('barcode-camera-container').style.display = 'none';
-          document.getElementById('barcode-input-container').style.display = 'block';
-          document.getElementById('camera-btn').textContent = '📷 相機掃描';
           lookupBarcode();
         } else if (result.error) {
           alert('辨識失敗：' + (result.error.message || result.error));
@@ -1520,10 +1483,19 @@
           alert('無法辨識條碼，請嘗試手動輸入');
         }
       } catch (err) {
-        captureBtn.disabled = false;
-        captureBtn.textContent = '📷 拍攝';
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '分析';
+        }
         alert('網路錯誤，請稍後再試');
-        console.error('Barcode capture failed:', err);
+        console.error('Barcode file analysis failed:', err);
+      }
+    }
+
+    async function reAnalyzeBarcode() {
+      const fileInput = document.getElementById('barcode-file-input');
+      if (fileInput.files.length > 0) {
+        handleBarcodeFileSelect({ target: fileInput });
       }
     }
 
