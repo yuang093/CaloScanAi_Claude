@@ -1450,6 +1450,7 @@
 
       try {
         const base64 = await compressImage(file);
+        window.lastBarcodeBase64 = base64; // Store for re-analyze
 
         // Show preview
         document.getElementById('barcode-preview-img').src = 'data:image/jpeg;base64,' + base64;
@@ -1496,6 +1497,45 @@
       const fileInput = document.getElementById('barcode-file-input');
       if (fileInput.files.length > 0) {
         handleBarcodeFileSelect({ target: fileInput });
+      } else if (window.lastBarcodeBase64) {
+        // Re-analyze with stored base64
+        const btn = document.getElementById('analyze-barcode-btn');
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = '🔄 分析中...';
+        }
+
+        fetch('/api/barcode/scan', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify({ image: window.lastBarcodeBase64 })
+        })
+        .then(res => res.json())
+        .then(result => {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '分析';
+          }
+          if (result.success && result.data.barcode) {
+            barcodeCapturedImage = window.lastBarcodeBase64;
+            document.getElementById('barcode-input').value = result.data.barcode;
+            lookupBarcode();
+          } else if (result.error) {
+            alert('辨識失敗：' + (result.error.message || result.error));
+          } else {
+            alert('無法辨識條碼，請嘗試手動輸入');
+          }
+        })
+        .catch(err => {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '分析';
+          }
+          alert('網路錯誤，請稍後再試');
+        });
       }
     }
 
