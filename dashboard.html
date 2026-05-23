@@ -899,7 +899,7 @@
       updateProgressTotals();
     }
 
-    function updateProgressTotals() {
+    function updateProgressTotals(goalCalories = 2000) {
       const total = foodLog.reduce((acc, item) => ({
         cal: acc.cal + item.calories,
         pro: acc.pro + item.protein,
@@ -911,7 +911,15 @@
       document.getElementById('total-pro').textContent = total.pro + 'g';
       document.getElementById('total-carb').textContent = total.carb + 'g';
       document.getElementById('total-fat').textContent = total.fat + 'g';
-      document.getElementById('remaining-cal').textContent = Math.max(0, 2000 - total.cal);
+      document.getElementById('remaining-cal').textContent = Math.max(0, goalCalories - total.cal);
+      document.getElementById('goal-cal-display').textContent = goalCalories;
+
+      // Update progress bar if on progress page
+      const progressBar = document.getElementById('progress-bar-fill');
+      if (progressBar) {
+        const progressPercent = Math.min((total.cal / goalCalories) * 100, 100);
+        progressBar.style.width = progressPercent + '%';
+      }
     }
 
     function resetUpload() {
@@ -1180,15 +1188,42 @@
     // Load food log from API
     async function loadFoodLog() {
       try {
-        const response = await fetch('/api/food/logs?limit=50', {
-          headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        // Fetch food logs and profile in parallel
+        const [logsRes, profileRes] = await Promise.all([
+          fetch('/api/food/logs?limit=50', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+          }),
+          fetch('/api/profile', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+          })
+        ]);
+
+        const result = await logsRes.json();
+        const profileResult = await profileRes.json();
+        console.log('[loadFoodLog] API response:', JSON.stringify(result));
+        console.log('[loadFoodLog] profile:', JSON.stringify(profileResult));
+
+        // Calculate goal calories from profile
+        let goalCalories = 2000;
+        if (profileResult.success && profileResult.data) {
+          const p = profileResult.data;
+          if (p.goal_calories) {
+            goalCalories = p.goal_calories;
+          } else if (p.weight && p.height && p.age && p.gender) {
+            let bmr = p.custom_bmr;
+            if (!bmr) {
+              if (p.gender === 'male') bmr = 10 * p.weight + 6.25 * p.height - 5 * p.age + 5;
+              else if (p.gender === 'female') bmr = 10 * p.weight + 6.25 * p.height - 5 * p.age - 161;
+              else bmr = 10 * p.weight + 6.25 * p.height - 5 * p.age;
+            }
+            const multipliers = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725 };
+            const tdee = Math.round(bmr * (multipliers[p.activity_level] || 1.2));
+            goalCalories = Math.round(tdee * 0.85);
           }
-        });
-        const result = await response.json();
-        console.log('[loadFoodLog] API response:', result);
+        }
 
         const logs = result.data?.logs || [];
+        console.log('[loadFoodLog] logs count:', logs.length);
         if (logs.length > 0) {
           foodLog = logs.map(log => ({
             id: log.id,
@@ -1203,7 +1238,8 @@
         } else {
           foodLog = [];
         }
-        renderFoodLog();
+        console.log('[loadFoodLog] foodLog:', JSON.stringify(foodLog));
+        updateProgressTotals(goalCalories);
       } catch (error) {
         console.error('Failed to load food log:', error);
       }
