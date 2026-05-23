@@ -197,13 +197,52 @@
       .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; min-width: 0; }
       .nav { display: flex; flex-wrap: wrap; height: auto; padding: 12px 16px; gap: 12px; }
       .container { padding: var(--space-8) 16px; }
+      .tab-content {
+        overflow-x: hidden;
+        width: 100%;
+      }
       .table-wrapper {
-        overflow-x: auto;
-        display: block;
+        overflow-x: hidden;
         width: 100%;
       }
       table {
-        min-width: 600px;
+        min-width: unset;
+        width: 100%;
+      }
+      /* Table card layout for mobile */
+      table, thead, tbody, th, td, tr {
+        display: block;
+        width: 100%;
+      }
+      thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+      }
+      tbody tr {
+        margin-bottom: 16px;
+        border-radius: 12px;
+        background: var(--color-surface, #fff);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        padding: 12px;
+      }
+      td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--color-border, #eee);
+        text-align: right;
+      }
+      td:last-child {
+        border-bottom: none;
+      }
+      td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        text-align: left;
+        margin-right: 16px;
+        color: var(--color-text-muted, #666);
       }
       .stat-value {
         font-size: 1.75rem;
@@ -558,12 +597,12 @@
           } else {
             tbody.innerHTML = result.data.map(user => `
               <tr>
-                <td>${user.id}</td>
-                <td>${user.name}</td>
-                <td>${user.username}</td>
-                <td>${user.role === 'admin' ? '<span style="background:#e3f2fd; color:#1565c0; padding:2px 8px; border-radius:10px; font-size:12px;">👑 管理員</span>' : '<span style="background:#f5f5f5; color:#666; padding:2px 8px; border-radius:10px; font-size:12px;">會員</span>'}</td>
-                <td>${new Date(user.created_at).toLocaleDateString('zh-TW')}</td>
-                <td>
+                <td data-label="ID">${user.id}</td>
+                <td data-label="名稱">${user.name}</td>
+                <td data-label="帳號">${user.username}</td>
+                <td data-label="角色">${user.role === 'admin' ? '<span style="background:#e3f2fd; color:#1565c0; padding:2px 8px; border-radius:10px; font-size:12px;">👑 管理員</span>' : '<span style="background:#f5f5f5; color:#666; padding:2px 8px; border-radius:10px; font-size:12px;">會員</span>'}</td>
+                <td data-label="註冊日期">${new Date(user.created_at).toLocaleDateString('zh-TW')}</td>
+                <td data-label="操作">
                   <button class="btn btn-secondary btn-small" onclick="editPassword(${user.id}, '${user.name}')">修改密碼</button>
                   ${user.role === 'admin' ? `<button class="btn btn-warning btn-small" onclick="demoteUser(${user.id}, '${user.name}')">降為會員</button>` : `<button class="btn btn-primary btn-small" onclick="promoteUser(${user.id}, '${user.name}')">提升為管理員</button>`}
                   <button class="btn btn-danger btn-small" onclick="deleteUser(${user.id})">刪除</button>
@@ -600,14 +639,14 @@
               } catch (e) {}
               return `
               <tr>
-                <td>${log.id}</td>
-                <td>${log.user_name}</td>
-                <td>${foodName.substring(0, 20)}</td>
-                <td>${log.calories} kcal</td>
-                <td>${log.protein}g</td>
-                <td>${log.carbs}g</td>
-                <td>${log.fat}g</td>
-                <td><button class="btn btn-secondary btn-small" onclick="showEditFoodForm(${log.id}, ${JSON.stringify(foodName).replace(/"/g, '&quot;')}, ${log.calories}, ${log.protein}, ${log.carbs}, ${log.fat})">修改</button>
+                <td data-label="ID">${log.id}</td>
+                <td data-label="用戶">${log.user_name}</td>
+                <td data-label="食物名稱">${foodName.substring(0, 20)}</td>
+                <td data-label="熱量">${log.calories} kcal</td>
+                <td data-label="蛋白質">${log.protein}g</td>
+                <td data-label="碳水">${log.carbs}g</td>
+                <td data-label="脂肪">${log.fat}g</td>
+                <td data-label="操作"><button class="btn btn-secondary btn-small" onclick="showEditFoodForm(${log.id}, ${JSON.stringify(foodName).replace(/"/g, '&quot;')}, ${log.calories}, ${log.protein}, ${log.carbs}, ${log.fat})">修改</button>
                   <button class="btn btn-danger btn-small" onclick="deleteFoodLog(${log.id})">刪除</button></td>
               </tr>
             `}).join('');
@@ -704,10 +743,10 @@
           } else {
             tbody.innerHTML = result.data.map(quote => `
               <tr>
-                <td>${quote.id}</td>
-                <td style="max-width:400px;">${quote.quote}</td>
-                <td>${quote.author || '佚名'}</td>
-                <td>
+                <td data-label="ID">${quote.id}</td>
+                <td data-label="內容" style="max-width:400px;">${quote.quote}</td>
+                <td data-label="作者">${quote.author || '佚名'}</td>
+                <td data-label="操作">
                   <button class="btn btn-danger btn-small" onclick="deleteQuote(${quote.id})">刪除</button>
                 </td>
               </tr>

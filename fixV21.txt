@@ -1,0 +1,35 @@
+後台表格「卡片化」免滑動 Prompt（請直接複製）
+目前管理後台 (admin.html) 的表格（包含會員列表、食物日誌、勵志語）在手機版必須橫向滑動（左右拉），閱讀體驗不佳。請幫我將這些表格在手機版 (max-width: 768px) 時，自動轉型為「卡片式排版 (Card Layout)」，徹底消除橫向捲軸。
+
+請幫我進行以下 3 項修改：
+
+1. 新增 RWD 表格 CSS (請加在 admin.html 的 style 或 global.css 內)
+在 @media (max-width: 768px) 區塊內加入以下樣式：
+
+將 table, thead, tbody, th, td, tr 全部設為 display: block; width: 100%;。
+
+隱藏表頭：thead tr { position: absolute; top: -9999px; left: -9999px; } (不直接用 display:none 是為了保留無障礙閱讀)。
+
+卡片化資料列 (tr)：加上背景色、圓角與陰影，例如 margin-bottom: 16px; border-radius: 12px; background: var(--bg-card, #fff); box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 12px;。
+
+儲存格 (td) 左右對齊：設為 display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color, #eee); text-align: right; (最後一個 td 取消底線)。
+
+顯示欄位名稱 (td::before)：加上 content: attr(data-label); font-weight: 600; text-align: left; margin-right: 16px; color: var(--text-secondary, #666);。
+
+2. 更新 JavaScript 的 Table 渲染邏輯
+因為後台的表格資料是透過 JS 動態生成的 (innerHTML 或 createElement)，請修改負責渲染「會員列表」、「食物日誌」、「勵志語」的相關函式。
+
+為每一個 <td> 補上對應的 data-label 屬性。
+
+例如：本來是 <td>${user.name}</td>，請改成 <td data-label="姓名">${user.name}</td>。
+
+請確保所有欄位（包含操作按鈕那欄，可設為 data-label="操作"）都有加上此屬性。
+
+3. 容器防溢出保護
+
+確保包住 table 的外層容器 (如 .table-container 或 .tab-pane) 在手機版設定為 overflow-x: hidden; width: 100%;，保證絕對不會出現水平捲軸。
+
+💡 修改後的效果
+套用這段修改後，當您在電腦上看，它依然是整齊的表格；但只要一換到手機螢幕，每一橫列的資料就會自動變成一個獨立的「小卡片」，欄位名稱會在左邊，數值在右邊。
+
+這不但能完全消滅左右滑動，管理員在手機上點擊刪除或編輯按鈕時，也不會因為按鈕太小而點錯了！快讓 Claude 幫您施展這個 CSS 魔法吧！
