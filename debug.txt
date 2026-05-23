@@ -1,14 +1,23 @@
-請直接複製以下這段 Prompt，貼給您的 AI 助手（Claude 或 Cursor），它就能幫您把這 3 個盲點一次徹底修復：
+每日進度
+2026年5月24日
 
-系統目前遇到「無法顯示今日食物日誌」與「無法扣除剩餘卡路里」的問題。主要是因為 SQLite UTC 時區比對錯誤，以及前端時間解析缺失。請幫我修改以下 2 個檔案：
+🔥 今日攝取
+1779
+卡路里 (kcal)
+40.400000000000006g
+蛋白質
+250.2g
+碳水化合物
+68.2g
+脂肪
+目標攝取：2000 kcal
 
-1. 修正 SQLite 時間比對 (src/services/database.js)：
-在 FoodLogDB 的 findByUserId 與 getTodayStats 函式中，所有使用到 date(created_at) 的 SQL 語法，請全面修改為 date(created_at, 'localtime')。包含 query 字串以及 countQuery，確保 SQLite 能正確將 UTC 轉為台灣時間再進行日期比對。
+剩餘 221 kcal
 
-2. 修正前端日期過濾與時間顯示 (dashboard.html)：
-
-過濾今天紀錄：在 loadFoodLog() 函式開頭，請先利用 getTimezoneOffset() 算出正確的本地日期字串（YYYY-MM-DD），並將 fetch 的網址從 fetch('/api/food/logs?limit=50') 改為使用樣板字串傳入日期參數：fetch(\/api/food/logs?date=${localDate}&limit=50`)`，確保只顯示今日日誌。
-
-修正時間偏差：在處理 foodLog 陣列的 map 邏輯中，將 time 屬性的轉換寫法，從 new Date(log.created_at) 改為 new Date(log.created_at + 'Z')，確保瀏覽器能正確將 UTC 時間轉換回本地時間，避免時間顯示提早 8 小時的問題。
-
-將這幾個修正套用之後，您的卡路里系統就能夠每天精準換日、正確扣除熱量，食物紀錄的時間也會完全正確了！
+🍽️ 餐次摘要
+🌅 早餐
+450 kcal
+☀️ 午餐
+680 kcal
+🌙 晚餐
+320 kcal

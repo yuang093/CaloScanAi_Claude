@@ -436,18 +436,18 @@
 
       <div class="analysis-result">
         <h3>🍽️ 餐次摘要</h3>
-        <div style="display:flex; flex-direction:column; gap:12px;">
+        <div id="meal-summary" style="display:flex; flex-direction:column; gap:12px;">
           <div style="display:flex; justify-content:space-between; padding:12px; background:var(--color-bg); border-radius:12px;">
             <span>🌅 早餐</span>
-            <strong style="color:var(--color-primary);">450 kcal</strong>
+            <strong id="meal-breakfast-cal" style="color:var(--color-primary);">0 kcal</strong>
           </div>
           <div style="display:flex; justify-content:space-between; padding:12px; background:var(--color-bg); border-radius:12px;">
             <span>☀️ 午餐</span>
-            <strong style="color:var(--color-primary);">680 kcal</strong>
+            <strong id="meal-lunch-cal" style="color:var(--color-primary);">0 kcal</strong>
           </div>
           <div style="display:flex; justify-content:space-between; padding:12px; background:var(--color-bg); border-radius:12px;">
             <span>🌙 晚餐</span>
-            <strong style="color:var(--color-primary);">320 kcal</strong>
+            <strong id="meal-dinner-cal" style="color:var(--color-primary);">0 kcal</strong>
           </div>
         </div>
       </div>
@@ -985,17 +985,34 @@
         if (progressResult.success) {
           const { stats, goals, quote } = progressResult.data;
 
-          // Update nutrition values
+          // Update nutrition values (round to 1 decimal)
           document.getElementById('total-cal').textContent = stats.calories;
-          document.getElementById('total-pro').textContent = stats.protein + 'g';
-          document.getElementById('total-carb').textContent = stats.carbs + 'g';
-          document.getElementById('total-fat').textContent = stats.fat + 'g';
+          document.getElementById('total-pro').textContent = Math.round(stats.protein * 10) / 10 + 'g';
+          document.getElementById('total-carb').textContent = Math.round(stats.carbs * 10) / 10 + 'g';
+          document.getElementById('total-fat').textContent = Math.round(stats.fat * 10) / 10 + 'g';
           document.getElementById('remaining-cal').textContent = goals.remaining;
 
-          // Use profile goal if available
-          if (profileResult.success && profileResult.data && profileResult.data.goal_calories) {
-            goalCalories = profileResult.data.goal_calories;
-          }
+          // Use goal from API response first
+          goalCalories = goals.calories;
+
+          // Fetch today's food logs for meal breakdown
+          const todayLogsRes = await fetch('/api/food/logs?limit=50', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+          });
+          const todayLogsResult = await todayLogsRes.json();
+          const todayLogs = todayLogsResult.data?.logs || [];
+
+          // Calculate meal totals
+          let breakfastCal = 0, lunchCal = 0, dinnerCal = 0;
+          todayLogs.forEach(log => {
+            const hour = new Date(log.created_at).getHours();
+            if (hour < 11) breakfastCal += log.calories || 0;
+            else if (hour < 17) lunchCal += log.calories || 0;
+            else dinnerCal += log.calories || 0;
+          });
+          document.getElementById('meal-breakfast-cal').textContent = breakfastCal + ' kcal';
+          document.getElementById('meal-lunch-cal').textContent = lunchCal + ' kcal';
+          document.getElementById('meal-dinner-cal').textContent = dinnerCal + ' kcal';
 
           document.getElementById('goal-cal-display').textContent = goalCalories;
 
