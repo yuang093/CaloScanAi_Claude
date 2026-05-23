@@ -1,6 +1,6 @@
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { FoodLogDB, DailyProgressDB, QuoteDB } from '../services/database.js';
+import { FoodLogDB, DailyProgressDB, QuoteDB, UserProfileDB } from '../services/database.js';
 import { getLocalDate, getLocalDateDaysAgo } from '../utils/date.js';
 
 const router = express.Router();
@@ -12,9 +12,30 @@ router.get('/daily', authMiddleware, async (req, res, next) => {
 
     // Get today's stats from food logs
     const todayStats = FoodLogDB.getTodayStats(req.user.id);
+    console.log('[progress/daily] todayStats:', todayStats);
+
+    // Get user's profile for goalCalories
+    const profile = UserProfileDB.findByUserId(req.user.id);
+    let goalCalories = 2000;
+    if (profile) {
+      if (profile.goal_calories) {
+        goalCalories = profile.goal_calories;
+      } else if (profile.weight && profile.height && profile.age && profile.gender) {
+        let bmr = profile.custom_bmr;
+        if (!bmr) {
+          if (profile.gender === 'male') bmr = 10 * profile.weight + 6.25 * profile.height - 5 * profile.age + 5;
+          else if (profile.gender === 'female') bmr = 10 * profile.weight + 6.25 * profile.height - 5 * profile.age - 161;
+          else bmr = 10 * profile.weight + 6.25 * profile.height - 5 * profile.age;
+        }
+        const multipliers = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725 };
+        const tdee = Math.round(bmr * (multipliers[profile.activity_level] || 1.2));
+        goalCalories = Math.round(tdee * 0.85);
+      }
+    }
 
     // Get or create daily progress record
     let progress = DailyProgressDB.findByUserAndDate(req.user.id, today);
+    console.log('[progress/daily] existing progress:', progress);
 
     if (!progress) {
       // Create initial progress for today
@@ -23,8 +44,9 @@ router.get('/daily', authMiddleware, async (req, res, next) => {
         totalProtein: todayStats.total_protein,
         totalCarbs: todayStats.total_carbs,
         totalFat: todayStats.total_fat,
-        goalCalories: 2000
+        goalCalories
       });
+      console.log('[progress/daily] created progress:', progress);
     }
 
     // Get random quote
