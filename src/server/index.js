@@ -9,6 +9,7 @@ import barcodeRouter from '../routes/barcode.js';
 import adminRouter from '../routes/admin.js';
 import profileRouter from '../routes/profile.js';
 import { errorHandler } from '../middleware/errorHandler.js';
+import db from '../services/database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -54,9 +55,38 @@ app.get('/health', (req, res) => {
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 CaloScanAi API running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
 });
+
+// Graceful Shutdown
+const gracefulShutdown = (signal) => {
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+
+  server.close(() => {
+    console.log('✅ HTTP server closed');
+
+    // Close database connection
+    try {
+      db.close();
+      console.log('✅ Database connection closed');
+    } catch (err) {
+      console.error('❌ Error closing database:', err.message);
+    }
+
+    console.log('👋 Shutdown complete');
+    process.exit(0);
+  });
+
+  // Force exit after 10 seconds
+  setTimeout(() => {
+    console.error('❌ Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 export default app;
