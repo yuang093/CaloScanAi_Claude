@@ -1512,6 +1512,7 @@
 
         if (result.success && result.data.barcode) {
           stopCameraScan();
+          barcodeCapturedImage = imageData; // Save for food log
           document.getElementById('barcode-input').value = result.data.barcode;
           document.getElementById('barcode-camera-container').style.display = 'none';
           document.getElementById('barcode-input-container').style.display = 'block';
@@ -1531,6 +1532,7 @@
     }
 
     let barcodeProductData = null;
+    let barcodeCapturedImage = null;
 
     async function lookupBarcode() {
       const barcode = document.getElementById('barcode-input').value.trim();
@@ -1579,7 +1581,7 @@
 
       const entry = {
         id: Date.now(),
-        image: '',
+        image: barcodeCapturedImage || '',
         calories: barcodeProductData.calories || 0,
         protein: barcodeProductData.protein || 0,
         carbs: barcodeProductData.carbs || 0,
@@ -1592,6 +1594,7 @@
       renderFoodLog();
       updateProgressTotals();
       closeBarcodeModal();
+      barcodeCapturedImage = null; // Reset after adding
     }
 
     let currentNutritionBarcode = null;
@@ -1610,6 +1613,7 @@
       document.getElementById('nutrition-create-zone').style.display = 'none';
       currentNutritionBarcode = null;
       currentNutritionImage = null;
+      barcodeCapturedImage = null;
     }
 
     async function handleNutritionPhotoSelect(event) {
@@ -1651,6 +1655,7 @@
         if (result.success) {
           // Update barcodeProductData with parsed values
           barcodeProductData = result.data.barcode;
+          barcodeCapturedImage = currentNutritionImage; // Save nutrition photo for display
           document.getElementById('barcode-product-name').textContent = barcodeProductData.name;
           document.getElementById('barcode-product-brand').textContent = (barcodeProductData.brand || '未知') + ' • ' + (barcodeProductData.servingSize || '');
           document.getElementById('barcode-calories').textContent = barcodeProductData.calories || 0;
