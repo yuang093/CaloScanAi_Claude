@@ -1,5 +1,5 @@
 # CaloScanAi Dockerfile
-FROM node:20-alpine
+FROM node:20
 
 WORKDIR /app
 
@@ -10,12 +10,9 @@ RUN npm ci --ignore-scripts && npm cache clean --force
 # Copy source
 COPY . .
 
-# Build native modules
-RUN npm rebuild better-sqlite3
-
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001 && \
+RUN groupadd -g 1001 -r nodejs && \
+    useradd -r -u 1001 -g nodejs nodejs && \
     chown -R nodejs:nodejs /app
 
 USER nodejs
