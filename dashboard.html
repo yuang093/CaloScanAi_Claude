@@ -543,6 +543,7 @@
         <video id="barcode-video" style="width:100%; border-radius:12px; background:#000;"></video>
         <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); border:2px solid var(--color-primary); width:200px; height:100px; border-radius:8px; pointer-events:none;"></div>
         <div style="text-align:center; margin-top:8px; font-size:0.85rem; color:var(--color-text-muted);">將條碼置於框內</div>
+        <button id="capture-barcode-btn" onclick="captureBarcodePhoto()" class="btn btn-primary" style="margin-top:12px; width:100%;">📷 拍攝</button>
       </div>
       <div id="barcode-input-container">
         <input type="text" id="barcode-input" placeholder="或輸入條碼號碼" class="input" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px;">
@@ -1433,19 +1434,20 @@
     }
 
     let cameraStream = null;
-    let cameraScanInterval = null;
 
     async function toggleCameraScan() {
       const video = document.getElementById('barcode-video');
       const container = document.getElementById('barcode-camera-container');
       const inputContainer = document.getElementById('barcode-input-container');
       const cameraBtn = document.getElementById('camera-btn');
+      const captureBtn = document.getElementById('capture-barcode-btn');
 
       if (cameraStream) {
         stopCameraScan();
         container.style.display = 'none';
         inputContainer.style.display = 'block';
         cameraBtn.textContent = '📷 相機掃描';
+        captureBtn.style.display = 'none';
         return;
       }
 
@@ -1458,9 +1460,7 @@
         container.style.display = 'block';
         inputContainer.style.display = 'none';
         cameraBtn.textContent = '⌨️ 輸入模式';
-
-        // Start scanning frames
-        cameraScanInterval = setInterval(scanBarcodeFrame, 500);
+        captureBtn.style.display = 'block';
       } catch (err) {
         alert('無法開啟相機，請確認已授權相機權限');
         console.error(err);
@@ -1472,15 +1472,18 @@
         cameraStream.getTracks().forEach(track => track.stop());
         cameraStream = null;
       }
-      if (cameraScanInterval) {
-        clearInterval(cameraScanInterval);
-        cameraScanInterval = null;
-      }
     }
 
-    async function scanBarcodeFrame() {
+    async function captureBarcodePhoto() {
       const video = document.getElementById('barcode-video');
-      if (!video || video.readyState < 2) return;
+      if (!video || video.readyState < 2) {
+        alert('相機尚未準備完成，請稍後');
+        return;
+      }
+
+      const captureBtn = document.getElementById('capture-barcode-btn');
+      captureBtn.disabled = true;
+      captureBtn.textContent = '🔄 分析中...';
 
       // Create canvas to capture frame
       const canvas = document.createElement('canvas');
@@ -1504,15 +1507,26 @@
         });
 
         const result = await response.json();
+        captureBtn.disabled = false;
+        captureBtn.textContent = '📷 拍攝';
+
         if (result.success && result.data.barcode) {
           stopCameraScan();
           document.getElementById('barcode-input').value = result.data.barcode;
+          document.getElementById('barcode-camera-container').style.display = 'none';
+          document.getElementById('barcode-input-container').style.display = 'block';
+          document.getElementById('camera-btn').textContent = '📷 相機掃描';
           lookupBarcode();
         } else if (result.error) {
-          console.error('Barcode scan error:', result.error);
+          alert('辨識失敗：' + (result.error.message || result.error));
+        } else {
+          alert('無法辨識條碼，請嘗試手動輸入');
         }
       } catch (err) {
-        console.error('Barcode scan failed:', err);
+        captureBtn.disabled = false;
+        captureBtn.textContent = '📷 拍攝';
+        alert('網路錯誤，請稍後再試');
+        console.error('Barcode capture failed:', err);
       }
     }
 
