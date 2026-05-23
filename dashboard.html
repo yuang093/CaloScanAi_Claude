@@ -906,7 +906,9 @@
         }
       });
 
-      if (page === 'progress') {
+      if (page === 'food-log') {
+        loadFoodLog();
+      } else if (page === 'progress') {
         document.getElementById('current-date').textContent = new Date().toLocaleDateString('zh-TW', {
           year: 'numeric', month: 'long', day: 'numeric'
         });
