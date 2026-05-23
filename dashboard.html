@@ -45,6 +45,19 @@
       --color-text-muted: #aaa;
       --color-border: #3a3a5a;
     }
+    [data-mode="dark"] {
+      --color-bg: #1a1a2e;
+      --color-surface: #252540;
+      --color-primary: #74c69d;
+      --color-primary-light: #95d5b2;
+      --color-text: #ffffff;
+      --color-text-muted: #aaa;
+      --color-border: #3a3a5a;
+    }
+    body[data-mode="dark"] {
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
     body {
       font-family: var(--font-family);
       background: var(--color-bg);
@@ -405,7 +418,11 @@
           <p style="font-size:1.2rem; margin-top:8px;">
             剩餘 <strong id="remaining-cal">2000</strong> kcal
           </p>
+          <div class="progress-bar" style="height:12px; background:var(--color-border); border-radius:6px; margin-top:12px; overflow:hidden;">
+            <div class="progress-bar-fill" style="height:100%; background:var(--color-primary); width:0%; transition:width 0.3s;"></div>
+          </div>
         </div>
+        <div id="daily-quote" style="text-align:center; margin-top:16px; font-style:italic; color:var(--color-text-muted);"></div>
       </div>
 
       <div class="analysis-result">
@@ -519,7 +536,7 @@
 
     function toggleDarkMode() {
       isDark = !isDark;
-      document.body.setAttribute('data-theme', isDark ? 'dark' : document.body.getAttribute('data-theme'));
+      document.body.setAttribute('data-mode', isDark ? 'dark' : 'light');
       document.getElementById('mode-icon').textContent = isDark ? '☀️' : '🌙';
       document.getElementById('mode-text').textContent = isDark ? '淺色模式' : '深色模式';
       localStorage.setItem('caloscanai_mode', isDark ? 'dark' : 'light');
@@ -786,8 +803,27 @@
     }
 
     // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       if (!checkAuth()) return;
+
+      // Verify token by calling /api/auth/me
+      try {
+        const meRes = await fetch('/api/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        if (meRes.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = 'index.html';
+          return;
+        }
+      } catch (e) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = 'index.html';
+        return;
+      }
+
       const savedTheme = localStorage.getItem('caloscanai_theme') || 'natural';
       setTheme(savedTheme);
 

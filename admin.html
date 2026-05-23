@@ -230,9 +230,9 @@
     </div>
 
     <div class="tab-container">
-      <button class="tab-btn active" onclick="switchTab('users')">會員管理</button>
-      <button class="tab-btn" onclick="switchTab('logs')">食物日誌</button>
-      <button class="tab-btn" onclick="switchTab('quotes')">勵志語</button>
+      <button class="tab-btn active" onclick="switchTab(event, 'users')">會員管理</button>
+      <button class="tab-btn" onclick="switchTab(event, 'logs')">食物日誌</button>
+      <button class="tab-btn" onclick="switchTab(event, 'quotes')">勵志語</button>
     </div>
 
     <div id="error-container"></div>
@@ -412,9 +412,25 @@
     let currentTab = 'users';
 
     // Check auth and load data
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       const token = localStorage.getItem('token');
       if (!token) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      // Verify token by calling /api/auth/me
+      try {
+        const meRes = await fetch('/api/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (meRes.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = 'index.html';
+          return;
+        }
+      } catch (e) {
         window.location.href = 'index.html';
         return;
       }
@@ -541,7 +557,7 @@
       }
     }
 
-    function switchTab(tab) {
+    function switchTab(event, tab) {
       currentTab = tab;
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       event.target.classList.add('active');

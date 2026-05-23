@@ -1,6 +1,7 @@
 #!/bin/bash
 # CaloScanAi 資料庫還原腳本
 # 使用方式: ./scripts/restore.sh <backup_file>
+# 適用於 SQLite 資料庫
 
 set -e
 
@@ -16,14 +17,13 @@ if [ -z "$1" ]; then
     echo "使用方式: $0 <backup_file>"
     echo ""
     echo "可用備份檔案:"
-    ls -lh ./backups/db/caloscanai_backup_*.dump.gz 2>/dev/null || echo "沒有找到備份檔案"
+    ls -lh ./backups/db/caloscanai_backup_*.db.gz 2>/dev/null || echo "沒有找到備份檔案"
     exit 1
 fi
 
 BACKUP_FILE="$1"
-CONTAINER_NAME="caloscanai_db"
-DB_NAME="caloscanai"
-DB_USER="caloscanai"
+DATA_DIR="./data"
+DB_FILE="caloscanai.db"
 
 # 檢查檔案是否存在
 if [ ! -f "${BACKUP_FILE}" ]; then
@@ -61,12 +61,16 @@ if [ "${CONFIRM}" != "yes" ]; then
     exit 0
 fi
 
-# 執行還原
+# 確保資料目錄存在
+mkdir -p "${DATA_DIR}"
+
+# 執行還原（直接覆蓋檔案）
 echo ""
 echo "正在還原資料庫..."
 echo "備份檔案: ${BACKUP_FILE}"
+echo "目標位置: ${DATA_DIR}/${DB_FILE}"
 
-docker exec -i ${CONTAINER_NAME} pg_restore -U ${DB_USER} -d ${DB_NAME} --clean --if-exists < "${BACKUP_FILE}"
+cp "${BACKUP_FILE}" "${DATA_DIR}/${DB_FILE}"
 
 # 檢查是否成功
 if [ $? -eq 0 ]; then
@@ -76,6 +80,11 @@ else
     echo ""
     echo -e "${RED}❌ 還原失敗，請檢查錯誤訊息${NC}"
     exit 1
+fi
+
+# 清理暫存檔案
+if [ -n "${TEMP_FILE}" ] && [ -f "${TEMP_FILE}" ]; then
+    rm -f "${TEMP_FILE}"
 fi
 
 echo ""

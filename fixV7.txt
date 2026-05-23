@@ -1,0 +1,26 @@
+綜合修復 Prompt（請直接複製以下內容）
+請幫我針對專案進行以下 7 項安全性與架構邏輯的修正。請直接提供修改後的程式碼或檔案內容：
+
+【安全性與穩定性修正】
+
+1. 修復 XSS 漏洞 (admin.html, dashboard.html)：
+目前前端使用 innerHTML 直接渲染 API 回傳的資料（如 user.name、log.user_name、勵志語等）。如果使用者註冊時填入惡意腳本，會導致後台被 XSS 攻擊。請將所有涉及使用者輸入渲染的地方，改用 textContent 或安全的 DOM 建立方式。
+
+2. 修正 Nginx 啟動崩潰風險 (nginx/conf.d/calo.conf)：
+設定檔第 26 行使用了 limit_req zone=api_limit burst=20 nodelay;，但如果 Nginx 主設定 (nginx.conf) 沒有先定義 api_limit 空間，Nginx 容器會直接啟動失敗崩潰。請先將這行註解掉，或給出完整的配套修改方案。
+
+【使用者體驗與前端邏輯修正】
+3. 優化 Token 過期體驗 (所有前端 HTML)：
+目前 API 若回傳 401 (Unauthorized)，前端畫面只會顯示「載入失敗」或卡住。請在 fetch 發生 401 錯誤時，加上「清除 localStorage 並強制導向回 index.html」的自動登出機制。
+4. 統一深色模式邏輯 (dashboard.html)：
+目前的 toggleDarkMode() 錯誤地修改了 data-theme，這會覆蓋掉原有的色彩主題（如 playful、natural）。請改為切換 data-mode="dark" 或 light，並與 admin.html 的實作邏輯保持完全一致。
+5. 補齊遺失的 DOM 元素 (dashboard.html)：
+在 progress-page 的 HTML 區塊中，缺少了 .progress-bar-fill 與 #daily-quote 這兩個元素，導致 fetchProgressData() 嘗試寫入資料時找不到節點。請補上這兩個對應的 HTML 標籤。
+6. 修正隱式 Event 報錯 (admin.html)：
+switchTab(tab) 函式內部直接使用了 event.target，這在部分瀏覽器或嚴格模式下會觸發 ReferenceError。請修改 HTML 中的 onclick，將 event 物件正確傳入（如 onclick="switchTab(event, 'users')"）。
+
+【後端架構與腳本修正】
+7. 同步資料庫腳本為 SQLite (scripts/init_db.sql, scripts/restore.sh)：
+專案的 Node.js 程式碼實際運行的是 SQLite (better-sqlite3)，但目前的腳本卻是針對 PostgreSQL 寫的（包含 uuid-ossp、pg_restore 等指令）。這會導致維運時無法使用。請將這兩個腳本完全改寫為適用於 SQLite 的結構與備份/還原邏輯。
+
+請擬定修改計畫藍圖
