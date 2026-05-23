@@ -1577,7 +1577,7 @@
 
       const entry = {
         id: Date.now(),
-        image: barcodeCapturedImage || '',
+        image: barcodeCapturedImage ? 'data:image/jpeg;base64,' + barcodeCapturedImage : '',
         calories: barcodeProductData.calories || 0,
         protein: barcodeProductData.protein || 0,
         carbs: barcodeProductData.carbs || 0,
