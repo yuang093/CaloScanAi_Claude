@@ -8,6 +8,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      TZ: ${TZ:-Asia/Taipei}
       JWT_SECRET: ${JWT_SECRET:-your-jwt-secret-change-in-production}
       AI_API_KEY: ${AI_API_KEY:-your-api-key}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}

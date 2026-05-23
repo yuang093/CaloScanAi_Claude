@@ -1,0 +1,11 @@
+封頂部署 Prompt（請直接複製以下內容）
+確認備份妥當後，請將這段 Prompt 貼給您的 AI 助手，把這個 Docker 盲點徹底封死：
+
+系統的程式碼邏輯已經非常完美了！為了確保在 VPS 上使用 Docker 部署時，時間邏輯不會出錯，請幫我補上最後一個環境變數修正。請直接提供修改後的設定檔：
+
+1. 修正 Docker 容器預設 UTC 導致的時區失效 (docker-compose.yml)
+雖然我們在程式碼加入了本地時區運算，但 Docker 容器預設為 UTC 時區，會讓 Node.js 取得的 getTimezoneOffset() 變成 0，導致換日邏輯再次失效。
+
+修改要求：請在 docker-compose.yml 中 app 服務的 environment 區塊，新增一行 TZ: ${TZ:-Asia/Taipei}，強制讓容器以台灣時區運行，確保底層時間準確無誤。
+
+請擬定修改計畫藍圖
