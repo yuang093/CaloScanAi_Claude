@@ -1,0 +1,18 @@
+剛才的 RWD 修改在手機上似乎沒有生效，這應該是缺少了 Viewport 設定或遇到了 CSS 快取問題。請幫我執行以下 3 項修正：
+
+1. 補齊所有 HTML 的 Viewport 標籤（最關鍵）
+請檢查 index.html, dashboard.html, admin.html, profile.html 與 planner.html。確保每一個檔案的 <head> 區塊內都包含這行程式碼（如果沒有請補上，如果寫錯請覆蓋）：
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+(加入 maximum-scale=1.0 可以防止 iOS 點擊輸入框時畫面亂放大)
+
+2. 強制更新 CSS 快取 (Cache Buster)
+請在所有 HTML 檔案引入 global.css 的地方，加上版本號來強迫瀏覽器抓取最新版。
+例如將 <link rel="stylesheet" href="/styles/global.css"> 修改為：
+<link rel="stylesheet" href="/styles/global.css?v=2.0">
+
+3. 檢查 @media 查詢是否被層級覆蓋
+請快速掃描一次剛才加到 global.css 的 @media (max-width: 768px) 區塊。確保它放在 CSS 檔案的最底部，並且選擇器的權重沒有低於上方設定的屬性（例如避免上方寫了 #app .card，下方卻只寫 .card 導致覆蓋失敗）。
+
+執行完這段修改並重新部署後，請在您的手機上用無痕模式 (Incognito/Private Mode) 重新打開 https://calo_c.yuang093.cc。
+
+有了 Viewport 標籤的加持，手機就會乖乖承認自己只有 300~400px 寬，您剛才辛苦縮小的那些 Padding 和字體就會完美呈現了！快試試看！
