@@ -1,80 +1,52 @@
-root@localhost:/opt/caloscanai_claude# cd /opt/caloscanai_claude && git pull && docker compose up --build -d
-remote: Enumerating objects: 9, done.
-remote: Counting objects: 100% (9/9), done.
-remote: Compressing objects: 100% (2/2), done.
-remote: Total 5 (delta 2), reused 5 (delta 2), pack-reused 0 (from 0)
-Unpacking objects: 100% (5/5), 955 bytes | 59.00 KiB/s, done.
-From https://github.com/yuang093/CaloScanAi_Claude
-   8362b0e..f361577  main       -> origin/main
-Updating 8362b0e..f361577
-Fast-forward
- debug.txt            | 89 +++++++++++++++++++++++++++++++++++++++++++++++++-------------------------------------
- docker/Dockerfile    | 35 ++++++++++------------------------
- docker/entrypoint.sh | 12 ------------
- 3 files changed, 61 insertions(+), 75 deletions(-)
- delete mode 100644 docker/entrypoint.sh
-WARN[0000] Docker Compose is configured to build using Bake, but buildx isn't installed 
-[+] Building 7.0s (10/11)                                                                          docker:default
- => [app internal] load build definition from Dockerfile                                                     0.0s
- => => transferring dockerfile: 680B                                                                         0.0s
- => [app internal] load metadata for docker.io/library/node:20-alpine                                        0.8s
- => [app internal] load .dockerignore                                                                        0.0s
- => => transferring context: 516B                                                                            0.0s
- => [app 1/7] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0  0.0s
- => [app internal] load build context                                                                        0.0s
- => => transferring context: 6.72kB                                                                          0.0s
- => CACHED [app 2/7] WORKDIR /app                                                                            0.0s
- => CACHED [app 3/7] COPY package*.json ./                                                                   0.0s
- => [app 4/7] RUN npm ci --ignore-scripts && npm cache clean --force                                         4.3s
- => [app 5/7] COPY . .                                                                                       0.1s 
- => ERROR [app 6/7] RUN npm rebuild better-sqlite3                                                           1.8s 
-------                                                                                                            
- > [app 6/7] RUN npm rebuild better-sqlite3:                                                                      
-1.732 npm error code 1                                                                                            
-1.733 npm error path /app/node_modules/better-sqlite3                                                             
-1.733 npm error command failed
-1.734 npm error command sh -c prebuild-install || node-gyp rebuild --release
-1.734 npm error prebuild-install warn install No prebuilt binaries found (target=20.20.2 runtime=node arch=x64 libc=musl platform=linux)
-1.734 npm error gyp info it worked if it ends with ok
-1.734 npm error gyp info using node-gyp@10.1.0
-1.734 npm error gyp info using node@20.20.2 | linux | x64
-1.734 npm error gyp ERR! find Python 
-1.734 npm error gyp ERR! find Python Python is not set from command line or npm configuration
-1.734 npm error gyp ERR! find Python Python is not set from environment variable PYTHON
-1.734 npm error gyp ERR! find Python checking if "python3" can be used
-1.734 npm error gyp ERR! find Python - executable path is ""
-1.734 npm error gyp ERR! find Python - "" could not be run
-1.734 npm error gyp ERR! find Python checking if "python" can be used
-1.734 npm error gyp ERR! find Python - executable path is ""
-1.734 npm error gyp ERR! find Python - "" could not be run
-1.734 npm error gyp ERR! find Python 
-1.734 npm error gyp ERR! find Python **********************************************************
-1.734 npm error gyp ERR! find Python You need to install the latest version of Python.
-1.734 npm error gyp ERR! find Python Node-gyp should be able to find and use Python. If not,
-1.734 npm error gyp ERR! find Python you can try one of the following options:
-1.734 npm error gyp ERR! find Python - Use the switch --python="/path/to/pythonexecutable"
-1.734 npm error gyp ERR! find Python (accepted by both node-gyp and npm)
-1.734 npm error gyp ERR! find Python - Set the environment variable PYTHON
-1.734 npm error gyp ERR! find Python - Set the npm configuration variable python:
-1.734 npm error gyp ERR! find Python npm config set python "/path/to/pythonexecutable"
-1.734 npm error gyp ERR! find Python For more information consult the documentation at:
-1.734 npm error gyp ERR! find Python https://github.com/nodejs/node-gyp#installation
-1.734 npm error gyp ERR! find Python **********************************************************
-1.734 npm error gyp ERR! find Python 
-1.734 npm error gyp ERR! configure error 
-1.734 npm error gyp ERR! stack Error: Could not find any Python installation to use
-1.734 npm error gyp ERR! stack at PythonFinder.fail (/usr/local/lib/node_modules/npm/node_modules/node-gyp/lib/find-python.js:306:11)
-1.734 npm error gyp ERR! stack at PythonFinder.findPython (/usr/local/lib/node_modules/npm/node_modules/node-gyp/lib/find-python.js:164:17)
-1.734 npm error gyp ERR! stack at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-1.734 npm error gyp ERR! stack at async configure (/usr/local/lib/node_modules/npm/node_modules/node-gyp/lib/configure.js:27:18)
-1.734 npm error gyp ERR! stack at async run (/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js:81:18)
-1.734 npm error gyp ERR! System Linux 6.8.0-107-generic
-1.734 npm error gyp ERR! command "/usr/local/bin/node" "/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js" "rebuild" "--release"
-1.734 npm error gyp ERR! cwd /app/node_modules/better-sqlite3
-1.734 npm error gyp ERR! node -v v20.20.2
-1.734 npm error gyp ERR! node-gyp -v v10.1.0
-1.734 npm error gyp ERR! not ok
-1.737 npm error A complete log of this run can be found in: /root/.npm/_logs/2026-05-23T08_45_55_072Z-debug-0.log
-------
-failed to solve: process "/bin/sh -c npm rebuild better-sqlite3" did not complete successfully: exit code: 1
+root@localhost:/opt/caloscanai_claude# docker logs caloscanai_app --tail 50
+ → /app/node_modules/better-sqlite3/out/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/default/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/compiled/20.20.2/linux/x64/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/release/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/debug/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/default/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/lib/binding/node-v115-linux-x64/better_sqlite3.node
+❌ 無法建立資料庫連線: Could not locate the bindings file. Tried:
+ → /app/node_modules/better-sqlite3/build/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/out/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/out/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/default/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/compiled/20.20.2/linux/x64/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/release/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/debug/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/default/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/lib/binding/node-v115-linux-x64/better_sqlite3.node
+❌ 無法建立資料庫連線: Could not locate the bindings file. Tried:
+ → /app/node_modules/better-sqlite3/build/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/out/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/out/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/default/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/compiled/20.20.2/linux/x64/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/release/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/debug/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/default/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/lib/binding/node-v115-linux-x64/better_sqlite3.node
+❌ 無法建立資料庫連線: Could not locate the bindings file. Tried:
+ → /app/node_modules/better-sqlite3/build/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/out/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/Debug/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/out/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/Release/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/build/default/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/compiled/20.20.2/linux/x64/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/release/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/debug/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/addon-build/default/install-root/better_sqlite3.node
+ → /app/node_modules/better-sqlite3/lib/binding/node-v115-linux-x64/better_sqlite3.node
 root@localhost:/opt/caloscanai_claude# 

@@ -3,9 +3,12 @@ FROM node:20
 
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies - force rebuild of native modules
 COPY package*.json ./
-RUN npm ci --ignore-scripts && npm cache clean --force
+RUN npm ci --ignore-scripts && \
+    rm -rf node_modules/better-sqlite3 && \
+    npm install better-sqlite3 && \
+    npm cache clean --force
 
 # Copy source
 COPY . .
