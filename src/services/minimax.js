@@ -68,12 +68,17 @@ export async function analyzeFoodImage(imageBase64, prompt, retryCount = 0) {
         cleanup();
         try {
           const parsed = JSON.parse(data);
+          console.log('[Minimax] API response keys:', Object.keys(parsed));
 
-          // Success case
-          if (parsed.choices && parsed.choices[0] && parsed.choices[0].message) {
+          // MiniMax returns {"content": "..."} not OpenAI's {"choices": [...]}
+          if (parsed.content) {
+            console.log('[Minimax] Found content field');
+            resolve({ success: true, data: { content: parsed.content } });
+          } else if (parsed.choices && parsed.choices[0] && parsed.choices[0].message) {
+            // Fallback to OpenAI format
             resolve({ success: true, data: { content: parsed.choices[0].message.content } });
-          } else if (parsed.base_resp?.status_msg) {
-            // API error - may be transient
+          } else if (parsed.base_resp?.status_msg && parsed.base_resp.status_msg !== 'success') {
+            console.log('[Minimax] base_resp error:', parsed.base_resp.status_msg);
             if (retryCount < MAX_RETRIES) {
               handleRetry(resolve, 'API error: ' + parsed.base_resp.status_msg);
             } else {
@@ -87,18 +92,18 @@ export async function analyzeFoodImage(imageBase64, prompt, retryCount = 0) {
               resolve({ success: false, error: parsed.status_msg });
             }
           } else if (res.statusCode >= 500) {
-            // Server error - likely transient
             if (retryCount < MAX_RETRIES) {
               handleRetry(resolve, 'Server error: ' + res.statusCode);
             } else {
               resolve({ success: false, error: 'Server error: ' + res.statusCode });
             }
           } else {
-            // Everything else, treat as success
-            console.log('[Minimax] Success fallback, content preview:', data.substring(0, 100));
+            // Fallback: treat raw data as content
+            console.log('[Minimax] Raw fallback, data preview:', data.substring(0, 150));
             resolve({ success: true, data: { content: data } });
           }
         } catch (e) {
+          console.log('[Minimax] Parse error:', e.message);
           if (retryCount < MAX_RETRIES) {
             handleRetry(resolve, 'Parse error');
           } else {
