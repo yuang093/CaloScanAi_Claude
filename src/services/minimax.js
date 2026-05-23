@@ -7,13 +7,25 @@ if (!MINIMAX_API_KEY) {
   console.warn('⚠️ AI_API_KEY environment variable is not set');
 }
 
+const REQUEST_TIMEOUT = 30000; // 30 seconds
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+
 /**
- * Analyze food image using MiniMax Vision API
+ * Sleep utility for retry delays
+ */
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Analyze food image using MiniMax Vision API with retry mechanism
  * @param {string} imageBase64 - Base64 encoded image data
  * @param {string} prompt - Analysis prompt
+ * @param {number} retryCount - Current retry attempt (internal)
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
-export async function analyzeFoodImage(imageBase64, prompt) {
+export async function analyzeFoodImage(imageBase64, prompt, retryCount = 0) {
   if (!MINIMAX_API_KEY) {
     return { success: false, error: 'API key not configured' };
   }
@@ -37,35 +49,86 @@ export async function analyzeFoodImage(imageBase64, prompt) {
         'Authorization': `Bearer ${MINIMAX_API_KEY}`,
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(requestBody)
-      }
+      },
+      timeout: REQUEST_TIMEOUT
     };
 
-    const req = https.request(options, (res) => {
+    let req;
+    let timeoutId;
+
+    const cleanup = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (req) req.removeAllListeners();
+    };
+
+    const handleResponse = (res) => {
       let data = '';
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
+        cleanup();
         try {
           const parsed = JSON.parse(data);
 
-          // Extract content from MiniMax response
+          // Success case
           if (parsed.choices && parsed.choices[0] && parsed.choices[0].message) {
-            const content = parsed.choices[0].message.content;
-            resolve({ success: true, data: { content } });
+            resolve({ success: true, data: { content: parsed.choices[0].message.content } });
           } else if (parsed.base_resp?.status_msg) {
-            resolve({ success: false, error: parsed.base_resp.status_msg });
+            // API error - may be transient
+            if (retryCount < MAX_RETRIES) {
+              handleRetry(resolve, 'API error: ' + parsed.base_resp.status_msg);
+            } else {
+              resolve({ success: false, error: parsed.base_resp.status_msg });
+            }
           } else if (parsed.status_msg) {
-            resolve({ success: false, error: parsed.status_msg });
+            if (retryCount < MAX_RETRIES) {
+              handleRetry(resolve, 'API error: ' + parsed.status_msg);
+            } else {
+              resolve({ success: false, error: parsed.status_msg });
+            }
+          } else if (res.statusCode >= 500) {
+            // Server error - likely transient
+            if (retryCount < MAX_RETRIES) {
+              handleRetry(resolve, 'Server error: ' + res.statusCode);
+            } else {
+              resolve({ success: false, error: 'Server error: ' + res.statusCode });
+            }
           } else {
             resolve({ success: true, data: { content: data } });
           }
         } catch (e) {
-          resolve({ success: false, error: 'Failed to parse response' });
+          if (retryCount < MAX_RETRIES) {
+            handleRetry(resolve, 'Parse error');
+          } else {
+            resolve({ success: false, error: 'Failed to parse response' });
+          }
         }
       });
-    });
+    };
+
+    const handleRetry = async (resolve, errorMsg) => {
+      await sleep(RETRY_DELAY * (retryCount + 1)); // Exponential backoff
+      resolve(analyzeFoodImage(imageBase64, prompt, retryCount + 1));
+    };
+
+    timeoutId = setTimeout(() => {
+      cleanup();
+      if (req) req.destroy();
+      if (retryCount < MAX_RETRIES) {
+        handleRetry(resolve, 'Request timeout');
+      } else {
+        resolve({ success: false, error: 'Request timeout after ' + MAX_RETRIES + ' retries' });
+      }
+    }, REQUEST_TIMEOUT);
+
+    req = https.request(options, handleResponse);
 
     req.on('error', (e) => {
-      resolve({ success: false, error: e.message });
+      cleanup();
+      if (retryCount < MAX_RETRIES) {
+        handleRetry(resolve, e.message);
+      } else {
+        resolve({ success: false, error: e.message });
+      }
     });
 
     req.write(requestBody);
