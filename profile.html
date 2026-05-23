@@ -303,6 +303,18 @@
       <button class="btn-primary" onclick="saveProfile()" style="margin-top: 20px;">儲存資料</button>
     </div>
 
+    <div class="card" id="bmr-manual-card">
+      <div class="card-title">⚡ 進階：手動輸入基礎代謝</div>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;">
+        如果你有透過 InBody 或其他機器測量出精準的基礎代謝率，可以直接在這裡輸入，系統會使用這個數值來計算 TDEE 和減脂目標。
+      </p>
+      <div class="form-group">
+        <label>我的基礎代謝 (BMR) kcal</label>
+        <input type="number" id="custom-bmr" placeholder="例如：1600" min="500" max="5000">
+      </div>
+      <button class="btn-primary" onclick="saveCustomBmr()" style="background: var(--color-text-muted);">只更新 BMR</button>
+    </div>
+
     <div class="card" id="tdee-card" style="display: none;">
       <div class="card-title">🔥 熱量計算結果</div>
       <div class="tdee-results">
@@ -351,6 +363,7 @@
           document.getElementById('height').value = profile.height || '';
           document.getElementById('age').value = profile.age || '';
           document.getElementById('gender').value = profile.gender || 'unspecified';
+          document.getElementById('custom-bmr').value = profile.custom_bmr || '';
           currentActivity = profile.activity_level || 'sedentary';
 
           // Update activity selection UI
@@ -359,7 +372,9 @@
           });
 
           // Calculate and show TDEE if we have enough data
-          if (profile.weight && profile.height && profile.age) {
+          if (profile.custom_bmr) {
+            calculateTDEE(profile, profile.custom_bmr);
+          } else if (profile.weight && profile.height && profile.age) {
             calculateTDEE(profile);
           }
         }
@@ -368,20 +383,28 @@
       }
     }
 
-    function calculateTDEE(profile) {
-      const weight = parseFloat(profile.weight);
-      const height = parseFloat(profile.height);
-      const age = parseInt(profile.age);
-      const gender = profile.gender;
+    function calculateTDEE(profile, customBmrOverride = null) {
       const activityLevel = profile.activity_level || 'sedentary';
-
       let bmr;
-      if (gender === 'male') {
-        bmr = 10 * weight + 6.25 * height - 5 * age + 5;
-      } else if (gender === 'female') {
-        bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+
+      // Use custom BMR if provided
+      if (customBmrOverride) {
+        bmr = customBmrOverride;
       } else {
-        bmr = 10 * weight + 6.25 * height - 5 * age;
+        const weight = parseFloat(profile.weight);
+        const height = parseFloat(profile.height);
+        const age = parseInt(profile.age);
+        const gender = profile.gender;
+
+        if (!weight || !height || !age) return;
+
+        if (gender === 'male') {
+          bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+        } else if (gender === 'female') {
+          bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+        } else {
+          bmr = 10 * weight + 6.25 * height - 5 * age;
+        }
       }
 
       const multipliers = {
@@ -402,11 +425,48 @@
       document.getElementById('tdee-card').style.display = 'block';
     }
 
+    async function saveCustomBmr() {
+      const customBmr = parseFloat(document.getElementById('custom-bmr').value);
+
+      if (!customBmr || customBmr < 500 || customBmr > 5000) {
+        alert('請輸入有效的 BMR 數值（500-5000 kcal）');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify({
+            customBmr,
+            activityLevel: currentActivity,
+            goalCalories: 2000
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showSuccess('BMR 已更新！');
+          // Recalculate with custom BMR
+          calculateTDEE({ activity_level: currentActivity }, customBmr);
+        } else {
+          alert(result.error || '儲存失敗');
+        }
+      } catch (error) {
+        alert('儲存失敗，請稍後再試');
+      }
+    }
+
     async function saveProfile() {
       const weight = parseFloat(document.getElementById('weight').value);
       const height = parseFloat(document.getElementById('height').value);
       const age = parseInt(document.getElementById('age').value);
       const gender = document.getElementById('gender').value;
+      const customBmr = parseFloat(document.getElementById('custom-bmr').value) || null;
 
       if (!weight || !height || !age) {
         alert('請填寫體重、身高和年齡');
@@ -426,7 +486,8 @@
             age,
             gender,
             activityLevel: currentActivity,
-            goalCalories: 2000
+            goalCalories: 2000,
+            customBmr
           })
         });
 
@@ -436,7 +497,12 @@
           showSuccess('儲存成功！');
 
           const profile = { weight, height, age, gender, activity_level: currentActivity };
-          calculateTDEE(profile);
+          // Use custom BMR if provided, otherwise calculate from basic data
+          if (customBmr) {
+            calculateTDEE(profile, customBmr);
+          } else {
+            calculateTDEE(profile);
+          }
         } else {
           alert(result.error || '儲存失敗');
         }

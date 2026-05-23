@@ -108,6 +108,7 @@ try {
       gender TEXT DEFAULT 'unspecified',
       activity_level TEXT DEFAULT 'sedentary',
       goal_calories INTEGER DEFAULT 2000,
+      custom_bmr REAL,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -396,8 +397,8 @@ export const BarcodeDB = {
 export const UserProfileDB = {
   upsert(userId, data) {
     const stmt = db.prepare(`
-      INSERT INTO user_profiles (user_id, weight, height, age, gender, activity_level, goal_calories)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO user_profiles (user_id, weight, height, age, gender, activity_level, goal_calories, custom_bmr)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET
         weight = excluded.weight,
         height = excluded.height,
@@ -405,6 +406,7 @@ export const UserProfileDB = {
         gender = excluded.gender,
         activity_level = excluded.activity_level,
         goal_calories = excluded.goal_calories,
+        custom_bmr = excluded.custom_bmr,
         updated_at = CURRENT_TIMESTAMP
     `);
     stmt.run(
@@ -414,7 +416,8 @@ export const UserProfileDB = {
       data.age || null,
       data.gender || 'unspecified',
       data.activityLevel || 'sedentary',
-      data.goalCalories || 2000
+      data.goalCalories || 2000,
+      data.customBmr || null
     );
     return this.findByUserId(userId);
   },

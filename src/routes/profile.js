@@ -36,7 +36,7 @@ router.get('/', authMiddleware, (req, res) => {
 // POST /api/profile - Create or update user profile
 router.post('/', authMiddleware, (req, res) => {
   try {
-    const { weight, height, age, gender, activityLevel, goalCalories } = req.body;
+    const { weight, height, age, gender, activityLevel, goalCalories, customBmr } = req.body;
 
     const profile = UserProfileDB.upsert(req.user.id, {
       weight,
@@ -44,7 +44,8 @@ router.post('/', authMiddleware, (req, res) => {
       age,
       gender,
       activityLevel,
-      goalCalories
+      goalCalories,
+      customBmr
     });
 
     res.json({

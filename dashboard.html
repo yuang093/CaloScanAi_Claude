@@ -997,18 +997,27 @@
       // Calculate TDEE if profile available
       let tdee = null;
       let bmr = null;
-      if (profile && profile.weight && profile.height && profile.age) {
-        if (profile.gender === 'male') {
-          bmr = 10 * profile.weight + 6.25 * profile.height - 5 * profile.age + 5;
-        } else if (profile.gender === 'female') {
-          bmr = 10 * profile.weight + 6.25 * profile.height - 5 * profile.age - 161;
-        } else {
-          bmr = 10 * profile.weight + 6.25 * profile.height - 5 * profile.age;
+      if (profile) {
+        // Use custom BMR if available
+        if (profile.custom_bmr) {
+          bmr = profile.custom_bmr;
+          const multipliers = {
+            sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725
+          };
+          tdee = Math.round(bmr * (multipliers[profile.activity_level] || 1.2));
+        } else if (profile.weight && profile.height && profile.age) {
+          if (profile.gender === 'male') {
+            bmr = 10 * profile.weight + 6.25 * profile.height - 5 * profile.age + 5;
+          } else if (profile.gender === 'female') {
+            bmr = 10 * profile.weight + 6.25 * profile.height - 5 * profile.age - 161;
+          } else {
+            bmr = 10 * profile.weight + 6.25 * profile.height - 5 * profile.age;
+          }
+          const multipliers = {
+            sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725
+          };
+          tdee = Math.round(bmr * (multipliers[profile.activity_level] || 1.2));
         }
-        const multipliers = {
-          sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725
-        };
-        tdee = Math.round(bmr * (multipliers[profile.activity_level] || 1.2));
       }
 
       // Build recommendation based on status
