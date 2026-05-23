@@ -528,6 +528,39 @@
     </button>
   </div>
 
+  <!-- Food Log Detail Modal -->
+  <div id="food-detail-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:500px; width:90%; position:relative;">
+      <button onclick="closeFoodDetailModal()" style="position:absolute; top:12px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
+      <div id="food-detail-image" style="width:100%; height:250px; background:var(--color-bg); border-radius:12px; margin-bottom:16px; overflow:hidden;">
+        <img id="food-detail-img" src="" style="width:100%; height:100%; object-fit:cover;">
+      </div>
+      <h3 id="food-detail-name" style="margin-bottom:8px; font-size:1.2rem;"></h3>
+      <p id="food-detail-time" style="color:var(--color-text-muted); font-size:0.85rem; margin-bottom:16px;"></p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div style="background:var(--color-bg); border-radius:12px; padding:16px; text-align:center;">
+          <div id="food-detail-cal" style="font-size:1.5rem; font-weight:700; color:var(--color-primary);">0</div>
+          <div style="font-size:0.8rem; color:var(--color-text-muted);">卡路里 (kcal)</div>
+        </div>
+        <div style="background:var(--color-bg); border-radius:12px; padding:16px; text-align:center;">
+          <div id="food-detail-protein" style="font-size:1.5rem; font-weight:700; color:var(--color-primary);">0g</div>
+          <div style="font-size:0.8rem; color:var(--color-text-muted);">蛋白質</div>
+        </div>
+        <div style="background:var(--color-bg); border-radius:12px; padding:16px; text-align:center;">
+          <div id="food-detail-carbs" style="font-size:1.5rem; font-weight:700; color:var(--color-primary);">0g</div>
+          <div style="font-size:0.8rem; color:var(--color-text-muted);">碳水化合物</div>
+        </div>
+        <div style="background:var(--color-bg); border-radius:12px; padding:16px; text-align:center;">
+          <div id="food-detail-fat" style="font-size:1.5rem; font-weight:700; color:var(--color-primary);">0g</div>
+          <div style="font-size:0.8rem; color:var(--color-text-muted);">脂肪</div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="deleteFoodLogItem()" id="food-detail-delete-btn" style="width:100%; margin-top:16px; background:#e74c3c;">
+        刪除此記錄
+      </button>
+    </div>
+  </div>
+
   <!-- Donation Modal -->
   <div id="donation-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div style="background:var(--color-surface); border-radius:20px; padding:32px; max-width:400px; width:90%; text-align:center;">
@@ -854,7 +887,7 @@
       }
 
       container.innerHTML = foodLog.map(item => `
-        <div class="food-log-item">
+        <div class="food-log-item" onclick="showFoodDetail(${item.id})" style="cursor:pointer;">
           <img src="${item.image}" alt="Food" class="food-log-img">
           <div class="food-log-info">
             <div class="food-log-cal">${item.calories} kcal</div>
@@ -1158,6 +1191,7 @@
           foodLog = result.data.logs.map(log => ({
             id: log.id,
             image: log.image_data ? 'data:image/jpeg;base64,' + log.image_data : '',
+            name: log.description || '未命名食物',
             calories: log.calories,
             protein: log.protein,
             carbs: log.carbs,
@@ -1200,6 +1234,44 @@
 
     function closeDonationModal() {
       document.getElementById('donation-modal').style.display = 'none';
+    }
+
+    let currentFoodDetailId = null;
+
+    function showFoodDetail(id) {
+      const item = foodLog.find(f => f.id === id);
+      if (!item) return;
+      currentFoodDetailId = id;
+      document.getElementById('food-detail-img').src = item.image;
+      document.getElementById('food-detail-name').textContent = item.name || '未命名食物';
+      document.getElementById('food-detail-time').textContent = item.time;
+      document.getElementById('food-detail-cal').textContent = item.calories;
+      document.getElementById('food-detail-protein').textContent = item.protein + 'g';
+      document.getElementById('food-detail-carbs').textContent = item.carbs + 'g';
+      document.getElementById('food-detail-fat').textContent = item.fat + 'g';
+      document.getElementById('food-detail-modal').style.display = 'flex';
+    }
+
+    function closeFoodDetailModal() {
+      document.getElementById('food-detail-modal').style.display = 'none';
+      currentFoodDetailId = null;
+    }
+
+    async function deleteFoodLogItem() {
+      if (!currentFoodDetailId) return;
+      if (!confirm('確定要刪除這個記錄嗎？')) return;
+      try {
+        const res = await fetch('/api/food/logs/' + currentFoodDetailId, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        if (res.ok) {
+          closeFoodDetailModal();
+          loadFoodLog();
+        }
+      } catch (err) {
+        alert('刪除失敗');
+      }
     }
 
     let cameraStream = null;
