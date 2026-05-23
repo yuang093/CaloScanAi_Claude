@@ -32,25 +32,6 @@ COPY --from=builder /app ./
 # Create directories for data and uploads
 RUN mkdir -p /app/data /app/uploads && chown -R nodejs:nodejs /app
 
-# Entrypoint script to fix permissions for mounted volumes
-COPY <<EOF /entrypoint.sh
-#!/bin/sh
-set -e
-
-# Fix permissions for mounted volumes (in case host directories are created as root)
-if [ -d "/app/data" ]; then
-    chown -R nodejs:nodejs /app/data 2>/dev/null || true
-fi
-if [ -d "/app/uploads" ]; then
-    chown -R nodejs:nodejs /app/uploads 2>/dev/null || true
-fi
-
-exec "$@"
-EOF
-
-RUN chmod +x /entrypoint.sh && sed -i 's/\r$//' /entrypoint.sh
-
-ENTRYPOINT ["/entrypoint.sh"]
 USER nodejs
 
 ENV NODE_ENV=production
@@ -62,5 +43,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
-# Start application
-CMD ["node", "src/server/index.js"]
+# Start application - fix permissions for mounted volumes at runtime
+CMD ["sh", "-c", "chown -R nodejs:nodejs /app/data /app/uploads 2>/dev/null || true; node src/server/index.js"]
