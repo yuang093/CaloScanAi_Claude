@@ -1083,12 +1083,13 @@
           let breakfastCal = 0, lunchCal = 0, dinnerCal = 0;
           let breakfastFoods = [], lunchFoods = [], dinnerFoods = [];
           todayLogs.forEach(log => {
-            const hour = new Date(log.created_at).getHours();
+            const utcDate = new Date(log.created_at);
+            const taiwanHour = (utcDate.getHours() + 8) % 24;
             const foodName = log.description || '未命名食物';
-            if (hour < 11) {
+            if (taiwanHour < 11) {
               breakfastCal += log.calories || 0;
               breakfastFoods.push(foodName);
-            } else if (hour < 17) {
+            } else if (taiwanHour < 17) {
               lunchCal += log.calories || 0;
               lunchFoods.push(foodName);
             } else {
