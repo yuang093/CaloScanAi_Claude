@@ -320,6 +320,7 @@
       <button class="nav-link" onclick="window.location.href='profile.html'">個人資料</button>
       <button class="nav-link" id="admin-btn" onclick="window.location.href='admin.html'" style="display:none;">管理介面</button>
     </div>
+    <button class="nav-link donation-btn" onclick="openDonationModal()" style="color: var(--color-primary); font-weight: 600;">斗內</button>
     <button class="nav-link" onclick="logout()">登出</button>
   </nav>
 
@@ -428,6 +429,11 @@
         <div id="daily-quote" style="text-align:center; margin-top:16px; font-style:italic; color:var(--color-text-muted);"></div>
       </div>
 
+      <div class="analysis-result" id="recommendation-card" style="display:none;">
+        <h3>💡 減脂建議</h3>
+        <div id="recommendation-text" style="font-size:0.95rem; line-height:1.7; color:var(--color-text-muted);"></div>
+      </div>
+
       <div class="analysis-result">
         <h3>🍽️ 餐次摘要</h3>
         <div style="display:flex; flex-direction:column; gap:12px;">
@@ -502,6 +508,25 @@
     <button class="theme-btn" id="theme-btn" style="background:#2d6a4f;" onclick="toggleThemeDropdown()">
       🌿
     </button>
+  </div>
+
+  <!-- Donation Modal -->
+  <div id="donation-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:var(--color-surface); border-radius:20px; padding:32px; max-width:400px; width:90%; text-align:center;">
+      <div style="font-size:3rem; margin-bottom:16px;">☕</div>
+      <h2 style="margin-bottom:12px;">支持 CaloScanAi</h2>
+      <p style="color:var(--color-text-muted); margin-bottom:24px; line-height:1.6;">
+        如果 CaloScanAi 對你有幫助，歡迎贊助一杯咖啡，讓我能繼續維護與開發！
+      </p>
+      <div style="background:var(--color-bg); border-radius:12px; padding:16px; margin-bottom:20px;">
+        <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:8px;">贊助方式</p>
+        <p style="font-weight:600;">藍新金流 - 信用卡 / 轉帳</p>
+        <p style="font-size:0.8rem; color:var(--color-text-muted); margin-top:4px;">費用將用於伺服器與 API 支出</p>
+      </div>
+      <button class="btn-primary" onclick="closeDonationModal()" style="background:var(--color-text-muted);">
+        先不用，謝謝
+      </button>
+    </div>
   </div>
 
   <script>
@@ -941,10 +966,93 @@
           if (quoteEl && quote) {
             quoteEl.textContent = '"' + quote.quote + '"' + (quote.author ? ' — ' + quote.author : '');
           }
+
+          // Generate fat loss recommendation
+          generateRecommendation(stats, goalCalories, profileResult.data);
         }
       } catch (error) {
         console.error('Failed to fetch progress:', error);
       }
+    }
+
+    function generateRecommendation(stats, goalCalories, profile) {
+      const recText = document.getElementById('recommendation-text');
+      const recCard = document.getElementById('recommendation-card');
+      if (!recText || !recCard) return;
+
+      const consumed = stats.calories || 0;
+      const protein = stats.protein || 0;
+      const carbs = stats.carbs || 0;
+      const fat = stats.fat || 0;
+      const remaining = goalCalories - consumed;
+
+      let recommendation = '';
+
+      // Calculate macros ratio
+      const totalMacros = protein + carbs + fat;
+      const proteinRatio = totalMacros > 0 ? Math.round((protein / totalMacros) * 100) : 0;
+      const carbsRatio = totalMacros > 0 ? Math.round((carbs / totalMacros) * 100) : 0;
+      const fatRatio = totalMacros > 0 ? Math.round((fat / totalMacros) * 100) : 0;
+
+      // Calculate TDEE if profile available
+      let tdee = null;
+      let bmr = null;
+      if (profile && profile.weight && profile.height && profile.age) {
+        if (profile.gender === 'male') {
+          bmr = 10 * profile.weight + 6.25 * profile.height - 5 * profile.age + 5;
+        } else if (profile.gender === 'female') {
+          bmr = 10 * profile.weight + 6.25 * profile.height - 5 * profile.age - 161;
+        } else {
+          bmr = 10 * profile.weight + 6.25 * profile.height - 5 * profile.age;
+        }
+        const multipliers = {
+          sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725
+        };
+        tdee = Math.round(bmr * (multipliers[profile.activity_level] || 1.2));
+      }
+
+      // Build recommendation based on status
+      if (consumed === 0) {
+        recommendation = '今天還沒記錄任何食物！上傳照片開始記錄吧。';
+      } else if (consumed > goalCalories * 1.1) {
+        recommendation = '今日熱量已超標 ' + Math.round(consumed - goalCalories) + ' kcal，建議：「' +
+          '今天吃得有點多，建議明天早餐減少約 ' + Math.round((consumed - goalCalories) / 2) + ' kcal。' +
+          '可以多吃蔬菜水果，減少油炸食物。」';
+      } else if (consumed >= goalCalories * 0.9) {
+        recommendation = '今日熱量已達目标的 90% 以上，建議：「' +
+          '熱量攝取接近目標了！建議晚餐選擇清淡食物，如烤魚、沙拉等。' +
+          '注意別再吃零食或含糖飲料了。」';
+      } else if (remaining > goalCalories * 0.4) {
+        recommendation = '今日熱量落後進度，建議：「' +
+          '熱量缺口較大，建議在午後或晚餐前補充一份水果或堅果，' +
+          '避免過度飢餓導致晚餐暴飲暴食。」';
+      } else {
+        recommendation = '今日進度良好，建議：「' +
+          '繼續保持這樣的節奏！建議晚餐均衡攝取蛋白質和蔬菜，' +
+          '飯量維持在半碗以內。」';
+      }
+
+      // Add macro advice if stats are available
+      if (totalMacros > 0) {
+        if (proteinRatio < 20) {
+          recommendation += ' 蛋白質攝取偏低，建議多吃雞胸肉、蛋、豆製品。';
+        } else if (proteinRatio > 50) {
+          recommendation += ' 蛋白質佔比過高，建議增加蔬菜攝取。';
+        }
+      }
+
+      // Add TDEE context if available
+      if (tdee && consumed > 0) {
+        const dailyDeficit = consumed - tdee;
+        if (dailyDeficit < -300) {
+          recommendation += ' 依據您的 TDEE (' + tdee + ' kcal)，今日攝取偏低，建議適度增加熱量以維持基礎代謝。';
+        } else if (dailyDeficit > 300) {
+          recommendation += ' 依據您的 TDEE (' + tdee + ' kcal)，今日熱量赤字過大，建議不要太極端。';
+        }
+      }
+
+      recText.textContent = recommendation;
+      recCard.style.display = 'block';
     }
 
     function logout() {
@@ -1053,6 +1161,14 @@
       document.getElementById('barcode-result').style.display = 'none';
       document.getElementById('add-barcode-btn').style.display = 'none';
       stopCameraScan();
+    }
+
+    function openDonationModal() {
+      document.getElementById('donation-modal').style.display = 'flex';
+    }
+
+    function closeDonationModal() {
+      document.getElementById('donation-modal').style.display = 'none';
     }
 
     let cameraStream = null;
