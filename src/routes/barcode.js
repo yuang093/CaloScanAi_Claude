@@ -181,13 +181,17 @@ router.post('/create-from-nutrition', authMiddleware, async (req, res, next) => 
   try {
     const { barcode, image } = req.body;
 
+    console.log('[Barcode] create-from-nutrition called:', { barcode, imageLength: image?.length });
+
     if (!barcode || !image) {
+      console.log('[Barcode] Validation failed: missing barcode or image');
       return res.status(400).json({ error: '條碼和營養標示圖片為必填欄位' });
     }
 
     // Check if already exists
     const existing = BarcodeDB.findByBarcode(barcode);
     if (existing) {
+      console.log('[Barcode] Barcode already exists:', barcode);
       return res.status(409).json({
         error: '此條碼已存在於資料庫',
         data: existing
@@ -195,13 +199,18 @@ router.post('/create-from-nutrition', authMiddleware, async (req, res, next) => 
     }
 
     // Analyze nutrition label image
+    console.log('[Barcode] Calling analyzeNutritionLabel...');
     const result = await analyzeNutritionLabel(image);
+    console.log('[Barcode] analyzeNutritionLabel result:', JSON.stringify(result));
+
     if (!result.success) {
+      console.log('[Barcode] AI analysis failed:', result.error);
       return res.status(500).json({ error: result.error || '營養標示解析失敗' });
     }
 
     // Parse the AI response
     const parsed = parseNutritionOCRResult(result.data.content);
+    console.log('[Barcode] Parsed nutrition data:', JSON.stringify(parsed));
 
     // Create barcode record
     const barcodeData = {

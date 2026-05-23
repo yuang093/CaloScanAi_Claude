@@ -209,6 +209,8 @@ export function parseNutritionalData(content) {
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export async function analyzeNutritionLabel(imageBase64) {
+  console.log('[Minimax] analyzeNutritionLabel called, image length:', imageBase64?.length);
+
   const prompt = `請仔細辨識這張營養標示圖片中的所有文字資訊。
 台灣的營養標示通常包含：
 - 產品名稱
@@ -233,7 +235,10 @@ export async function analyzeNutritionLabel(imageBase64) {
 
 如果無法辨識某個欄位，請設為 null。不要虛構資料，只回傳 JSON。`;
 
-  return analyzeFoodImage(imageBase64, prompt);
+  console.log('[Minimax] Calling analyzeFoodImage...');
+  const result = await analyzeFoodImage(imageBase64, prompt);
+  console.log('[Minimax] analyzeFoodImage returned:', JSON.stringify(result));
+  return result;
 }
 
 /**
