@@ -1186,9 +1186,11 @@
           }
         });
         const result = await response.json();
+        console.log('[loadFoodLog] API response:', result);
 
-        if (result.success && result.data.logs.length > 0) {
-          foodLog = result.data.logs.map(log => ({
+        const logs = result.data?.logs || [];
+        if (logs.length > 0) {
+          foodLog = logs.map(log => ({
             id: log.id,
             image: log.image_data ? 'data:image/jpeg;base64,' + log.image_data : '',
             name: log.description || '未命名食物',
@@ -1198,8 +1200,10 @@
             fat: log.fat,
             time: new Date(log.created_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })
           }));
-          renderFoodLog();
+        } else {
+          foodLog = [];
         }
+        renderFoodLog();
       } catch (error) {
         console.error('Failed to load food log:', error);
       }
