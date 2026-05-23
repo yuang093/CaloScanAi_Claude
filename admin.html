@@ -277,11 +277,11 @@
             <tr>
               <th>ID</th>
               <th>用戶</th>
+              <th>食物名稱</th>
               <th>熱量</th>
               <th>蛋白質</th>
               <th>碳水</th>
               <th>脂肪</th>
-              <th>時間</th>
             </tr>
           </thead>
           <tbody id="logs-table-body">
@@ -523,11 +523,11 @@
               <tr>
                 <td>${log.id}</td>
                 <td>${log.user_name}</td>
+                <td>${(log.description || '未知食物').substring(0, 30)}</td>
                 <td>${log.calories} kcal</td>
                 <td>${log.protein}g</td>
                 <td>${log.carbs}g</td>
                 <td>${log.fat}g</td>
-                <td>${new Date(log.created_at).toLocaleString('zh-TW')}</td>
               </tr>
             `).join('');
           }
