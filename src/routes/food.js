@@ -73,7 +73,7 @@ router.post('/upload', authMiddleware, async (req, res, next) => {
       protein: nutrition.totalProtein || 0,
       carbs: nutrition.totalCarbs || 0,
       fat: nutrition.totalFat || 0,
-      description: content.substring(0, 500)
+      description: nutrition.name || nutrition.description || 'AI 分析食物'
     });
 
     console.log('[Food] Food log created:', {

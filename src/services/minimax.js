@@ -146,13 +146,14 @@ export async function analyzeFoodImage(imageBase64, prompt, retryCount = 0) {
 
 /**
  * Extract nutritional data from MiniMax response
- * Expects JSON format: { totalCalories, totalProtein, totalCarbs, totalFat, description }
+ * Expects JSON format: { name, totalCalories, totalProtein, totalCarbs, totalFat, description }
  * @param {string} content - The response content from MiniMax
  * @returns {object} Parsed nutritional data
  */
 export function parseNutritionalData(content) {
   if (!content || typeof content !== 'string') {
     return {
+      name: '',
       description: content || '',
       foods: [],
       totalCalories: 0,
@@ -167,11 +168,24 @@ export function parseNutritionalData(content) {
   if (jsonMatch) {
     try {
       const jsonData = JSON.parse(jsonMatch[0]);
-      if (typeof jsonData.totalCalories === 'number') {
+      // Check if this is a nutrition response (has calories)
+      if (typeof jsonData.totalCalories === 'number' || typeof jsonData.calories === 'number') {
+        // Extract food name - could be in 'name', 'foods' array, or 'description'
+        let name = '';
+        if (jsonData.name) {
+          name = jsonData.name;
+        } else if (jsonData.foods && Array.isArray(jsonData.foods) && jsonData.foods.length > 0) {
+          name = jsonData.foods[0].name || jsonData.foods[0].description || jsonData.foods[0];
+        } else if (jsonData.description) {
+          // description might contain the food name
+          name = jsonData.description.substring(0, 50);
+        }
+
         return {
-          description: jsonData.description || content,
-          foods: [],
-          totalCalories: jsonData.totalCalories || 0,
+          name: name,
+          description: jsonData.description || jsonData.name || content.substring(0, 200),
+          foods: jsonData.foods || [],
+          totalCalories: jsonData.totalCalories || jsonData.calories || 0,
           totalProtein: jsonData.totalProtein || 0,
           totalCarbs: jsonData.totalCarbs || 0,
           totalFat: jsonData.totalFat || 0
@@ -188,7 +202,6 @@ export function parseNutritionalData(content) {
   let totalCalories = 0;
 
   if (matches.length > 0) {
-    // Take the last matched value (typically the total)
     const lastMatch = matches[matches.length - 1];
     totalCalories = parseInt(lastMatch[1]);
   }
@@ -202,7 +215,8 @@ export function parseNutritionalData(content) {
   }
 
   return {
-    description: content,
+    name: '',
+    description: content.substring(0, 200),
     foods: [],
     totalCalories: totalCalories || 0,
     totalProtein: 0,

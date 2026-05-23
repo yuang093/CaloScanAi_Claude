@@ -520,12 +520,12 @@
             tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#999;">尚無食物記錄</td></tr>';
           } else {
             tbody.innerHTML = result.data.logs.map(log => {
-              // 嘗試從 description 擷取食物名稱
+              // 解析食物名稱（可能是 JSON 或純文字）
               let foodName = log.description || '未知食物';
               try {
                 if (foodName.startsWith('{')) {
                   const parsed = JSON.parse(foodName);
-                  foodName = parsed.name || parsed.description || '未知食物';
+                  foodName = parsed.name || parsed.description || parsed.foods?.[0]?.name || '未知食物';
                 }
               } catch (e) {}
               return `
