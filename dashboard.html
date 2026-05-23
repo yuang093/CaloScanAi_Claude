@@ -1242,6 +1242,7 @@
         }
         console.log('[loadFoodLog] foodLog:', JSON.stringify(foodLog));
         updateProgressTotals(goalCalories);
+        renderFoodLog();
       } catch (error) {
         console.error('Failed to load food log:', error);
       }
