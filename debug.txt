@@ -1,21 +1,26 @@
-root@localhost:/opt/caloscanai_claude# cd /opt/caloscanai_claude
-root@localhost:/opt/caloscanai_claude# git pull origin main
-From https://github.com/yuang093/CaloScanAi_Claude
- * branch            main       -> FETCH_HEAD
-Already up to date.
-root@localhost:/opt/caloscanai_claude# docker compose down
-[+] Running 3/3
- ✔ Container caloscanai_nginx                    Removed                                                                                                                                               0.2s 
- ✔ Container caloscanai_app                      Removed                                                                                                                                               0.1s 
- ! Network caloscanai_claude_caloscanai_network  Resource is still in use                                                                                                                              0.0s 
-root@localhost:/opt/caloscanai_claude# docker compose up --build -d
-[+] Building 0.0s (0/0)                                                                                                                                                                                     
-[+] Running 3/3
- ✔ app                         Built                                                                                                                                                                   0.0s 
- ✔ Container caloscanai_app    Started                                                                                                                                                                 0.4s 
- ✔ Container caloscanai_nginx  Started                                                                                                                                                                 0.7s 
-root@localhost:/opt/caloscanai_claude# docker compose logs -f app
-caloscanai_app  | ⚠️ food_logs.updated_at 欄位遷移警告: Cannot add a column with non-constant default
-caloscanai_app  | ⚠️ APP_URL not set, CORS is open to all origins
-caloscanai_app  | 🚀 CaloScanAi API running on port 3000
-caloscanai_app  | 📊 Health check: http://localhost:3000/health
+每日進度
+2026年5月24日
+
+🔥 今日攝取
+0
+卡路里 (kcal)
+0g
+蛋白質
+0g
+碳水化合物
+0g
+脂肪
+目標攝取：2266 kcal
+
+剩餘 2000 kcal
+
+"吃到飽餐廳選擇順序。" — 佚名
+💡 減脂建議
+今天還沒記錄任何食物！上傳照片開始記錄吧。
+🍽️ 餐次摘要
+🌅 早餐
+450 kcal
+☀️ 午餐
+680 kcal
+🌙 晚餐
+320 kcal

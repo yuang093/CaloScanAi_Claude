@@ -32,43 +32,31 @@ router.get('/daily', authMiddleware, async (req, res, next) => {
         goalCalories = Math.round(tdee * 0.85);
       }
     }
-
-    // Get or create daily progress record
-    let progress = DailyProgressDB.findByUserAndDate(req.user.id, today);
-    console.log('[progress/daily] existing progress:', progress);
-
-    if (!progress) {
-      // Create initial progress for today
-      progress = DailyProgressDB.upsert(req.user.id, today, {
-        totalCalories: todayStats.total_calories,
-        totalProtein: todayStats.total_protein,
-        totalCarbs: todayStats.total_carbs,
-        totalFat: todayStats.total_fat,
-        goalCalories
-      });
-      console.log('[progress/daily] created progress:', progress);
-    }
+    console.log('[progress/daily] goalCalories:', goalCalories);
 
     // Get random quote
     const quote = QuoteDB.getRandom();
 
-    // Calculate percentages
-    const caloriesPercent = Math.round((progress.total_calories / progress.goal_calories) * 100);
-    const remaining = progress.goal_calories - progress.total_calories;
+    // Always use todayStats for current stats (fresh from food_logs)
+    const stats = {
+      calories: todayStats.total_calories,
+      protein: todayStats.total_protein,
+      carbs: todayStats.total_carbs,
+      fat: todayStats.total_fat,
+      mealCount: todayStats.meal_count
+    };
+
+    // Calculate percentages using current stats and goal
+    const caloriesPercent = Math.round((stats.calories / goalCalories) * 100);
+    const remaining = goalCalories - stats.calories;
 
     res.json({
       success: true,
       data: {
         date: today,
-        stats: {
-          calories: progress.total_calories,
-          protein: progress.total_protein,
-          carbs: progress.total_carbs,
-          fat: progress.total_fat,
-          mealCount: todayStats.meal_count
-        },
+        stats,
         goals: {
-          calories: progress.goal_calories,
+          calories: goalCalories,
           caloriesPercent: Math.min(caloriesPercent, 100),
           remaining: Math.max(remaining, 0)
         },
