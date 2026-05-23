@@ -171,6 +171,29 @@ router.put('/logs/:id', authMiddleware, async (req, res) => {
     fat
   });
 
+  // Calculate goalCalories for daily progress
+  const calcGoalCalories = () => {
+    let goal = 2000;
+    try {
+      const profile = UserProfileDB.findByUserId(req.user.id);
+      if (profile) {
+        const { custom_bmr, activity_level, weight, height, age, gender } = profile;
+        let bmr = custom_bmr;
+        if (!bmr) {
+          if (gender === 'male') bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+          else if (gender === 'female') bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+          else bmr = 10 * weight + 6.25 * height - 5 * age;
+        }
+        const mults = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725 };
+        const tdee = Math.round(bmr * (mults[activity_level] || 1.2));
+        goal = Math.round(tdee * 0.85);
+      }
+    } catch (e) {
+      console.error('Failed to get goal:', e.message);
+    }
+    return goal;
+  };
+
   // Update daily progress
   const today = getLocalDate();
   const todayStats = FoodLogDB.getTodayStats(req.user.id);
@@ -178,7 +201,8 @@ router.put('/logs/:id', authMiddleware, async (req, res) => {
     totalCalories: todayStats.total_calories,
     totalProtein: todayStats.total_protein,
     totalCarbs: todayStats.total_carbs,
-    totalFat: todayStats.total_fat
+    totalFat: todayStats.total_fat,
+    goalCalories: calcGoalCalories()
   });
 
   res.json({
@@ -205,7 +229,8 @@ router.delete('/logs/:id', authMiddleware, async (req, res) => {
       totalCalories: todayStats.total_calories,
       totalProtein: todayStats.total_protein,
       totalCarbs: todayStats.total_carbs,
-      totalFat: todayStats.total_fat
+      totalFat: todayStats.total_fat,
+      goalCalories: 2000
     });
   }
 
