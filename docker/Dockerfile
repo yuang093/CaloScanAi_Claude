@@ -48,7 +48,7 @@ fi
 exec "$@"
 EOF
 
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh && sed -i 's/\r$//' /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
 USER nodejs

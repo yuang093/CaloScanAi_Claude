@@ -1,0 +1,14 @@
+實戰級除錯 Prompt（請直接複製以下內容）
+專案的配置已經非常完整，請幫我針對以下 2 個「實機營運時常見的崩潰陷阱」進行最終修復。請直接提供修改後的程式碼：
+
+1. 修正 entrypoint.sh 的執行權限與換行格式陷阱 (docker/Dockerfile)
+雖然我們加入了 entrypoint.sh，但如果這個檔案是在 Windows/Mac 環境下建立的，掛載進 Linux 容器時經常會發生 Permission denied (缺少執行權限) 或 /bin/sh^M: bad interpreter (CRLF 換行字元錯誤) 而導致伺服器無法啟動。
+
+修改要求：請在 Dockerfile 複製 entrypoint.sh 的步驟後，加上 RUN chmod +x entrypoint.sh 確保執行權限。若基底圖像是 Alpine，建議同時利用 sed -i 's/\r$//' entrypoint.sh 來過濾掉潛在的 Windows 換行字元。
+
+2. 修復 Canvas 壓縮導致的 EXIF 旋轉問題 (iOS 照片躺平 Bug) (dashboard.html)
+前端的 Canvas 壓縮邏輯雖然成功縮小了檔案，但這會直接抹除原圖的 EXIF 方向數據 (Orientation)。特別是當實際拿著 iPhone 直立拍照並上傳時，畫到 Canvas 上的餐點照片極高機率會向左或向右倒轉 90 度，這對影像辨識與使用者體驗影響極大。
+
+修改要求：請在 dashboard.html 的圖片壓縮邏輯中，加入對圖片 EXIF Orientation 的讀取與處理（可考慮引入輕量級的 blueimp-load-image 或 exifr 套件，或是利用現代瀏覽器預設的 Canvas 繪製行為）。確保在 Canvas 縮放前，照片的方向會被正確校正。
+
+請擬定修改計畫藍圖
