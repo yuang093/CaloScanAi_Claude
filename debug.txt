@@ -1,23 +1,21 @@
-每日進度
-2026年5月24日
-
-🔥 今日攝取
-1779
-卡路里 (kcal)
-40.400000000000006g
-蛋白質
-250.2g
-碳水化合物
-68.2g
-脂肪
-目標攝取：2000 kcal
-
-剩餘 221 kcal
-
-🍽️ 餐次摘要
-🌅 早餐
-450 kcal
-☀️ 午餐
-680 kcal
-🌙 晚餐
-320 kcal
+root@localhost:/opt/caloscanai_claude# cd /opt/caloscanai_claude && docker compose logs app --tail=20
+caloscanai_app  | [progress/daily] userId: 2
+caloscanai_app  | [progress/daily] todayStats: {
+caloscanai_app  |   total_calories: 0,
+caloscanai_app  |   total_protein: 0,
+caloscanai_app  |   total_carbs: 0,
+caloscanai_app  |   total_fat: 0,
+caloscanai_app  |   meal_count: 0
+caloscanai_app  | }
+caloscanai_app  | ❌ Error: db is not defined
+caloscanai_app  | Stack: ReferenceError: db is not defined
+caloscanai_app  |     at file:///app/src/routes/progress.js:20:21
+caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+caloscanai_app  |     at next (/app/node_modules/express/lib/router/route.js:149:13)
+caloscanai_app  |     at authMiddleware (file:///app/src/middleware/auth.js:37:3)
+caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+caloscanai_app  |     at next (/app/node_modules/express/lib/router/route.js:149:13)
+caloscanai_app  |     at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
+caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+caloscanai_app  |     at /app/node_modules/express/lib/router/index.js:284:15
+caloscanai_app  |     at Function.process_params (/app/node_modules/express/lib/router/index.js:346:12)

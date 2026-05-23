@@ -16,10 +16,6 @@ router.get('/daily', authMiddleware, async (req, res, next) => {
     const todayStats = FoodLogDB.getTodayStats(req.user.id);
     console.log('[progress/daily] todayStats:', todayStats);
 
-    // Check if there are any logs at all for this user
-    const allLogs = db.prepare('SELECT created_at, calories FROM food_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 5').all(req.user.id);
-    console.log('[progress/daily] recent logs for user:', allLogs);
-
     // Get user's profile for goalCalories
     const profile = UserProfileDB.findByUserId(req.user.id);
     let goalCalories = 2000;
