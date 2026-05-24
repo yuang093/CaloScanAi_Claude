@@ -552,7 +552,7 @@
       </div>
       <input type="file" id="barcode-file-input" accept="image/*" style="display:none;" onchange="handleBarcodeFileSelect(event)">
       <div id="barcode-preview-container" style="display:none; margin-bottom:16px;">
-        <img id="barcode-preview-img" style="width:100%; border-radius:12px; background:#000;">
+        <img id="barcode-preview-img" style="width:100%; max-height:200px; object-fit:contain; border-radius:12px; background:#000;">
         <button id="analyze-barcode-btn" onclick="reAnalyzeBarcode()" class="btn btn-secondary" style="margin-top:8px; width:100%;">重新分析</button>
       </div>
       <div id="barcode-input-container">
