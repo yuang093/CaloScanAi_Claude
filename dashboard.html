@@ -2099,7 +2099,7 @@
 
     async function loadFavorites() {
       try {
-        const response = await fetch('/api/food/search?q=', {
+        const response = await fetch('/api/food/search', {
           headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
         });
         const result = await response.json();
@@ -2107,14 +2107,14 @@
 
         if (result.success && result.data.length > 0) {
           container.innerHTML = result.data.slice(0, 20).map(food => {
-            const escapedName = food.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+            const escapedName = (food.name || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
             return `
             <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--color-border);">
               <div>
-                <div style="font-weight:600;">${escapeHtml(food.name)}</div>
+                <div style="font-weight:600;">${escapeHtml(food.name || '未命名')}</div>
                 <div style="font-size:0.8rem; color:var(--color-text-muted);">${escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
               </div>
-              <button onclick="addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat})" class="btn btn-primary btn-small">加入</button>
+              <button onclick="addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0})" class="btn btn-primary btn-small">加入</button>
             </div>
           `}).join('');
         } else {
@@ -2122,6 +2122,7 @@
         }
       } catch (error) {
         console.error('Load favorites error:', error);
+        document.getElementById('favorites-list').innerHTML = '<div style="text-align:center; color:#e74c3c; padding:20px;">載入失敗</div>';
       }
     }
 
