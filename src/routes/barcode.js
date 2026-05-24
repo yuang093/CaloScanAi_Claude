@@ -72,6 +72,7 @@ router.get('/lookup/:barcode', (req, res) => {
     res.json({
       success: true,
       data: {
+        id: product.id,
         barcode,
         name: product.name,
         brand: product.brand,
@@ -114,6 +115,7 @@ router.post('/lookup', (req, res) => {
     res.json({
       success: true,
       data: {
+        id: product.id,
         barcode,
         name: product.name,
         brand: product.brand,

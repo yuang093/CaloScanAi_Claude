@@ -82,6 +82,26 @@ router.post('/upload', authMiddleware, async (req, res, next) => {
       imageLength: base64Data?.length
     });
 
+    // Also add to food database (barcodes table) - generate pseudo-barcode for AI analyzed foods
+    const foodName = nutrition.name || nutrition.description || 'AI 分析食物';
+    const pseudoBarcode = 'AI_' + Date.now();
+    try {
+      BarcodeDB.create({
+        barcode: pseudoBarcode,
+        name: foodName,
+        brand: 'AI 分析',
+        calories: nutrition.totalCalories || 0,
+        protein: nutrition.totalProtein || 0,
+        carbs: nutrition.totalCarbs || 0,
+        fat: nutrition.totalFat || 0,
+        servingSize: '1 份'
+      });
+      console.log('[Food] Food database entry created for:', foodName);
+    } catch (e) {
+      // Ignore if already exists
+      console.log('[Food] Food database entry may already exist:', e.message);
+    }
+
     // Update daily progress with TDEE goal
     const today = getLocalDate();
     const todayStats = FoodLogDB.getTodayStats(req.user.id);

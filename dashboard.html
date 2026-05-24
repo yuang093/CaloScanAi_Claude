@@ -1121,9 +1121,9 @@
           document.getElementById('meal-breakfast-cal').textContent = breakfastCal + ' kcal';
           document.getElementById('meal-lunch-cal').textContent = lunchCal + ' kcal';
           document.getElementById('meal-dinner-cal').textContent = dinnerCal + ' kcal';
-          document.getElementById('meal-breakfast-foods').textContent = breakfastFoods.join('、') || '尚無記錄';
-          document.getElementById('meal-lunch-foods').textContent = lunchFoods.join('、') || '尚無記錄';
-          document.getElementById('meal-dinner-foods').textContent = dinnerFoods.join('、') || '尚無記錄';
+          document.getElementById('meal-breakfast-foods').textContent = breakfastFoods.length > 0 ? breakfastFoods.length + ' 種食物' : '尚無記錄';
+          document.getElementById('meal-lunch-foods').textContent = lunchFoods.length > 0 ? lunchFoods.length + ' 種食物' : '尚無記錄';
+          document.getElementById('meal-dinner-foods').textContent = dinnerFoods.length > 0 ? dinnerFoods.length + ' 種食物' : '尚無記錄';
 
           document.getElementById('goal-cal-display').textContent = goalCalories;
 
@@ -1693,23 +1693,28 @@
     function addBarcodeToLog() {
       if (!barcodeProductData) return;
 
-      const entry = {
-        id: Date.now(),
-        image: barcodeCapturedImage ? 'data:image/jpeg;base64,' + barcodeCapturedImage : '',
-        name: barcodeProductData.name || '未命名食物',
-        calories: barcodeProductData.calories || 0,
-        protein: barcodeProductData.protein || 0,
-        carbs: barcodeProductData.carbs || 0,
-        fat: barcodeProductData.fat || 0,
-        description: barcodeProductData.name,
-        time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })
-      };
-
-      foodLog.unshift(entry);
-      renderFoodLog();
-      updateProgressTotals();
-      closeBarcodeModal();
-      barcodeCapturedImage = null; // Reset after adding
+      // Call API to add to food log on server
+      fetch('/api/food/add-from-database', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify({ barcodeId: barcodeProductData.id })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          closeBarcodeModal();
+          loadFoodLog();
+        } else {
+          alert(result.error || '加入失敗');
+        }
+      })
+      .catch(err => {
+        alert('網路錯誤');
+        console.error('Add barcode to log error:', err);
+      });
     }
 
     let currentNutritionBarcode = null;
