@@ -826,6 +826,10 @@ export const BarcodeDB = {
     return db.prepare('SELECT * FROM barcodes WHERE barcode = ?').get(barcode);
   },
 
+  getAll() {
+    return db.prepare('SELECT * FROM barcodes ORDER BY created_at DESC LIMIT 50').all();
+  },
+
   search(term) {
     return db.prepare(`
       SELECT * FROM barcodes

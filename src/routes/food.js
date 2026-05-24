@@ -267,7 +267,7 @@ router.get('/search', authMiddleware, async (req, res) => {
   let results;
   if (!q || q.trim().length < 1) {
     // Return all barcodes when no query provided
-    results = db.prepare('SELECT * FROM barcodes ORDER BY created_at DESC LIMIT 50').all();
+    results = BarcodeDB.getAll();
   } else {
     const searchTerm = '%' + q.trim() + '%';
     results = BarcodeDB.search(searchTerm);
