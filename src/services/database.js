@@ -829,7 +829,7 @@ export const BarcodeDB = {
 
   update(id, data) {
     const stmt = db.prepare(`
-      UPDATE barcodes SET barcode = ?, name = ?, brand = ?, calories = ?, protein = ?, carbs = ?, fat = ?, serving_size = ?, updated_at = CURRENT_TIMESTAMP
+      UPDATE barcodes SET barcode = ?, name = ?, brand = ?, calories = ?, protein = ?, carbs = ?, fat = ?, serving_size = ?
       WHERE id = ?
     `);
     stmt.run(

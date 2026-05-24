@@ -295,7 +295,7 @@ router.put('/barcodes/:id', adminMiddleware, (req, res) => {
 
   const stmt = db.prepare(`
     UPDATE barcodes
-    SET barcode = ?, name = ?, brand = ?, serving_size = ?, calories = ?, protein = ?, carbs = ?, fat = ?, updated_at = CURRENT_TIMESTAMP
+    SET barcode = ?, name = ?, brand = ?, serving_size = ?, calories = ?, protein = ?, carbs = ?, fat = ?
     WHERE id = ?
   `);
   const result = stmt.run(barcode || '', name, brand || '', servingSize || '', calories, protein || 0, carbs || 0, fat || 0, req.params.id);
