@@ -1,7 +1,7 @@
 import express from 'express';
 import { analyzeFoodImage, parseNutritionalData } from '../services/minimax.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { FoodLogDB, DailyProgressDB, UserProfileDB, BarcodeDB } from '../services/database.js';
+import { FoodLogDB, DailyProgressDB, UserProfileDB, BarcodeDB, FavoritesDB } from '../services/database.js';
 import { getLocalDate } from '../utils/date.js';
 
 const router = express.Router();
@@ -280,15 +280,30 @@ router.get('/search', authMiddleware, async (req, res) => {
 // POST /api/food/add-from-database - Add food from database to log (authenticated)
 router.post('/add-from-database', authMiddleware, async (req, res, next) => {
   try {
-    const { barcodeId } = req.body;
+    const { barcodeId, isFavorite } = req.body;
 
     if (!barcodeId) {
       return res.status(400).json({ error: '食物 ID 為必填欄位' });
     }
 
-    const food = BarcodeDB.findById(parseInt(barcodeId));
-    if (!food) {
-      return res.status(404).json({ error: '找不到此食物資料' });
+    let food;
+    if (isFavorite) {
+      const favorite = FavoritesDB.findById(parseInt(barcodeId));
+      if (!favorite || favorite.user_id !== req.user.id) {
+        return res.status(404).json({ error: '找不到此最愛項目' });
+      }
+      food = {
+        name: favorite.name,
+        calories: favorite.calories,
+        protein: favorite.protein,
+        carbs: favorite.carbs,
+        fat: favorite.fat
+      };
+    } else {
+      food = BarcodeDB.findById(parseInt(barcodeId));
+      if (!food) {
+        return res.status(404).json({ error: '找不到此食物資料' });
+      }
     }
 
     // Create food log entry
@@ -341,6 +356,69 @@ router.post('/add-from-database', authMiddleware, async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+});
+
+// GET /api/food/favorites - Get user's favorites (authenticated)
+router.get('/favorites', authMiddleware, async (req, res) => {
+  const favorites = FavoritesDB.findByUserId(req.user.id);
+  res.json({
+    success: true,
+    data: favorites
+  });
+});
+
+// POST /api/food/favorites - Add to favorites (authenticated)
+router.post('/favorites', authMiddleware, async (req, res) => {
+  const { barcodeId, name, brand, calories, protein, carbs, fat, servingSize } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: '食物名稱為必填欄位' });
+  }
+
+  const favorite = FavoritesDB.create(req.user.id, {
+    barcodeId,
+    name,
+    brand: brand || '',
+    calories: calories || 0,
+    protein: protein || 0,
+    carbs: carbs || 0,
+    fat: fat || 0,
+    servingSize: servingSize || ''
+  });
+
+  res.json({
+    success: true,
+    message: '已加入最愛',
+    data: favorite
+  });
+});
+
+// DELETE /api/food/favorites/:id - Remove from favorites (authenticated)
+router.delete('/favorites/:id', authMiddleware, async (req, res) => {
+  const result = FavoritesDB.delete(parseInt(req.params.id), req.user.id);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: '找不到此最愛項目' });
+  }
+
+  res.json({
+    success: true,
+    message: '已移除最愛'
+  });
+});
+
+// GET /api/food/recent - Get recent food logs to copy (authenticated)
+router.get('/recent', authMiddleware, async (req, res) => {
+  const { limit = 10 } = req.query;
+  const result = FoodLogDB.findByUserId(req.user.id, {
+    limit: parseInt(limit),
+    offset: 0
+  });
+
+  res.json({
+    success: true,
+    data: result.logs
+  });
 });
 
 export default router;

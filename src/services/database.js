@@ -101,6 +101,22 @@ try {
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS favorites (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      barcode_id INTEGER,
+      name TEXT NOT NULL,
+      brand TEXT,
+      calories INTEGER DEFAULT 0,
+      protein REAL DEFAULT 0,
+      carbs REAL DEFAULT 0,
+      fat REAL DEFAULT 0,
+      serving_size TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (barcode_id) REFERENCES barcodes(id) ON DELETE SET NULL
+    );
+
     CREATE TABLE IF NOT EXISTS user_profiles (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL UNIQUE,
@@ -862,6 +878,40 @@ export const BarcodeDB = {
       this.create(data);
     }
     return this.findByBarcode(data.barcode);
+  }
+};
+
+// Favorites operations
+export const FavoritesDB = {
+  findByUserId(userId) {
+    return db.prepare('SELECT * FROM favorites WHERE user_id = ? ORDER BY created_at DESC').all(userId);
+  },
+
+  create(userId, data) {
+    const stmt = db.prepare(`
+      INSERT INTO favorites (user_id, barcode_id, name, brand, calories, protein, carbs, fat, serving_size)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(
+      userId,
+      data.barcodeId || null,
+      data.name,
+      data.brand || '',
+      data.calories || 0,
+      data.protein || 0,
+      data.carbs || 0,
+      data.fat || 0,
+      data.servingSize || ''
+    );
+    return this.findById(result.lastInsertRowid);
+  },
+
+  findById(id) {
+    return db.prepare('SELECT * FROM favorites WHERE id = ?').get(id);
+  },
+
+  delete(id, userId) {
+    return db.prepare('DELETE FROM favorites WHERE id = ? AND user_id = ?').run(id, userId);
   }
 };
 
