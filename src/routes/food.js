@@ -1,7 +1,7 @@
 import express from 'express';
 import { analyzeFoodImage, parseNutritionalData } from '../services/minimax.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { FoodLogDB, DailyProgressDB, UserProfileDB, BarcodeDB, FavoritesDB } from '../services/database.js';
+import { FoodLogDB, DailyProgressDB, UserProfileDB, BarcodeDB, FavoritesDB, ShoppingDB } from '../services/database.js';
 import { getLocalDate } from '../utils/date.js';
 
 const router = express.Router();
@@ -404,6 +404,77 @@ router.delete('/favorites/:id', authMiddleware, async (req, res) => {
   res.json({
     success: true,
     message: '已移除最愛'
+  });
+});
+
+// GET /api/food/shopping-lists - Get user's shopping lists (authenticated)
+router.get('/shopping-lists', authMiddleware, async (req, res) => {
+  const lists = ShoppingDB.findByUserId(req.user.id);
+  res.json({
+    success: true,
+    data: lists.map(l => ({
+      ...l,
+      items: JSON.parse(l.items || '[]')
+    }))
+  });
+});
+
+// POST /api/food/shopping-lists - Create shopping list (authenticated)
+router.post('/shopping-lists', authMiddleware, async (req, res) => {
+  const { name, items } = req.body;
+  const list = ShoppingDB.create(req.user.id, { name, items: items || [] });
+  res.json({
+    success: true,
+    data: { ...list, items: JSON.parse(list.items || '[]') }
+  });
+});
+
+// PUT /api/food/shopping-lists/:id - Update shopping list (authenticated)
+router.put('/shopping-lists/:id', authMiddleware, async (req, res) => {
+  const { name, items } = req.body;
+  const list = ShoppingDB.update(parseInt(req.params.id), req.user.id, { name, items: items || [] });
+  if (!list) return res.status(404).json({ error: '找不到此購物清單' });
+  res.json({
+    success: true,
+    data: { ...list, items: JSON.parse(list.items || '[]') }
+  });
+});
+
+// DELETE /api/food/shopping-lists/:id - Delete shopping list (authenticated)
+router.delete('/shopping-lists/:id', authMiddleware, async (req, res) => {
+  const result = ShoppingDB.delete(parseInt(req.params.id), req.user.id);
+  if (result.changes === 0) return res.status(404).json({ error: '找不到此購物清單' });
+  res.json({ success: true, message: '已刪除' });
+});
+
+// POST /api/food/shopping-lists/:id/items - Add item to list (authenticated)
+router.post('/shopping-lists/:id/items', authMiddleware, async (req, res) => {
+  const { name, calories } = req.body;
+  const list = ShoppingDB.addItem(parseInt(req.params.id), req.user.id, { name, calories });
+  if (!list) return res.status(404).json({ error: '找不到此購物清單' });
+  res.json({
+    success: true,
+    data: { ...list, items: JSON.parse(list.items || '[]') }
+  });
+});
+
+// PUT /api/food/shopping-lists/:id/items/:itemId - Toggle item (authenticated)
+router.put('/shopping-lists/:id/items/:itemId', authMiddleware, async (req, res) => {
+  const list = ShoppingDB.toggleItem(parseInt(req.params.id), req.user.id, parseInt(req.params.itemId));
+  if (!list) return res.status(404).json({ error: '找不到此項目' });
+  res.json({
+    success: true,
+    data: { ...list, items: JSON.parse(list.items || '[]') }
+  });
+});
+
+// DELETE /api/food/shopping-lists/:id/items/:itemId - Remove item (authenticated)
+router.delete('/shopping-lists/:id/items/:itemId', authMiddleware, async (req, res) => {
+  const list = ShoppingDB.removeItem(parseInt(req.params.id), req.user.id, parseInt(req.params.itemId));
+  if (!list) return res.status(404).json({ error: '找不到此項目' });
+  res.json({
+    success: true,
+    data: { ...list, items: JSON.parse(list.items || '[]') }
   });
 });
 

@@ -117,6 +117,16 @@ try {
       FOREIGN KEY (barcode_id) REFERENCES barcodes(id) ON DELETE SET NULL
     );
 
+    CREATE TABLE IF NOT EXISTS shopping_lists (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT DEFAULT '購物清單',
+      items TEXT DEFAULT '[]',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS user_profiles (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL UNIQUE,
@@ -878,6 +888,63 @@ export const BarcodeDB = {
       this.create(data);
     }
     return this.findByBarcode(data.barcode);
+  }
+};
+
+// Shopping list operations
+export const ShoppingDB = {
+  findByUserId(userId) {
+    return db.prepare('SELECT * FROM shopping_lists WHERE user_id = ? ORDER BY created_at DESC').all(userId);
+  },
+
+  findById(id) {
+    return db.prepare('SELECT * FROM shopping_lists WHERE id = ?').get(id);
+  },
+
+  create(userId, data) {
+    const stmt = db.prepare(`
+      INSERT INTO shopping_lists (user_id, name, items)
+      VALUES (?, ?, ?)
+    `);
+    const result = stmt.run(userId, data.name || '購物清單', JSON.stringify(data.items || []));
+    return this.findById(result.lastInsertRowid);
+  },
+
+  update(id, userId, data) {
+    const stmt = db.prepare(`
+      UPDATE shopping_lists SET name = ?, items = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND user_id = ?
+    `);
+    stmt.run(data.name || '購物清單', JSON.stringify(data.items || []), id, userId);
+    return this.findById(id);
+  },
+
+  delete(id, userId) {
+    return db.prepare('DELETE FROM shopping_lists WHERE id = ? AND user_id = ?').run(id, userId);
+  },
+
+  addItem(id, userId, item) {
+    const list = this.findById(id);
+    if (!list || list.user_id !== userId) return null;
+    const items = JSON.parse(list.items || '[]');
+    items.push({ id: Date.now(), name: item.name, checked: false, calories: item.calories || 0 });
+    return this.update(id, userId, { items });
+  },
+
+  toggleItem(id, userId, itemId) {
+    const list = this.findById(id);
+    if (!list || list.user_id !== userId) return null;
+    const items = JSON.parse(list.items || '[]');
+    const item = items.find(i => i.id === itemId);
+    if (item) item.checked = !item.checked;
+    return this.update(id, userId, { items });
+  },
+
+  removeItem(id, userId, itemId) {
+    const list = this.findById(id);
+    if (!list || list.user_id !== userId) return null;
+    const items = JSON.parse(list.items || '[]').filter(i => i.id !== itemId);
+    return this.update(id, userId, { items });
   }
 };
 
