@@ -611,8 +611,8 @@
   </main>
 
   <!-- Barcode Scanner Modal -->
-  <div id="barcode-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-    <div class="modal-content" style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:400px; width:90%;">
+  <div id="barcode-modal" class="modal" onclick="if(event.target===this)closeBarcodeModal()" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div class="modal-content" style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:400px; width:90%; position:relative;" onclick="event.stopPropagation()">
       <h3 style="margin-bottom:16px;">📱 條碼掃描</h3>
       <div id="barcode-upload-zone" onclick="document.getElementById('barcode-file-input').click()" style="border:2px dashed var(--color-border); border-radius:12px; padding:32px; text-align:center; cursor:pointer; margin-bottom:16px;">
         <div style="font-size:2rem; margin-bottom:12px;">📷</div>
@@ -695,8 +695,8 @@
   </div>
 
   <!-- Food Log Detail Modal -->
-  <div id="food-detail-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:500px; width:90%; position:relative;">
+  <div id="food-detail-modal" class="modal" onclick="if(event.target===this)closeFoodDetailModal()" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:500px; width:90%; position:relative;" onclick="event.stopPropagation()">
       <button onclick="closeFoodDetailModal()" style="position:absolute; top:12px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
       <div id="food-detail-image" style="width:100%; height:250px; background:var(--color-bg); border-radius:12px; margin-bottom:16px; overflow:hidden;">
         <img id="food-detail-img" src="" style="width:100%; height:100%; object-fit:cover;">
@@ -728,8 +728,8 @@
   </div>
 
   <!-- Donation Modal -->
-  <div id="donation-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:var(--color-surface); border-radius:20px; padding:32px; max-width:400px; width:90%; position:relative;">
+  <div id="donation-modal" class="modal" onclick="if(event.target===this)closeDonationModal()" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:var(--color-surface); border-radius:20px; padding:32px; max-width:400px; width:90%; position:relative;" onclick="event.stopPropagation()">
       <button onclick="closeDonationModal()" style="position:absolute; top:12px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
       <div style="font-size:3rem; margin-bottom:16px;">☕</div>
       <h2 style="margin-bottom:12px;">支持 姜老爹</h2>
@@ -742,9 +742,9 @@
   </div>
 
   <!-- Favorites Modal -->
-  <div id="favorites-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto;">
-      <button onclick="closeFavoritesModal()" style="position:absolute; top:12px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
+  <div id="favorites-modal" class="modal" onclick="if(event.target===this)closeFavoritesModal()" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; position:relative;" onclick="event.stopPropagation()">
+      <button onclick="closeFavoritesModal()" style="position:absolute; top:8px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer; z-index:10;">×</button>
       <h3 style="margin-bottom:16px;">⭐ 我的最愛</h3>
       <div id="favorites-list" style="margin-bottom:16px;"></div>
       <h4 style="margin-bottom:12px;">📋 最近的食物</h4>
@@ -753,9 +753,9 @@
   </div>
 
   <!-- Batch Upload Modal -->
-  <div id="batch-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:600px; width:90%; max-height:90vh; overflow-y:auto;">
-      <button onclick="closeBatchModal()" style="position:absolute; top:12px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
+  <div id="batch-modal" class="modal" onclick="if(event.target===this)closeBatchModal()" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:600px; width:90%; max-height:90vh; overflow-y:auto; position:relative;" onclick="event.stopPropagation()">
+      <button onclick="closeBatchModal()" style="position:absolute; top:12px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer; z-index:10;">×</button>
       <h3 style="margin-bottom:16px;">📚 批次上傳</h3>
       <p style="color:var(--color-text-muted); margin-bottom:16px;">一次上傳多張圖片，AI 會自動分析並加總熱量</p>
       <div id="batch-upload-zone" onclick="document.getElementById('batch-file-input').click()" style="border:2px dashed var(--color-border); border-radius:12px; padding:32px; text-align:center; cursor:pointer; margin-bottom:16px;">
@@ -791,8 +791,8 @@
   </div>
 
   <!-- Share Achievement Card Modal -->
-  <div id="share-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:400px; width:90%;">
+  <div id="share-modal" class="modal" onclick="if(event.target===this)closeShareModal()" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:400px; width:90%; position:relative;" onclick="event.stopPropagation()">
       <button onclick="closeShareModal()" style="position:absolute; top:12px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
       <h3 style="margin-bottom:16px; text-align:center;">🎉 分享成就</h3>
       <div id="share-card-preview" style="background:linear-gradient(135deg, #2d6a4f, #74c69d); border-radius:16px; padding:24px; color:#fff; text-align:center; margin-bottom:16px;">
