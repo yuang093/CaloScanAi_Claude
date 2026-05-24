@@ -1,7 +1,7 @@
 import express from 'express';
 import { analyzeFoodImage, parseNutritionalData } from '../services/minimax.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { FoodLogDB, DailyProgressDB, UserProfileDB } from '../services/database.js';
+import { FoodLogDB, DailyProgressDB, UserProfileDB, BarcodeDB } from '../services/database.js';
 import { getLocalDate } from '../utils/date.js';
 
 const router = express.Router();
@@ -238,6 +238,89 @@ router.delete('/logs/:id', authMiddleware, async (req, res) => {
     success: true,
     message: '刪除成功'
   });
+});
+
+// GET /api/food/search - Search food database (authenticated)
+router.get('/search', authMiddleware, async (req, res) => {
+  const { q } = req.query;
+
+  if (!q || q.trim().length < 1) {
+    return res.status(400).json({ error: '請輸入搜尋關鍵字' });
+  }
+
+  const searchTerm = '%' + q.trim() + '%';
+  const results = BarcodeDB.search(searchTerm);
+
+  res.json({
+    success: true,
+    data: results
+  });
+});
+
+// POST /api/food/add-from-database - Add food from database to log (authenticated)
+router.post('/add-from-database', authMiddleware, async (req, res, next) => {
+  try {
+    const { barcodeId } = req.body;
+
+    if (!barcodeId) {
+      return res.status(400).json({ error: '食物 ID 為必填欄位' });
+    }
+
+    const food = BarcodeDB.findById(parseInt(barcodeId));
+    if (!food) {
+      return res.status(404).json({ error: '找不到此食物資料' });
+    }
+
+    // Create food log entry
+    const logEntry = FoodLogDB.create(req.user.id, {
+      imageData: '',
+      mealType: 'general',
+      calories: food.calories || 0,
+      protein: food.protein || 0,
+      carbs: food.carbs || 0,
+      fat: food.fat || 0,
+      description: food.name
+    });
+
+    // Update daily progress
+    const today = getLocalDate();
+    const todayStats = FoodLogDB.getTodayStats(req.user.id);
+
+    let goalCalories = 2000;
+    try {
+      const userProfile = UserProfileDB.findByUserId(req.user.id);
+      if (userProfile) {
+        const { custom_bmr, activity_level, weight, height, age, gender } = userProfile;
+        let bmr = custom_bmr;
+        if (!bmr) {
+          if (gender === 'male') bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+          else if (gender === 'female') bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+          else bmr = 10 * weight + 6.25 * height - 5 * age;
+        }
+        const multipliers = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725 };
+        const tdee = Math.round(bmr * (multipliers[activity_level] || 1.2));
+        goalCalories = Math.round(tdee * 0.85);
+      }
+    } catch (e) {
+      console.error('Failed to get TDEE for goal:', e.message);
+    }
+
+    DailyProgressDB.upsert(req.user.id, today, {
+      totalCalories: todayStats.total_calories,
+      totalProtein: todayStats.total_protein,
+      totalCarbs: todayStats.total_carbs,
+      totalFat: todayStats.total_fat,
+      goalCalories
+    });
+
+    res.json({
+      success: true,
+      message: '已加入日誌',
+      data: logEntry
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 export default router;

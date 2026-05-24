@@ -544,6 +544,12 @@
         <div style="color:var(--color-text-muted); font-size:0.9rem;">點擊上傳或拖曳圖片</div>
         <div style="color:var(--color-text-muted); font-size:0.8rem; margin-top:8px;">或拍攝營養標示 / 條碼照片</div>
       </div>
+      <button onclick="toggleFoodSearch()" class="btn btn-secondary" style="margin-bottom:16px; width:100%;">🔍 搜尋食物資料庫</button>
+      <div id="food-search-zone" style="display:none; margin-bottom:16px;">
+        <input type="text" id="food-search-input" placeholder="輸入食物名稱或條碼" class="input" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px; margin-bottom:8px;">
+        <button onclick="searchFoodDatabase()" class="btn btn-primary" style="width:100%;">搜尋</button>
+        <div id="food-search-results" style="margin-top:12px; max-height:200px; overflow-y:auto;"></div>
+      </div>
       <input type="file" id="barcode-file-input" accept="image/*" style="display:none;" onchange="handleBarcodeFileSelect(event)">
       <div id="barcode-preview-container" style="display:none; margin-bottom:16px;">
         <img id="barcode-preview-img" style="width:100%; border-radius:12px; background:#000;">
@@ -1396,11 +1402,99 @@
       document.getElementById('barcode-upload-zone').style.display = 'block';
       document.getElementById('barcode-preview-container').style.display = 'none';
       document.getElementById('barcode-file-input').value = '';
+      document.getElementById('food-search-zone').style.display = 'none';
+      document.getElementById('food-search-input').value = '';
+      document.getElementById('food-search-results').innerHTML = '';
     }
 
     function stopCameraScan() {
       // No-op: camera stream removed
     }
+
+    function toggleFoodSearch() {
+      const zone = document.getElementById('food-search-zone');
+      if (zone.style.display === 'none') {
+        zone.style.display = 'block';
+        document.getElementById('food-search-input').focus();
+      } else {
+        zone.style.display = 'none';
+      }
+    }
+
+    async function searchFoodDatabase() {
+      const query = document.getElementById('food-search-input').value.trim();
+      if (!query) {
+        alert('請輸入搜尋關鍵字');
+        return;
+      }
+
+      const resultsDiv = document.getElementById('food-search-results');
+      resultsDiv.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">搜尋中...</div>';
+
+      try {
+        const response = await fetch('/api/food/search?q=' + encodeURIComponent(query), {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+
+        if (result.success && result.data.length > 0) {
+          resultsDiv.innerHTML = result.data.map(food => `
+            <div style="padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-weight:600;">${escapeHtml(food.name)}</div>
+                <div style="font-size:0.8rem; color:#666;">${escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
+              </div>
+              <button onclick="addFoodFromDatabase(${food.id}, '${escapeHtml(food.name)}', ${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat})" class="btn btn-primary btn-small">加入</button>
+            </div>
+          `).join('');
+        } else if (result.success && result.data.length === 0) {
+          resultsDiv.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">找不到符合的食物</div>';
+        } else {
+          resultsDiv.innerHTML = '<div style="text-align:center; color:#e74c3c; padding:20px;">搜尋失敗</div>';
+        }
+      } catch (err) {
+        resultsDiv.innerHTML = '<div style="text-align:center; color:#e74c3c; padding:20px;">網路錯誤</div>';
+        console.error('Food search error:', err);
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    async function addFoodFromDatabase(id, name, calories, protein, carbs, fat) {
+      try {
+        const response = await fetch('/api/food/add-from-database', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify({ barcodeId: id })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          alert('已加入日誌');
+          closeBarcodeModal();
+          loadFoodLog();
+        } else {
+          alert(result.error || '加入失敗');
+        }
+      } catch (err) {
+        alert('網路錯誤');
+        console.error('Add from database error:', err);
+      }
+    }
+
+    // Enter key for food search
+    document.getElementById('food-search-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        searchFoodDatabase();
+      }
+    });
 
     function openDonationModal() {
       document.getElementById('donation-modal').style.display = 'flex';

@@ -777,8 +777,21 @@ export const QuoteDB = {
 
 // Barcode operations
 export const BarcodeDB = {
+  findById(id) {
+    return db.prepare('SELECT * FROM barcodes WHERE id = ?').get(id);
+  },
+
   findByBarcode(barcode) {
     return db.prepare('SELECT * FROM barcodes WHERE barcode = ?').get(barcode);
+  },
+
+  search(term) {
+    return db.prepare(`
+      SELECT * FROM barcodes
+      WHERE barcode LIKE ? OR name LIKE ? OR brand LIKE ?
+      ORDER BY created_at DESC
+      LIMIT 50
+    `).all(term, term, term);
   },
 
   create(data) {
@@ -797,6 +810,29 @@ export const BarcodeDB = {
       data.servingSize || '未知'
     );
     return this.findByBarcode(data.barcode);
+  },
+
+  update(id, data) {
+    const stmt = db.prepare(`
+      UPDATE barcodes SET barcode = ?, name = ?, brand = ?, calories = ?, protein = ?, carbs = ?, fat = ?, serving_size = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `);
+    stmt.run(
+      data.barcode || '',
+      data.name,
+      data.brand || '',
+      data.calories || 0,
+      data.protein || 0,
+      data.carbs || 0,
+      data.fat || 0,
+      data.servingSize || '',
+      id
+    );
+    return this.findById(id);
+  },
+
+  delete(id) {
+    return db.prepare('DELETE FROM barcodes WHERE id = ?').run(id);
   },
 
   upsert(data) {
