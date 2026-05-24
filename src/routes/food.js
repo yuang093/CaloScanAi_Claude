@@ -264,12 +264,14 @@ router.delete('/logs/:id', authMiddleware, async (req, res) => {
 router.get('/search', authMiddleware, async (req, res) => {
   const { q } = req.query;
 
+  let results;
   if (!q || q.trim().length < 1) {
-    return res.status(400).json({ error: '請輸入搜尋關鍵字' });
+    // Return all barcodes when no query provided
+    results = db.prepare('SELECT * FROM barcodes ORDER BY created_at DESC LIMIT 50').all();
+  } else {
+    const searchTerm = '%' + q.trim() + '%';
+    results = BarcodeDB.search(searchTerm);
   }
-
-  const searchTerm = '%' + q.trim() + '%';
-  const results = BarcodeDB.search(searchTerm);
 
   res.json({
     success: true,
