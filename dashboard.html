@@ -2019,15 +2019,17 @@
         const result = await response.json();
 
         if (result.success && result.data.length > 0) {
-          resultsDiv.innerHTML = result.data.map(food => `
+          resultsDiv.innerHTML = result.data.map(food => {
+            const escapedName = food.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+            return `
             <div style="padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
               <div>
                 <div style="font-weight:600;">${escapeHtml(food.name)}</div>
                 <div style="font-size:0.8rem; color:#666;">${escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
               </div>
-              <button onclick="addFoodFromDatabase(${food.id}, '${escapeHtml(food.name)}', ${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat})" class="btn btn-primary btn-small">加入</button>
+              <button onclick="addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat})" class="btn btn-primary btn-small">加入</button>
             </div>
-          `).join('');
+          `}).join('');
         } else if (result.success && result.data.length === 0) {
           resultsDiv.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">找不到符合的食物</div>';
         } else {
