@@ -6,6 +6,7 @@
   <title>CaloScanAi - 食物日誌</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🥗%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="src/styles/global.css?v=2.1">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -389,6 +390,7 @@
     <div class="nav-links">
       <button class="nav-link active" onclick="switchPage('food-log')">食物日誌</button>
       <button class="nav-link" onclick="switchPage('progress')">每日進度</button>
+      <button class="nav-link" onclick="switchPage('history')">歷史統計</button>
       <button class="nav-link" onclick="window.location.href='profile.html'">個人資料</button>
       <button class="nav-link" id="admin-btn" onclick="window.location.href='admin.html'" style="display:none;">管理介面</button>
     </div>
@@ -533,6 +535,35 @@
             </div>
             <div id="meal-dinner-foods" style="font-size:0.85rem; color:var(--color-text-muted); margin-top:4px;"></div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Page -->
+    <div id="history-page" style="display:none;">
+      <div class="page-title">
+        <h1>歷史統計</h1>
+        <p>查看你的長期飲食趨勢</p>
+      </div>
+
+      <div style="display:flex; gap:12px; margin-bottom:24px;">
+        <button class="btn btn-secondary" onclick="loadHistoryData('weekly')">近一週</button>
+        <button class="btn btn-secondary" onclick="loadHistoryData('monthly')">近一個月</button>
+        <button class="btn btn-secondary" onclick="loadHistoryData('90days')">近三個月</button>
+      </div>
+
+      <div class="analysis-result">
+        <h3>🔥 熱量趨勢</h3>
+        <div style="height:250px; position:relative; margin:16px 0;">
+          <canvas id="calorie-chart"></canvas>
+        </div>
+        <div id="history-summary" style="text-align:center; padding:16px; background:var(--color-bg); border-radius:12px;"></div>
+      </div>
+
+      <div class="analysis-result">
+        <h3>📊 營養素趨勢</h3>
+        <div style="height:200px; position:relative; margin:16px 0;">
+          <canvas id="nutrition-chart"></canvas>
         </div>
       </div>
     </div>
@@ -1043,10 +1074,11 @@
     function switchPage(page) {
       document.getElementById('food-log-page').style.display = page === 'food-log' ? 'block' : 'none';
       document.getElementById('progress-page').style.display = page === 'progress' ? 'block' : 'none';
+      document.getElementById('history-page').style.display = page === 'history' ? 'block' : 'none';
 
       document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
-        if (link.textContent.includes(page === 'food-log' ? '食物日誌' : '每日進度')) {
+        if (link.textContent.includes(page === 'food-log' ? '食物日誌' : page === 'progress' ? '每日進度' : '歷史統計')) {
           link.classList.add('active');
         }
       });
@@ -1058,6 +1090,95 @@
           year: 'numeric', month: 'long', day: 'numeric'
         });
         fetchProgressData();
+      } else if (page === 'history') {
+        loadHistoryData('weekly');
+      }
+    }
+
+    let calorieChart = null;
+    let nutritionChart = null;
+
+    async function loadHistoryData(period) {
+      try {
+        let days = 7;
+        if (period === 'monthly') days = 30;
+        if (period === '90days') days = 90;
+
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+
+        const formatDate = (d) => d.toISOString().split('T')[0];
+
+        const response = await fetch('/api/progress/history?startDate=' + formatDate(startDate) + '&endDate=' + formatDate(endDate) + '&limit=' + days, {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+
+        if (result.success && result.data.records.length > 0) {
+          const records = result.data.records;
+          const labels = records.map(r => r.date.slice(5));
+          const calories = records.map(r => r.total_calories);
+          const protein = records.map(r => r.total_protein);
+          const carbs = records.map(r => r.total_carbs);
+          const fat = records.map(r => r.total_fat);
+
+          // Calorie chart
+          if (calorieChart) calorieChart.destroy();
+          const ctx1 = document.getElementById('calorie-chart').getContext('2d');
+          calorieChart = new Chart(ctx1, {
+            type: 'line',
+            data: {
+              labels,
+              datasets: [{
+                label: '熱量 (kcal)',
+                data: calories,
+                borderColor: '#c85a3b',
+                backgroundColor: 'rgba(200,90,59,0.1)',
+                fill: true,
+                tension: 0.3
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } }
+            }
+          });
+
+          // Nutrition chart
+          if (nutritionChart) nutritionChart.destroy();
+          const ctx2 = document.getElementById('nutrition-chart').getContext('2d');
+          nutritionChart = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [
+                { label: '蛋白質 (g)', data: protein, backgroundColor: '#74c69d' },
+                { label: '碳水 (g)', data: carbs, backgroundColor: '#ffd166' },
+                { label: '脂肪 (g)', data: fat, backgroundColor: '#c85a3b' }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { position: 'bottom' } }
+            }
+          });
+
+          // Summary
+          const avgCal = Math.round(calories.reduce((a, b) => a + b, 0) / calories.length);
+          const avgPro = Math.round(protein.reduce((a, b) => a + b, 0) / protein.length * 10) / 10;
+          document.getElementById('history-summary').innerHTML =
+            '平均熱量：<strong>' + avgCal + '</strong> kcal | 平均蛋白質：<strong>' + avgPro + '</strong> g<br>' +
+            '總記錄天數：' + records.length + ' 天';
+        } else {
+          document.getElementById('history-summary').innerHTML = '尚無歷史資料';
+          if (calorieChart) calorieChart.destroy();
+          if (nutritionChart) nutritionChart.destroy();
+        }
+      } catch (error) {
+        console.error('Load history error:', error);
       }
     }
 
