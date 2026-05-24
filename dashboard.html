@@ -1084,22 +1084,32 @@
 
           // Calculate meal totals and food names
           let breakfastCal = 0, lunchCal = 0, dinnerCal = 0;
+          let totalCalories = 0;
           let breakfastFoods = [], lunchFoods = [], dinnerFoods = [];
           todayLogs.forEach(log => {
+            const logCal = log.calories || 0;
+            totalCalories += logCal;
             const utcDate = new Date(log.created_at);
             const taiwanHour = (utcDate.getHours() + 8) % 24;
             const foodName = log.description || '未命名食物';
             if (taiwanHour < 11) {
-              breakfastCal += log.calories || 0;
+              breakfastCal += logCal;
               breakfastFoods.push(foodName);
             } else if (taiwanHour < 17) {
-              lunchCal += log.calories || 0;
+              lunchCal += logCal;
               lunchFoods.push(foodName);
             } else {
-              dinnerCal += log.calories || 0;
+              dinnerCal += logCal;
               dinnerFoods.push(foodName);
             }
           });
+
+          // Update nutrition values from calculated totals
+          document.getElementById('total-cal').textContent = totalCalories;
+          document.getElementById('total-pro').textContent = Math.round(stats.protein * 10) / 10 + 'g';
+          document.getElementById('total-carb').textContent = Math.round(stats.carbs * 10) / 10 + 'g';
+          document.getElementById('total-fat').textContent = Math.round(stats.fat * 10) / 10 + 'g';
+          document.getElementById('remaining-cal').textContent = Math.max(0, goalCalories - totalCalories);
           document.getElementById('meal-breakfast-cal').textContent = breakfastCal + ' kcal';
           document.getElementById('meal-lunch-cal').textContent = lunchCal + ' kcal';
           document.getElementById('meal-dinner-cal').textContent = dinnerCal + ' kcal';
@@ -1110,7 +1120,7 @@
           document.getElementById('goal-cal-display').textContent = goalCalories;
 
           // Update progress bar
-          const progressPercent = Math.min((stats.calories / goalCalories) * 100, 100);
+          const progressPercent = Math.min((totalCalories / goalCalories) * 100, 100);
           const progressBar = document.getElementById('progress-bar-fill');
           if (progressBar) {
             progressBar.style.width = progressPercent + '%';
