@@ -414,6 +414,9 @@
         <button class="btn btn-secondary" onclick="openFavoritesModal()" style="flex:1;">
           ⭐ 我的最愛
         </button>
+        <button class="btn btn-secondary" onclick="openBatchModal()" style="flex:1;">
+          📚 批次上傳
+        </button>
       </div>
 
       <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
@@ -504,6 +507,12 @@
           <div id="calorie-warning" style="display:none; margin-top:8px; padding:8px 16px; border-radius:8px; font-size:0.85rem; font-weight:500;"></div>
         </div>
         <div id="daily-quote" style="text-align:center; margin-top:16px; font-style:italic; color:var(--color-text-muted);"></div>
+      </div>
+
+      <div id="share-achievement-btn" style="display:none; margin-top:16px;">
+        <button onclick="openShareCard()" class="btn btn-secondary" style="width:100%;">
+          🎉 分享成就卡
+        </button>
       </div>
 
       <div class="analysis-result" id="recommendation-card" style="display:none;">
@@ -708,6 +717,62 @@
       <div id="favorites-list" style="margin-bottom:16px;"></div>
       <h4 style="margin-bottom:12px;">📋 最近的食物</h4>
       <div id="recent-list" style="max-height:200px; overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- Batch Upload Modal -->
+  <div id="batch-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:600px; width:90%; max-height:90vh; overflow-y:auto;">
+      <button onclick="closeBatchModal()" style="position:absolute; top:12px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
+      <h3 style="margin-bottom:16px;">📚 批次上傳</h3>
+      <p style="color:var(--color-text-muted); margin-bottom:16px;">一次上傳多張圖片，AI 會自動分析並加總熱量</p>
+      <div id="batch-upload-zone" onclick="document.getElementById('batch-file-input').click()" style="border:2px dashed var(--color-border); border-radius:12px; padding:32px; text-align:center; cursor:pointer; margin-bottom:16px;">
+        <div style="font-size:2rem; margin-bottom:12px;">📷</div>
+        <div style="color:var(--color-text-muted);">點擊上傳多張圖片</div>
+        <div style="color:var(--color-text-muted); font-size:0.85rem; margin-top:8px;">支援 JPEG、PNG、WebP</div>
+      </div>
+      <input type="file" id="batch-file-input" accept="image/jpeg,image/png,image/webp" multiple style="display:none;" onchange="handleBatchFileSelect(event)">
+      <div id="batch-preview-area" style="display:none; margin-bottom:16px;">
+        <h4 style="margin-bottom:8px;">待分析圖片：</h4>
+        <div id="batch-preview-list" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-height:200px; overflow-y:auto;"></div>
+      </div>
+      <div id="batch-progress" style="display:none; margin-bottom:16px;">
+        <div style="padding:12px; background:var(--color-bg); border-radius:8px;">
+          <div id="batch-progress-text" style="margin-bottom:8px;">分析中...</div>
+          <div style="height:8px; background:var(--color-border); border-radius:4px; overflow:hidden;">
+            <div id="batch-progress-bar" style="height:100%; background:var(--color-primary); width:0%; transition:width 0.3s;"></div>
+          </div>
+        </div>
+      </div>
+      <div id="batch-results" style="display:none; margin-bottom:16px;">
+        <h4 style="margin-bottom:8px;">分析結果：</h4>
+        <div id="batch-results-list" style="max-height:200px; overflow-y:auto;"></div>
+        <div style="margin-top:12px; padding:12px; background:var(--color-bg); border-radius:8px; text-align:center;">
+          <div style="font-size:0.9rem; color:var(--color-text-muted);">總熱量</div>
+          <div id="batch-total-calories" style="font-size:1.5rem; font-weight:bold; color:var(--color-primary);">0 kcal</div>
+        </div>
+      </div>
+      <button id="batch-analyze-btn" onclick="startBatchAnalyze()" class="btn btn-primary" style="width:100%; display:none;">開始分析</button>
+      <button id="batch-add-all-btn" onclick="addAllBatchToLog()" class="btn btn-primary" style="width:100%; display:none;">全部加入日誌</button>
+      <button onclick="closeBatchModal()" class="btn btn-secondary" style="margin-top:8px; width:100%;">關閉</button>
+    </div>
+  </div>
+
+  <!-- Share Achievement Card Modal -->
+  <div id="share-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:400px; width:90%;">
+      <button onclick="closeShareModal()" style="position:absolute; top:12px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
+      <h3 style="margin-bottom:16px; text-align:center;">🎉 分享成就</h3>
+      <div id="share-card-preview" style="background:linear-gradient(135deg, #2d6a4f, #74c69d); border-radius:16px; padding:24px; color:#fff; text-align:center; margin-bottom:16px;">
+        <div style="font-size:1.5rem; margin-bottom:8px;">🥗 CaloScanAi</div>
+        <div style="font-size:0.9rem; margin-bottom:12px;" id="share-date"></div>
+        <div style="font-size:0.8rem; margin-bottom:4px;">今日熱量攝取</div>
+        <div style="font-size:2.5rem; font-weight:bold;" id="share-calories">0</div>
+        <div style="font-size:0.8rem;">kcal</div>
+        <div style="margin-top:12px; font-size:0.85rem;" id="share-achievement"></div>
+      </div>
+      <button onclick="downloadShareCard()" class="btn btn-primary" style="width:100%; margin-bottom:8px;">📥 下載圖片</button>
+      <button onclick="copyShareCard()" class="btn btn-secondary" style="width:100%;">📋 複製內容</button>
     </div>
   </div>
 
@@ -1290,6 +1355,12 @@
             } else {
               warningEl.style.display = 'none';
             }
+          }
+
+          // Show share button if progress > 50%
+          const shareBtn = document.getElementById('share-achievement-btn');
+          if (shareBtn) {
+            shareBtn.style.display = progressPercent >= 50 ? 'block' : 'none';
           }
 
           // Show quote if element exists
@@ -1912,6 +1983,255 @@
 
     let barcodeProductData = null;
     let barcodeCapturedImage = null;
+
+    // Batch upload functions
+    let batchFiles = [];
+    let batchAnalysisResults = [];
+
+    function openBatchModal() {
+      document.getElementById('batch-modal').style.display = 'flex';
+      batchFiles = [];
+      batchAnalysisResults = [];
+      document.getElementById('batch-preview-area').style.display = 'none';
+      document.getElementById('batch-progress').style.display = 'none';
+      document.getElementById('batch-results').style.display = 'none';
+      document.getElementById('batch-analyze-btn').style.display = 'none';
+      document.getElementById('batch-add-all-btn').style.display = 'none';
+    }
+
+    function closeBatchModal() {
+      document.getElementById('batch-modal').style.display = 'none';
+      batchFiles = [];
+      batchAnalysisResults = [];
+    }
+
+    async function handleBatchFileSelect(event) {
+      const files = Array.from(event.target.files);
+      if (files.length === 0) return;
+
+      batchFiles = files;
+      const previewArea = document.getElementById('batch-preview-area');
+      const previewList = document.getElementById('batch-preview-list');
+
+      previewArea.style.display = 'block';
+      previewList.innerHTML = files.map((file, index) => `
+        <div style="position:relative;">
+          <img id="batch-img-${index}" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px;">
+          <button onclick="removeBatchFile(${index})" style="position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.6); color:#fff; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer;">×</button>
+        </div>
+      `).join('');
+
+      // Load previews
+      for (let i = 0; i < files.length; i++) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = document.getElementById('batch-img-' + i);
+          if (img) img.src = e.target.result;
+        };
+        reader.readAsDataURL(files[i]);
+      }
+
+      document.getElementById('batch-analyze-btn').style.display = 'block';
+      document.getElementById('batch-add-all-btn').style.display = 'none';
+      document.getElementById('batch-results').style.display = 'none';
+    }
+
+    function removeBatchFile(index) {
+      batchFiles.splice(index, 1);
+      if (batchFiles.length === 0) {
+        document.getElementById('batch-preview-area').style.display = 'none';
+        document.getElementById('batch-analyze-btn').style.display = 'none';
+      } else {
+        handleBatchFileSelect({ target: { files: batchFiles } });
+      }
+    }
+
+    async function startBatchAnalyze() {
+      if (batchFiles.length === 0) return;
+
+      const progressArea = document.getElementById('batch-progress');
+      const progressText = document.getElementById('batch-progress-text');
+      const progressBar = document.getElementById('batch-progress-bar');
+      const analyzeBtn = document.getElementById('batch-analyze-btn');
+
+      progressArea.style.display = 'block';
+      analyzeBtn.style.display = 'none';
+      batchAnalysisResults = [];
+
+      for (let i = 0; i < batchFiles.length; i++) {
+        progressText.textContent = `分析中 ${i + 1}/${batchFiles.length}...`;
+        progressBar.style.width = ((i + 1) / batchFiles.length * 100) + '%';
+
+        try {
+          const base64 = await compressImage(batchFiles[i]);
+          const response = await fetch('/api/food/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: base64 })
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            const analysis = result.analysis;
+            batchAnalysisResults.push({
+              image: 'data:image/jpeg;base64,' + base64,
+              name: analysis.name || analysis.description || '未命名食物',
+              calories: analysis.totalCalories || 0,
+              protein: analysis.totalProtein || 0,
+              carbs: analysis.totalCarbs || 0,
+              fat: analysis.totalFat || 0
+            });
+          }
+        } catch (err) {
+          console.error('Batch analyze error:', err);
+        }
+      }
+
+      progressArea.style.display = 'none';
+      showBatchResults();
+    }
+
+    function showBatchResults() {
+      const resultsArea = document.getElementById('batch-results');
+      const resultsList = document.getElementById('batch-results-list');
+      const totalEl = document.getElementById('batch-total-calories');
+      const addAllBtn = document.getElementById('batch-add-all-btn');
+
+      resultsArea.style.display = 'block';
+      addAllBtn.style.display = 'block';
+
+      resultsList.innerHTML = batchAnalysisResults.map((item, index) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid var(--color-border);">
+          <div style="flex:1;">
+            <div style="font-weight:500;">${item.name}</div>
+            <div style="font-size:0.8rem; color:var(--color-text-muted);">蛋白質 ${item.protein}g | 碳水 ${item.carbs}g | 脂肪 ${item.fat}g</div>
+          </div>
+          <div style="font-weight:bold; color:var(--color-primary);">${item.calories} kcal</div>
+        </div>
+      `).join('');
+
+      const totalCal = batchAnalysisResults.reduce((sum, item) => sum + item.calories, 0);
+      totalEl.textContent = totalCal + ' kcal';
+    }
+
+    async function addAllBatchToLog() {
+      if (batchAnalysisResults.length === 0) return;
+
+      const addAllBtn = document.getElementById('batch-add-all-btn');
+      addAllBtn.disabled = true;
+      addAllBtn.textContent = '加入中...';
+
+      let successCount = 0;
+      for (const item of batchAnalysisResults) {
+        try {
+          const base64Data = item.image.replace(/^data:image\/\w+;base64,/, '');
+          const response = await fetch('/api/food/upload', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify({ image: base64Data, mealType: 'general' })
+          });
+          const result = await response.json();
+          if (result.success) successCount++;
+        } catch (err) {
+          console.error('Add batch to log error:', err);
+        }
+      }
+
+      addAllBtn.disabled = false;
+      addAllBtn.textContent = '全部加入日誌';
+
+      alert('已成功加入 ' + successCount + ' 筆資料到日誌');
+      closeBatchModal();
+      loadFoodLog();
+    }
+
+    // Share achievement card functions
+    let shareCardData = { calories: 0, goalCalories: 2000, achievement: '' };
+
+    function openShareCard() {
+      const totalCal = document.getElementById('total-cal').textContent;
+      const goalCal = document.getElementById('goal-cal-display').textContent;
+      const cal = parseInt(totalCal) || 0;
+      const goal = parseInt(goalCal) || 2000;
+      const percent = Math.round((cal / goal) * 100);
+
+      let achievement = '';
+      if (percent >= 100) {
+        achievement = '🎯 達成目標！';
+      } else if (percent >= 90) {
+        achievement = '🔥 接近目標了！';
+      } else if (percent >= 70) {
+        achievement = '💪 表現良好！';
+      } else {
+        achievement = '📈 持續加油！';
+      }
+
+      shareCardData = { calories: cal, goalCalories: goal, achievement };
+
+      const today = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
+      document.getElementById('share-date').textContent = today;
+      document.getElementById('share-calories').textContent = cal;
+      document.getElementById('share-achievement').textContent = achievement + ' ' + percent + '%';
+
+      document.getElementById('share-modal').style.display = 'flex';
+    }
+
+    function closeShareModal() {
+      document.getElementById('share-modal').style.display = 'none';
+    }
+
+    function downloadShareCard() {
+      const card = document.getElementById('share-card-preview');
+      const canvas = document.createElement('canvas');
+      canvas.width = 400;
+      canvas.height = 300;
+      const ctx = canvas.getContext('2d');
+
+      // Draw gradient background
+      const gradient = ctx.createLinearGradient(0, 0, 400, 300);
+      gradient.addColorStop(0, '#2d6a4f');
+      gradient.addColorStop(1, '#74c69d');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 400, 300);
+
+      // Draw text
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🥗 CaloScanAi', 200, 50);
+
+      ctx.font = '16px sans-serif';
+      ctx.fillText(new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' }), 200, 80);
+
+      ctx.font = '14px sans-serif';
+      ctx.fillText('今日熱量攝取', 200, 120);
+
+      ctx.font = 'bold 48px sans-serif';
+      ctx.fillText(shareCardData.calories + '', 200, 180);
+
+      ctx.font = '14px sans-serif';
+      ctx.fillText('kcal', 200, 210);
+
+      ctx.font = '18px sans-serif';
+      ctx.fillText(shareCardData.achievement + ' ' + Math.round((shareCardData.calories / shareCardData.goalCalories) * 100) + '%', 200, 260);
+
+      // Download
+      const link = document.createElement('a');
+      link.download = 'caloscanai_achievement.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    function copyShareCard() {
+      const text = `🥗 CaloScanAi 成就分享\n日期：${new Date().toLocaleDateString('zh-TW')}\n今日攝取：${shareCardData.calories} kcal\n${shareCardData.achievement} ${Math.round((shareCardData.calories / shareCardData.goalCalories) * 100)}%`;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('已複製到剪貼簿！');
+        closeShareModal();
+      });
+    }
 
     async function lookupBarcode() {
       const barcode = document.getElementById('barcode-input').value.trim();
