@@ -305,7 +305,7 @@
 
     <div class="tab-container">
       <button class="tab-btn active" onclick="switchTab(event, 'users')">會員管理</button>
-      <button class="tab-btn" onclick="switchTab(event, 'logs')">食物日誌</button>
+      <button class="tab-btn" onclick="switchTab(event, 'logs')">食物資料庫</button>
       <button class="tab-btn" onclick="switchTab(event, 'quotes')">勵志語</button>
     </div>
 
@@ -341,17 +341,29 @@
     <div id="logs-tab" class="tab-content" style="display:none;">
       <div class="section">
         <div class="section-header">
-          <h2 class="section-title">食物日誌</h2>
+          <h2 class="section-title">食物資料庫</h2>
         </div>
 
         <!-- Edit Form -->
         <div id="edit-food-form" style="display:none; background:#f9f9f9; padding:20px; border-radius:12px; margin-bottom:20px;">
-          <h3 style="margin-bottom:16px;">編輯食物記錄</h3>
+          <h3 style="margin-bottom:16px;">編輯食物資料</h3>
           <input type="hidden" id="edit-food-id">
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
             <div style="margin-bottom:12px;">
+              <label style="display:block; margin-bottom:4px;">條碼</label>
+              <input type="text" id="edit-food-barcode" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div style="margin-bottom:12px;">
               <label style="display:block; margin-bottom:4px;">食物名稱</label>
               <input type="text" id="edit-food-name" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div style="margin-bottom:12px;">
+              <label style="display:block; margin-bottom:4px;">品牌</label>
+              <input type="text" id="edit-food-brand" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div style="margin-bottom:12px;">
+              <label style="display:block; margin-bottom:4px;">每份量</label>
+              <input type="text" id="edit-food-serving" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
             </div>
             <div style="margin-bottom:12px;">
               <label style="display:block; margin-bottom:4px;">熱量 (kcal)</label>
@@ -381,8 +393,9 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>用戶</th>
-              <th>食物名稱</th>
+              <th>條碼</th>
+              <th>名稱</th>
+              <th>品牌</th>
               <th>熱量</th>
               <th>蛋白質</th>
               <th>碳水</th>
@@ -391,7 +404,7 @@
             </tr>
           </thead>
           <tbody id="logs-table-body">
-            <tr><td colspan="8" class="loading">載入中...</td></tr>
+            <tr><td colspan="9" class="loading">載入中...</td></tr>
           </tbody>
         </table>
         </div>
@@ -618,48 +631,49 @@
 
     async function loadFoodLogs() {
       try {
-        const response = await fetch('/api/admin/food-logs', {
+        const response = await fetch('/api/admin/barcodes', {
           headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
         });
         const result = await response.json();
 
         if (result.success) {
           const tbody = document.getElementById('logs-table-body');
-          if (result.data.logs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#999;">尚無食物記錄</td></tr>';
+          if (result.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#999;">尚無食物資料</td></tr>';
           } else {
-            tbody.innerHTML = result.data.logs.map(log => {
-              // 解析食物名稱（可能是 JSON 或純文字）
-              let foodName = log.description || '未知食物';
-              try {
-                if (foodName.startsWith('{')) {
-                  const parsed = JSON.parse(foodName);
-                  foodName = parsed.name || parsed.description || parsed.foods?.[0]?.name || '未知食物';
-                }
-              } catch (e) {}
-              return `
+            tbody.innerHTML = result.data.map(food => `
               <tr>
-                <td data-label="ID">${log.id}</td>
-                <td data-label="用戶">${log.user_name}</td>
-                <td data-label="食物名稱">${foodName.substring(0, 20)}</td>
-                <td data-label="熱量">${log.calories} kcal</td>
-                <td data-label="蛋白質">${log.protein}g</td>
-                <td data-label="碳水">${log.carbs}g</td>
-                <td data-label="脂肪">${log.fat}g</td>
-                <td data-label="操作"><button class="btn btn-secondary btn-small" onclick="showEditFoodForm(${log.id}, ${JSON.stringify(foodName).replace(/"/g, '&quot;')}, ${log.calories}, ${log.protein}, ${log.carbs}, ${log.fat})">修改</button>
-                  <button class="btn btn-danger btn-small" onclick="deleteFoodLog(${log.id})">刪除</button></td>
+                <td data-label="ID">${food.id}</td>
+                <td data-label="條碼">${food.barcode || '-'}</td>
+                <td data-label="名稱">${food.name}</td>
+                <td data-label="品牌">${food.brand || '-'}</td>
+                <td data-label="熱量">${food.calories} kcal</td>
+                <td data-label="蛋白質">${food.protein}g</td>
+                <td data-label="碳水">${food.carbs}g</td>
+                <td data-label="脂肪">${food.fat}g</td>
+                <td data-label="操作"><button class="btn btn-secondary btn-small" onclick="showEditFoodForm(${food.id}, '${escapeHtml(food.barcode || '')}', '${escapeHtml(food.name)}', '${escapeHtml(food.brand || '')}', '${escapeHtml(food.serving_size || '')}', ${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat})">修改</button>
+                  <button class="btn btn-danger btn-small" onclick="deleteFoodLog(${food.id})">刪除</button></td>
               </tr>
-            `}).join('');
+            `).join('');
           }
         }
       } catch (error) {
-        document.getElementById('logs-table-body').innerHTML = '<tr><td colspan="8" class="error">載入失敗</td></tr>';
+        document.getElementById('logs-table-body').innerHTML = '<tr><td colspan="9" class="error">載入失敗</td></tr>';
       }
     }
 
-    async function showEditFoodForm(id, name, calories, protein, carbs, fat) {
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    async function showEditFoodForm(id, barcode, name, brand, serving, calories, protein, carbs, fat) {
       document.getElementById('edit-food-id').value = id;
+      document.getElementById('edit-food-barcode').value = barcode;
       document.getElementById('edit-food-name').value = name;
+      document.getElementById('edit-food-brand').value = brand;
+      document.getElementById('edit-food-serving').value = serving;
       document.getElementById('edit-food-calories').value = calories;
       document.getElementById('edit-food-protein').value = protein;
       document.getElementById('edit-food-carbs').value = carbs;
@@ -673,21 +687,27 @@
 
     async function submitEditFoodLog() {
       const id = document.getElementById('edit-food-id').value;
-      const description = document.getElementById('edit-food-name').value;
+      const barcode = document.getElementById('edit-food-barcode').value;
+      const name = document.getElementById('edit-food-name').value;
+      const brand = document.getElementById('edit-food-brand').value;
+      const serving = document.getElementById('edit-food-serving').value;
       const calories = document.getElementById('edit-food-calories').value;
       const protein = document.getElementById('edit-food-protein').value;
       const carbs = document.getElementById('edit-food-carbs').value;
       const fat = document.getElementById('edit-food-fat').value;
 
       try {
-        const response = await fetch('/api/admin/food-logs/' + id, {
+        const response = await fetch('/api/admin/barcodes/' + id, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + localStorage.getItem('token')
           },
           body: JSON.stringify({
-            description,
+            barcode,
+            name,
+            brand,
+            servingSize: serving,
             calories: parseInt(calories) || 0,
             protein: parseFloat(protein) || 0,
             carbs: parseFloat(carbs) || 0,
@@ -709,10 +729,10 @@
     }
 
     async function deleteFoodLog(id) {
-      if (!confirm('確定要刪除此食物記錄嗎？')) return;
+      if (!confirm('確定要刪除此食物資料嗎？')) return;
 
       try {
-        const response = await fetch('/api/admin/food-logs/' + id, {
+        const response = await fetch('/api/admin/barcodes/' + id, {
           method: 'DELETE',
           headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
         });

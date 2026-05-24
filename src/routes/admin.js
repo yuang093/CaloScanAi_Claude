@@ -1,6 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
-import { UserDB, FoodLogDB, DailyProgressDB, QuoteDB } from '../services/database.js';
+import { UserDB, FoodLogDB, DailyProgressDB, QuoteDB, BarcodeDB } from '../services/database.js';
 import { verifyToken } from '../middleware/auth.js';
 import { getLocalDate } from '../utils/date.js';
 import db from '../services/database.js';
@@ -272,6 +272,58 @@ router.delete('/food-logs/:id', adminMiddleware, (req, res) => {
   res.json({
     success: true,
     message: '食物記錄已刪除'
+  });
+});
+
+// GET /api/admin/barcodes - Get all barcodes (food database) (admin only)
+router.get('/barcodes', adminMiddleware, (req, res) => {
+  const barcodes = db.prepare('SELECT * FROM barcodes ORDER BY created_at DESC').all();
+
+  res.json({
+    success: true,
+    data: barcodes
+  });
+});
+
+// PUT /api/admin/barcodes/:id - Update barcode (admin only)
+router.put('/barcodes/:id', adminMiddleware, (req, res) => {
+  const { barcode, name, brand, servingSize, calories, protein, carbs, fat } = req.body;
+
+  if (!name || calories === undefined) {
+    return res.status(400).json({ error: '名稱和熱量為必填欄位' });
+  }
+
+  const stmt = db.prepare(`
+    UPDATE barcodes
+    SET barcode = ?, name = ?, brand = ?, serving_size = ?, calories = ?, protein = ?, carbs = ?, fat = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `);
+  const result = stmt.run(barcode || '', name, brand || '', servingSize || '', calories, protein || 0, carbs || 0, fat || 0, req.params.id);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: '食物資料不存在' });
+  }
+
+  const updated = db.prepare('SELECT * FROM barcodes WHERE id = ?').get(req.params.id);
+
+  res.json({
+    success: true,
+    message: '食物資料已更新',
+    data: updated
+  });
+});
+
+// DELETE /api/admin/barcodes/:id - Delete barcode (admin only)
+router.delete('/barcodes/:id', adminMiddleware, (req, res) => {
+  const result = db.prepare('DELETE FROM barcodes WHERE id = ?').run(req.params.id);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: '食物資料不存在' });
+  }
+
+  res.json({
+    success: true,
+    message: '食物資料已刪除'
   });
 });
 
