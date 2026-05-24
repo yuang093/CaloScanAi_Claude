@@ -1121,9 +1121,9 @@
           document.getElementById('meal-breakfast-cal').textContent = breakfastCal + ' kcal';
           document.getElementById('meal-lunch-cal').textContent = lunchCal + ' kcal';
           document.getElementById('meal-dinner-cal').textContent = dinnerCal + ' kcal';
-          document.getElementById('meal-breakfast-foods').textContent = breakfastFoods.length > 0 ? breakfastFoods.length + ' 種食物' : '尚無記錄';
-          document.getElementById('meal-lunch-foods').textContent = lunchFoods.length > 0 ? lunchFoods.length + ' 種食物' : '尚無記錄';
-          document.getElementById('meal-dinner-foods').textContent = dinnerFoods.length > 0 ? dinnerFoods.length + ' 種食物' : '尚無記錄';
+          document.getElementById('meal-breakfast-foods').textContent = breakfastFoods.length > 0 ? breakfastFoods.join('、') : '尚無記錄';
+          document.getElementById('meal-lunch-foods').textContent = lunchFoods.length > 0 ? lunchFoods.join('、') : '尚無記錄';
+          document.getElementById('meal-dinner-foods').textContent = dinnerFoods.length > 0 ? dinnerFoods.join('、') : '尚無記錄';
 
           document.getElementById('goal-cal-display').textContent = goalCalories;
 
