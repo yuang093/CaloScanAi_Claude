@@ -370,4 +370,70 @@ router.delete('/quotes/:id', adminMiddleware, (req, res) => {
   });
 });
 
+// GET /api/admin/backup - Get database backup (admin only)
+router.get('/backup', adminMiddleware, (req, res) => {
+  try {
+    const backupData = {
+      version: '1.0',
+      timestamp: new Date().toISOString(),
+      tables: {
+        barcodes: db.prepare('SELECT * FROM barcodes ORDER BY created_at DESC').all(),
+        users: db.prepare('SELECT id, username, name, role, created_at FROM users ORDER BY id').all(),
+        user_profiles: db.prepare('SELECT * FROM user_profiles').all(),
+        daily_quotes: db.prepare('SELECT * FROM daily_quotes ORDER BY id').all()
+      }
+    };
+
+    res.json({
+      success: true,
+      data: backupData
+    });
+  } catch (error) {
+    console.error('Backup error:', error);
+    res.status(500).json({ error: '備份失敗' });
+  }
+});
+
+// POST /api/admin/restore - Restore database from backup (admin only)
+router.post('/restore', adminMiddleware, (req, res) => {
+  try {
+    const { data } = req.body;
+
+    if (!data || !data.tables) {
+      return res.status(400).json({ error: '無效的備份資料' });
+    }
+
+    // Restore barcodes
+    if (data.tables.barcodes && Array.isArray(data.tables.barcodes)) {
+      // Clear existing barcodes and insert new ones
+      db.exec('DELETE FROM barcodes');
+      const stmt = db.prepare(`
+        INSERT INTO barcodes (barcode, name, brand, calories, protein, carbs, fat, serving_size, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const item of data.tables.barcodes) {
+        stmt.run(
+          item.barcode,
+          item.name,
+          item.brand || '未知',
+          item.calories || 0,
+          item.protein || 0,
+          item.carbs || 0,
+          item.fat || 0,
+          item.serving_size || '未知',
+          item.created_at || new Date().toISOString()
+        );
+      }
+    }
+
+    res.json({
+      success: true,
+      message: '還原成功'
+    });
+  } catch (error) {
+    console.error('Restore error:', error);
+    res.status(500).json({ error: '還原失敗' });
+  }
+});
+
 export default router;

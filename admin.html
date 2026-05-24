@@ -307,6 +307,7 @@
       <button class="tab-btn active" onclick="switchTab(event, 'users')">會員管理</button>
       <button class="tab-btn" onclick="switchTab(event, 'logs')">食物資料庫</button>
       <button class="tab-btn" onclick="switchTab(event, 'quotes')">勵志語</button>
+      <button class="tab-btn" onclick="switchTab(event, 'backup')">備份管理</button>
     </div>
 
     <div id="error-container"></div>
@@ -447,6 +448,32 @@
             <tr><td colspan="4" class="loading">載入中...</td></tr>
           </tbody>
         </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Backup Tab -->
+    <div id="backup-tab" class="tab-content" style="display:none;">
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">資料庫備份</h2>
+          <button onclick="downloadBackup()" class="btn btn-primary" style="margin-left:auto;">下載備份</button>
+        </div>
+        <div style="background:var(--color-surface,#fff); padding:24px; border-radius:12px; margin-bottom:20px;">
+          <h4 style="margin-bottom:16px;">📦 備份說明</h4>
+          <p style="color:var(--color-text-muted,#666); margin-bottom:12px;">
+            備份檔案包含：食物資料庫、會員資料、每日勵志語。<br>
+            不包含個人食物日誌（這些資料存在伺服器日誌中）。
+          </p>
+          <p style="color:var(--color-text-muted,#666); font-size:0.9rem;">
+            <strong>還原功能：</strong>上傳備份檔案可還原食物資料庫與設定。
+          </p>
+        </div>
+        <div style="background:var(--color-surface,#fff); padding:24px; border-radius:12px;">
+          <h4 style="margin-bottom:16px;">🔄 還原資料庫</h4>
+          <input type="file" id="restore-file-input" accept=".json" style="display:none;" onchange="handleRestoreFile(event)">
+          <button onclick="document.getElementById('restore-file-input').click()" class="btn btn-secondary">選擇備份檔案</button>
+          <div id="restore-status" style="margin-top:12px;"></div>
         </div>
       </div>
     </div>
@@ -908,6 +935,74 @@
       } catch (error) {
         alert('刪除失敗');
       }
+    }
+
+    async function downloadBackup() {
+      try {
+        const response = await fetch('/api/admin/backup', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'caloscanai_backup_' + new Date().toISOString().split('T')[0] + '.json';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          alert('備份下載成功！');
+        } else {
+          alert('備份失敗');
+        }
+      } catch (error) {
+        alert('備份失敗，請稍後再試');
+      }
+    }
+
+    async function handleRestoreFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!confirm('確定要還原資料庫嗎？現有資料將被覆蓋。')) {
+        event.target.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          document.getElementById('restore-status').innerHTML = '<span style="color:#666;">還原中...</span>';
+
+          const response = await fetch('/api/admin/restore', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify({ data })
+          });
+
+          const result = await response.json();
+          if (result.success) {
+            document.getElementById('restore-status').innerHTML = '<span style="color:green;">還原成功！</span>';
+            setTimeout(() => {
+              document.getElementById('restore-status').innerHTML = '';
+              loadFoodLogs();
+            }, 1500);
+          } else {
+            document.getElementById('restore-status').innerHTML = '<span style="color:red;">還原失敗：' + result.error + '</span>';
+          }
+        } catch (err) {
+          document.getElementById('restore-status').innerHTML = '<span style="color:red;">檔案格式錯誤</span>';
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
     }
 
     function showAddQuoteForm() {
