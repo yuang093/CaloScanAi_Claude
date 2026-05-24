@@ -97,7 +97,8 @@ try {
       carbs REAL DEFAULT 0,
       fat REAL DEFAULT 0,
       serving_size TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS user_profiles (
@@ -127,6 +128,20 @@ try {
   // Column may already exist, ignore error
   if (!err.message.includes('duplicate column name')) {
     console.warn('⚠️ users.role 欄位設定警告:', err.message);
+  }
+}
+
+// Migration: ensure barcodes table has updated_at column
+try {
+  const pragma = db.prepare("PRAGMA table_info(barcodes)").all();
+  const columns = pragma.map(c => c.name);
+  if (!columns.includes('updated_at')) {
+    db.exec("ALTER TABLE barcodes ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP");
+    console.log('✅ 資料庫遷移完成: 新增 barcodes.updated_at 欄位');
+  }
+} catch (err) {
+  if (!err.message.includes('duplicate column name')) {
+    console.warn('⚠️ barcodes.updated_at 欄位設定警告:', err.message);
   }
 }
 
