@@ -941,6 +941,7 @@
           const entry = {
             id: result.data.id,
             image: currentPreview,
+            name: analysisData.name || 'AI 分析食物',
             calories: analysisData.totalCalories || 0,
             protein: analysisData.totalProtein || 0,
             carbs: analysisData.totalCarbs || 0,
@@ -974,8 +975,9 @@
 
       container.innerHTML = foodLog.map(item => `
         <div class="food-log-item" onclick="showFoodDetail(${item.id})" style="cursor:pointer;">
-          <img src="${item.image}" alt="Food" class="food-log-img">
+          <img src="${item.image}" alt="Food" class="food-log-img" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E🍽️%3C/text%3E%3C/svg%3E'">
           <div class="food-log-info">
+            <div class="food-log-name" style="font-weight:600; font-size:0.85rem; color:var(--color-text); margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.name || '未命名食物'}</div>
             <div class="food-log-cal">${item.calories} kcal</div>
             <div class="food-log-time">${item.time}</div>
           </div>
@@ -1694,6 +1696,7 @@
       const entry = {
         id: Date.now(),
         image: barcodeCapturedImage ? 'data:image/jpeg;base64,' + barcodeCapturedImage : '',
+        name: barcodeProductData.name || '未命名食物',
         calories: barcodeProductData.calories || 0,
         protein: barcodeProductData.protein || 0,
         carbs: barcodeProductData.carbs || 0,
@@ -1780,8 +1783,9 @@
           document.getElementById('barcode-result').style.display = 'block';
           document.getElementById('add-barcode-btn').style.display = 'block';
 
-          // Auto add to log
-          addBarcodeToLog();
+          // API 已自動加入日誌，關閉 modal 並重新載入列表
+          closeBarcodeModal();
+          loadFoodLog();
         } else {
           const errMsg = typeof result.error === 'string' ? result.error : (result.error?.message || JSON.stringify(result.error));
           document.getElementById('nutrition-parse-result').textContent = '❌ 解析失敗：' + errMsg;
