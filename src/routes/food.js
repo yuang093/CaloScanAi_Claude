@@ -175,7 +175,7 @@ router.get('/logs/:id', authMiddleware, async (req, res) => {
 
 // PUT /api/food/logs/:id - Update food log (authenticated)
 router.put('/logs/:id', authMiddleware, async (req, res) => {
-  const { mealType, calories, protein, carbs, fat } = req.body;
+  const { mealType, calories, protein, carbs, fat, description } = req.body;
 
   // Check ownership
   const existingLog = FoodLogDB.findById(parseInt(req.params.id));
@@ -188,8 +188,29 @@ router.put('/logs/:id', authMiddleware, async (req, res) => {
     calories,
     protein,
     carbs,
-    fat
+    fat,
+    description
   });
+
+  // Sync update to barcodes table if description matches
+  if (description || calories !== undefined) {
+    const foodName = description || existingLog.description;
+    // Find barcodes entry by name (AI foods have barcode like 'AI_*')
+    const barcodeEntry = db.prepare(`
+      SELECT id FROM barcodes WHERE name = ? OR (barcode LIKE 'AI_%' AND name = ?)
+    `).get(foodName, foodName);
+
+    if (barcodeEntry) {
+      BarcodeDB.update(barcodeEntry.id, {
+        name: foodName,
+        calories: calories !== undefined ? calories : existingLog.calories,
+        protein: protein !== undefined ? protein : existingLog.protein,
+        carbs: carbs !== undefined ? carbs : existingLog.carbs,
+        fat: fat !== undefined ? fat : existingLog.fat
+      });
+      console.log('[Food] BarcodeDB synced for:', foodName);
+    }
+  }
 
   // Calculate goalCalories for daily progress
   const calcGoalCalories = () => {

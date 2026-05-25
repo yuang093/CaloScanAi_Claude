@@ -701,29 +701,39 @@
       <div id="food-detail-image" style="width:100%; height:250px; background:var(--color-bg); border-radius:12px; margin-bottom:16px; overflow:hidden;">
         <img id="food-detail-img" src="" style="width:100%; height:100%; object-fit:cover;">
       </div>
+      <input type="text" id="food-detail-name-edit" style="display:none; width:100%; font-size:1.2rem; font-weight:600; padding:8px; border:1px solid var(--color-border); border-radius:8px; margin-bottom:8px;" />
       <h3 id="food-detail-name" style="margin-bottom:8px; font-size:1.2rem;"></h3>
       <p id="food-detail-time" style="color:var(--color-text-muted); font-size:0.85rem; margin-bottom:16px;"></p>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
         <div style="background:var(--color-bg); border-radius:12px; padding:16px; text-align:center;">
           <div id="food-detail-cal" style="font-size:1.5rem; font-weight:700; color:var(--color-primary);">0</div>
+          <input type="number" id="food-detail-cal-edit" style="display:none; width:80%; font-size:1.2rem; text-align:center; padding:4px;" placeholder="卡路里" />
           <div style="font-size:0.8rem; color:var(--color-text-muted);">卡路里 (kcal)</div>
         </div>
         <div style="background:var(--color-bg); border-radius:12px; padding:16px; text-align:center;">
           <div id="food-detail-protein" style="font-size:1.5rem; font-weight:700; color:var(--color-primary);">0g</div>
+          <input type="number" id="food-detail-protein-edit" style="display:none; width:80%; font-size:1.2rem; text-align:center; padding:4px;" placeholder="蛋白質" />
           <div style="font-size:0.8rem; color:var(--color-text-muted);">蛋白質</div>
         </div>
         <div style="background:var(--color-bg); border-radius:12px; padding:16px; text-align:center;">
           <div id="food-detail-carbs" style="font-size:1.5rem; font-weight:700; color:var(--color-primary);">0g</div>
+          <input type="number" id="food-detail-carbs-edit" style="display:none; width:80%; font-size:1.2rem; text-align:center; padding:4px;" placeholder="碳水" />
           <div style="font-size:0.8rem; color:var(--color-text-muted);">碳水化合物</div>
         </div>
         <div style="background:var(--color-bg); border-radius:12px; padding:16px; text-align:center;">
           <div id="food-detail-fat" style="font-size:1.5rem; font-weight:700; color:var(--color-primary);">0g</div>
+          <input type="number" id="food-detail-fat-edit" style="display:none; width:80%; font-size:1.2rem; text-align:center; padding:4px;" placeholder="脂肪" />
           <div style="font-size:0.8rem; color:var(--color-text-muted);">脂肪</div>
         </div>
       </div>
-      <button class="btn-primary" onclick="deleteFoodLogItem()" id="food-detail-delete-btn" style="width:100%; margin-top:16px; background:#e74c3c;">
-        刪除此記錄
-      </button>
+      <div id="food-detail-buttons" style="display:flex; gap:8px; margin-top:16px;">
+        <button class="btn-primary" onclick="editFoodLogItem()" id="food-detail-edit-btn" style="flex:1;">編輯</button>
+        <button class="btn-primary" onclick="deleteFoodLogItem()" style="flex:1; background:#e74c3c;">刪除</button>
+      </div>
+      <div id="food-detail-edit-buttons" style="display:none; gap:8px; margin-top:16px;">
+        <button class="btn-primary" onclick="saveFoodLogItem()" style="flex:1; background:#27ae60;">保存</button>
+        <button class="btn-primary" onclick="cancelEditFoodLogItem()" style="flex:1; background:#95a5a6;">取消</button>
+      </div>
     </div>
   </div>
 
@@ -2288,24 +2298,99 @@
     }
 
     let currentFoodDetailId = null;
+    let currentFoodDetailData = null;
+    let isEditingFoodLog = false;
 
     function showFoodDetail(id) {
       const item = foodLog.find(f => f.id === id);
       if (!item) return;
       currentFoodDetailId = id;
+      currentFoodDetailData = item;
+      isEditingFoodLog = false;
       document.getElementById('food-detail-img').src = item.image;
       document.getElementById('food-detail-name').textContent = item.name || '未命名食物';
+      document.getElementById('food-detail-name').style.display = 'block';
+      document.getElementById('food-detail-name-edit').style.display = 'none';
       document.getElementById('food-detail-time').textContent = item.time;
       document.getElementById('food-detail-cal').textContent = item.calories;
+      document.getElementById('food-detail-cal').style.display = 'block';
+      document.getElementById('food-detail-cal-edit').style.display = 'none';
       document.getElementById('food-detail-protein').textContent = item.protein + 'g';
+      document.getElementById('food-detail-protein').style.display = 'block';
+      document.getElementById('food-detail-protein-edit').style.display = 'none';
       document.getElementById('food-detail-carbs').textContent = item.carbs + 'g';
+      document.getElementById('food-detail-carbs').style.display = 'block';
+      document.getElementById('food-detail-carbs-edit').style.display = 'none';
       document.getElementById('food-detail-fat').textContent = item.fat + 'g';
+      document.getElementById('food-detail-fat').style.display = 'block';
+      document.getElementById('food-detail-fat-edit').style.display = 'none';
+      document.getElementById('food-detail-buttons').style.display = 'flex';
+      document.getElementById('food-detail-edit-buttons').style.display = 'none';
       document.getElementById('food-detail-modal').style.display = 'flex';
+    }
+
+    function editFoodLogItem() {
+      if (!currentFoodDetailData) return;
+      isEditingFoodLog = true;
+      document.getElementById('food-detail-name').style.display = 'none';
+      document.getElementById('food-detail-name-edit').style.display = 'block';
+      document.getElementById('food-detail-name-edit').value = currentFoodDetailData.name || '';
+      document.getElementById('food-detail-cal').style.display = 'none';
+      document.getElementById('food-detail-cal-edit').style.display = 'block';
+      document.getElementById('food-detail-cal-edit').value = currentFoodDetailData.calories || 0;
+      document.getElementById('food-detail-protein').style.display = 'none';
+      document.getElementById('food-detail-protein-edit').style.display = 'block';
+      document.getElementById('food-detail-protein-edit').value = currentFoodDetailData.protein || 0;
+      document.getElementById('food-detail-carbs').style.display = 'none';
+      document.getElementById('food-detail-carbs-edit').style.display = 'block';
+      document.getElementById('food-detail-carbs-edit').value = currentFoodDetailData.carbs || 0;
+      document.getElementById('food-detail-fat').style.display = 'none';
+      document.getElementById('food-detail-fat-edit').style.display = 'block';
+      document.getElementById('food-detail-fat-edit').value = currentFoodDetailData.fat || 0;
+      document.getElementById('food-detail-buttons').style.display = 'none';
+      document.getElementById('food-detail-edit-buttons').style.display = 'flex';
+    }
+
+    function cancelEditFoodLogItem() {
+      isEditingFoodLog = false;
+      showFoodDetail(currentFoodDetailId);
+    }
+
+    async function saveFoodLogItem() {
+      if (!currentFoodDetailId) return;
+      const name = document.getElementById('food-detail-name-edit').value;
+      const calories = parseInt(document.getElementById('food-detail-cal-edit').value) || 0;
+      const protein = parseFloat(document.getElementById('food-detail-protein-edit').value) || 0;
+      const carbs = parseFloat(document.getElementById('food-detail-carbs-edit').value) || 0;
+      const fat = parseFloat(document.getElementById('food-detail-fat-edit').value) || 0;
+
+      try {
+        const res = await fetch('/api/food/logs/' + currentFoodDetailId, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify({ description: name, calories, protein, carbs, fat })
+        });
+        const result = await res.json();
+        if (result.success) {
+          closeFoodDetailModal();
+          loadFoodLog();
+        } else {
+          alert(result.error || '保存失敗');
+        }
+      } catch (err) {
+        alert('保存失敗');
+        console.error('Save food log error:', err);
+      }
     }
 
     function closeFoodDetailModal() {
       document.getElementById('food-detail-modal').style.display = 'none';
       currentFoodDetailId = null;
+      currentFoodDetailData = null;
+      isEditingFoodLog = false;
     }
 
     async function deleteFoodLogItem() {

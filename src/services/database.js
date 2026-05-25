@@ -727,6 +727,7 @@ export const FoodLogDB = {
     if (data.protein !== undefined) { fields.push('protein = ?'); values.push(data.protein); }
     if (data.carbs !== undefined) { fields.push('carbs = ?'); values.push(data.carbs); }
     if (data.fat !== undefined) { fields.push('fat = ?'); values.push(data.fat); }
+    if (data.description !== undefined) { fields.push('description = ?'); values.push(data.description); }
 
     if (fields.length === 0) return this.findById(id);
 
