@@ -112,6 +112,7 @@ try {
       carbs REAL DEFAULT 0,
       fat REAL DEFAULT 0,
       serving_size TEXT,
+      use_count INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (barcode_id) REFERENCES barcodes(id) ON DELETE SET NULL
@@ -954,14 +955,18 @@ export const ShoppingDB = {
 
 // Favorites operations
 export const FavoritesDB = {
-  findByUserId(userId) {
-    return db.prepare('SELECT * FROM favorites WHERE user_id = ? ORDER BY created_at DESC').all(userId);
+  findByUserId(userId, options = {}) {
+    const { sort = 'recent' } = options;
+    let orderClause = 'ORDER BY created_at DESC';
+    if (sort === 'most_used') orderClause = 'ORDER BY use_count DESC, created_at DESC';
+    else if (sort === 'name') orderClause = 'ORDER BY name ASC';
+    return db.prepare(`SELECT * FROM favorites WHERE user_id = ? ${orderClause}`).all(userId);
   },
 
   create(userId, data) {
     const stmt = db.prepare(`
-      INSERT INTO favorites (user_id, barcode_id, name, brand, calories, protein, carbs, fat, serving_size)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO favorites (user_id, barcode_id, name, brand, calories, protein, carbs, fat, serving_size, use_count)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
     `);
     const result = stmt.run(
       userId,
@@ -975,6 +980,10 @@ export const FavoritesDB = {
       data.servingSize || ''
     );
     return this.findById(result.lastInsertRowid);
+  },
+
+  incrementUseCount(id) {
+    return db.prepare('UPDATE favorites SET use_count = use_count + 1 WHERE id = ?').run(id);
   },
 
   findById(id) {

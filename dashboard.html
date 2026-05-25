@@ -746,6 +746,13 @@
     <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; position:relative;" onclick="event.stopPropagation()">
       <button onclick="closeFavoritesModal()" style="position:absolute; top:8px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer; z-index:10;">×</button>
       <h3 style="margin-bottom:16px;">⭐ 我的最愛</h3>
+      <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <select id="favorites-sort-select" onchange="loadFavorites()" style="padding:6px 12px; border-radius:8px; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); font-size:0.85rem;">
+          <option value="recent">最近新增</option>
+          <option value="most_used">最常使用</option>
+          <option value="name">按名稱</option>
+        </select>
+      </div>
       <div id="favorites-list" style="margin-bottom:16px;"></div>
       <h4 style="margin-bottom:12px;">📋 最近的食物</h4>
       <div id="recent-list" style="max-height:200px; overflow-y:auto;"></div>
@@ -2109,7 +2116,7 @@
       return div.innerHTML;
     }
 
-    async function addFoodFromDatabase(id, name, calories, protein, carbs, fat) {
+    async function addFoodFromDatabase(id, name, calories, protein, carbs, fat, isFavorite = false) {
       try {
         const response = await fetch('/api/food/add-from-database', {
           method: 'POST',
@@ -2117,7 +2124,7 @@
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + localStorage.getItem('token')
           },
-          body: JSON.stringify({ barcodeId: id })
+          body: JSON.stringify({ barcodeId: id, isFavorite })
         });
         const result = await response.json();
 
@@ -2161,7 +2168,8 @@
 
     async function loadFavorites() {
       try {
-        const response = await fetch('/api/food/search', {
+        const sort = document.getElementById('favorites-sort-select')?.value || 'recent';
+        const response = await fetch(`/api/food/favorites?sort=${sort}`, {
           headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
         });
         const result = await response.json();
@@ -2176,11 +2184,11 @@
                 <div style="font-weight:600;">${escapeHtml(food.name || '未命名')}</div>
                 <div style="font-size:0.8rem; color:var(--color-text-muted);">${escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
               </div>
-              <button onclick="addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0})" class="btn btn-primary btn-small">加入</button>
+              <button onclick="addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0}, true)" class="btn btn-primary btn-small">加入</button>
             </div>
           `}).join('');
         } else {
-          container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">尚無食物資料</div>';
+          container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">尚無最愛食物</div>';
         }
       } catch (error) {
         console.error('Load favorites error:', error);

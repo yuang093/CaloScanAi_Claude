@@ -319,6 +319,11 @@ router.post('/add-from-database', authMiddleware, async (req, res, next) => {
       description: food.name
     });
 
+    // Increment use_count for favorite items
+    if (isFavorite && barcodeId) {
+      FavoritesDB.incrementUseCount(parseInt(barcodeId));
+    }
+
     // Update daily progress
     const today = getLocalDate();
     const todayStats = FoodLogDB.getTodayStats(req.user.id);
@@ -362,7 +367,10 @@ router.post('/add-from-database', authMiddleware, async (req, res, next) => {
 
 // GET /api/food/favorites - Get user's favorites (authenticated)
 router.get('/favorites', authMiddleware, async (req, res) => {
-  const favorites = FavoritesDB.findByUserId(req.user.id);
+  const { sort = 'recent' } = req.query;
+  const validSorts = ['recent', 'most_used', 'name'];
+  const sortParam = validSorts.includes(sort) ? sort : 'recent';
+  const favorites = FavoritesDB.findByUserId(req.user.id, { sort: sortParam });
   res.json({
     success: true,
     data: favorites
