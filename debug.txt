@@ -1,30 +1,52 @@
-root@localhost:/opt/caloscanai_claude# docker compose logs app | grep -E "遷移|migration|use_count"
-caloscanai_app  | ✅ 資料庫遷移完成: 新增 favorites.use_count 欄位
-root@localhost:/opt/caloscanai_claude# docker compose down --rmi all && docker compose up --build -d
-[+] Running 5/5
- ✔ Container caloscanai_nginx                    Removed                                                                                                                                 0.2s 
- ✔ Container caloscanai_app                      Removed                                                                                                                                 0.1s 
- ✔ Image nginx:alpine                            Removed                                                                                                                                 0.1s 
- ✔ Image caloscanai_claude-app:latest            Removed                                                                                                                                 0.1s 
- ! Network caloscanai_claude_caloscanai_network  Resource is still in use                                                                                                                0.0s 
-[+] Running 9/9
- ✔ nginx Pulled                                                                                                                                                                          4.7s 
-   ✔ 6a0ac1617861 Already exists                                                                                                                                                         0.0s 
-   ✔ abaae85d1626 Pull complete                                                                                                                                                          0.8s 
-   ✔ 43f834d60d8a Pull complete                                                                                                                                                          0.8s 
-   ✔ de1b677d8c00 Pull complete                                                                                                                                                          0.8s 
-   ✔ 94d083cf706a Pull complete                                                                                                                                                          1.1s 
-   ✔ e654dbbbb9e1 Pull complete                                                                                                                                                          1.1s 
-   ✔ a5008f4a4b25 Pull complete                                                                                                                                                          1.2s 
-   ✔ fbaed3f7fcbe Pull complete                                                                                                                                                          2.3s 
-[+] Building 0.0s (0/0)                                                                                                                                                                       
-[+] Running 3/3
- ✔ app                         Built                                                                                                                                                     0.0s 
- ✔ Container caloscanai_app    Started                                                                                                                                                   0.2s 
- ✔ Container caloscanai_nginx  Started                                                                                                                                                   0.6s 
-root@localhost:/opt/caloscanai_claude# docker compose logs app | tail -50
+root@localhost:/opt/caloscanai_claude# docker compose logs app --tail=30
 caloscanai_app  | ⚠️ barcodes.updated_at 欄位設定警告: Cannot add a column with non-constant default
 caloscanai_app  | ⚠️ APP_URL not set, CORS is open to all origins
 caloscanai_app  | 🚀 CaloScanAi API running on port 3000
 caloscanai_app  | 📊 Health check: http://localhost:3000/health
-root@localhost:/opt/caloscanai_claude# 
+caloscanai_app  | file:///app/src/routes/food.js:199
+caloscanai_app  |     const barcodeEntry = db.prepare(`
+caloscanai_app  |                          ^
+caloscanai_app  | 
+caloscanai_app  | ReferenceError: db is not defined
+caloscanai_app  |     at file:///app/src/routes/food.js:199:26
+caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+caloscanai_app  |     at next (/app/node_modules/express/lib/router/route.js:149:13)
+caloscanai_app  |     at authMiddleware (file:///app/src/middleware/auth.js:37:3)
+caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+caloscanai_app  |     at next (/app/node_modules/express/lib/router/route.js:149:13)
+caloscanai_app  |     at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
+caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+caloscanai_app  |     at /app/node_modules/express/lib/router/index.js:284:15
+caloscanai_app  |     at param (/app/node_modules/express/lib/router/index.js:365:14)
+caloscanai_app  | 
+caloscanai_app  | Node.js v20.20.2
+caloscanai_app  | ⚠️ barcodes.updated_at 欄位設定警告: Cannot add a column with non-constant default
+caloscanai_app  | ⚠️ APP_URL not set, CORS is open to all origins
+caloscanai_app  | 🚀 CaloScanAi API running on port 3000
+caloscanai_app  | 📊 Health check: http://localhost:3000/health
+root@localhost:/opt/caloscanai_claude# docker compose logs -f app
+caloscanai_app  | ⚠️ barcodes.updated_at 欄位設定警告: Cannot add a column with non-constant default
+caloscanai_app  | ⚠️ APP_URL not set, CORS is open to all origins
+caloscanai_app  | 🚀 CaloScanAi API running on port 3000
+caloscanai_app  | 📊 Health check: http://localhost:3000/health
+caloscanai_app  | file:///app/src/routes/food.js:199
+caloscanai_app  |     const barcodeEntry = db.prepare(`
+caloscanai_app  |                          ^
+caloscanai_app  | 
+caloscanai_app  | ReferenceError: db is not defined
+caloscanai_app  |     at file:///app/src/routes/food.js:199:26
+caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+caloscanai_app  |     at next (/app/node_modules/express/lib/router/route.js:149:13)
+caloscanai_app  |     at authMiddleware (file:///app/src/middleware/auth.js:37:3)
+caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+caloscanai_app  |     at next (/app/node_modules/express/lib/router/route.js:149:13)
+caloscanai_app  |     at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
+caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+caloscanai_app  |     at /app/node_modules/express/lib/router/index.js:284:15
+caloscanai_app  |     at param (/app/node_modules/express/lib/router/index.js:365:14)
+caloscanai_app  | 
+caloscanai_app  | Node.js v20.20.2
+caloscanai_app  | ⚠️ barcodes.updated_at 欄位設定警告: Cannot add a column with non-constant default
+caloscanai_app  | ⚠️ APP_URL not set, CORS is open to all origins
+caloscanai_app  | 🚀 CaloScanAi API running on port 3000
+caloscanai_app  | 📊 Health check: http://localhost:3000/health

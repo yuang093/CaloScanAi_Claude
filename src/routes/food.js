@@ -2,6 +2,7 @@ import express from 'express';
 import { analyzeFoodImage, parseNutritionalData } from '../services/minimax.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { FoodLogDB, DailyProgressDB, UserProfileDB, BarcodeDB, FavoritesDB, ShoppingDB } from '../services/database.js';
+import db from '../services/database.js';
 import { getLocalDate } from '../utils/date.js';
 
 const router = express.Router();
