@@ -216,6 +216,19 @@ try {
   console.warn('⚠️ user_profiles.custom_bmr 欄位遷移警告:', err.message);
 }
 
+// Migration: ensure use_count column exists in favorites
+try {
+  const favoritesPragma = db.prepare("PRAGMA table_info(favorites)").all();
+  const favoritesColumns = favoritesPragma.map(c => c.name);
+
+  if (!favoritesColumns.includes('use_count')) {
+    db.exec("ALTER TABLE favorites ADD COLUMN use_count INTEGER DEFAULT 0");
+    console.log('✅ 資料庫遷移完成: 新增 favorites.use_count 欄位');
+  }
+} catch (err) {
+  console.warn('⚠️ favorites.use_count 欄位遷移警告:', err.message);
+}
+
 // Migration: ensure updated_at column exists in food_logs
 try {
   const foodLogPragma = db.prepare("PRAGMA table_info(food_logs)").all();
