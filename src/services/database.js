@@ -873,21 +873,40 @@ export const BarcodeDB = {
   },
 
   update(id, data) {
-    const stmt = db.prepare(`
-      UPDATE barcodes SET barcode = ?, name = ?, brand = ?, calories = ?, protein = ?, carbs = ?, fat = ?, serving_size = ?
-      WHERE id = ?
-    `);
-    stmt.run(
-      data.barcode || '',
-      data.name,
-      data.brand || '',
-      data.calories || 0,
-      data.protein || 0,
-      data.carbs || 0,
-      data.fat || 0,
-      data.servingSize || '',
-      id
-    );
+    // Only update barcode if explicitly provided (to preserve UNIQUE constraint)
+    if (data.barcode !== undefined) {
+      const stmt = db.prepare(`
+        UPDATE barcodes SET barcode = ?, name = ?, brand = ?, calories = ?, protein = ?, carbs = ?, fat = ?, serving_size = ?
+        WHERE id = ?
+      `);
+      stmt.run(
+        data.barcode || '',
+        data.name,
+        data.brand || '',
+        data.calories || 0,
+        data.protein || 0,
+        data.carbs || 0,
+        data.fat || 0,
+        data.servingSize || '',
+        id
+      );
+    } else {
+      // Update without changing barcode
+      const stmt = db.prepare(`
+        UPDATE barcodes SET name = ?, brand = ?, calories = ?, protein = ?, carbs = ?, fat = ?, serving_size = ?
+        WHERE id = ?
+      `);
+      stmt.run(
+        data.name,
+        data.brand || '',
+        data.calories || 0,
+        data.protein || 0,
+	data.carbs || 0,
+        data.fat || 0,
+        data.servingSize || '',
+        id
+      );
+    }
     return this.findById(id);
   },
 
