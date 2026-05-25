@@ -1,0 +1,66 @@
+請幫我完成 CaloScanAi 專案的最後兩項「barcode_id 精準同步」修復任務。請注意處理可能的 CRLF/LF 換行字元問題，確保檔案能被正確修改。
+
+---
+任務 1：修復 FoodLogDB.create() 以支援寫入 barcode_id
+目標檔案：src/services/database.js
+
+請找到 `FoodLogDB` 類別中的 `create(userId, data)` 函式（大約在 690-706 行附近）。目前的版本遺失了 `db.prepare()` 導致無法執行。請將整個 `create` 函式完整替換為以下安全版本：
+
+```javascript
+  create(userId, data) {
+    let sql, params;
+    
+    // 檢查是否有傳入 barcodeId
+    if (data.barcodeId !== undefined && data.barcodeId !== null) {
+      sql = `INSERT INTO food_logs (user_id, image_data, meal_type, calories, protein, carbs, fat, description, barcode_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      params = [userId, data.imageData || null, data.mealType || 'general', data.calories || 0, data.protein || 0, data.carbs || 0, data.fat || 0, data.description || null, data.barcodeId];
+    } else {
+      sql = `INSERT INTO food_logs (user_id, image_data, meal_type, calories, protein, carbs, fat, description)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+      params = [userId, data.imageData || null, data.mealType || 'general', data.calories || 0, data.protein || 0, data.carbs || 0, data.fat || 0, data.description || null];
+    }
+    
+    // 必須先 prepare SQL 才能執行 run
+    const stmt = db.prepare(sql);
+    const result = stmt.run(...params);
+    return this.findById(result.lastInsertRowid);
+  }
+
+任務 2：修復 PUT /api/food/logs/:id 以支援精準同步
+目標檔案：src/routes/food.js
+
+請找到 PUT /api/food/logs/:id 的路由處理邏輯。將內部負責「更新 FoodLogDB 以及同步 barcodes」的 try-catch 區塊，替換為以下基於 barcode_id 的精準更新邏輯：
+
+
+try {
+        // 1. 先更新 food_logs 的內容
+        FoodLogDB.update(req.params.id, {
+            mealType, calories, protein, carbs, fat, description
+        });
+
+        // 2. 取出更新後的日誌，檢查是否有 barcode_id 關聯
+        const currentLog = FoodLogDB.findById(req.params.id);
+
+        if (currentLog && currentLog.barcode_id) {
+            // 3. 透過 barcode_id 精準更新 barcodes 表
+            // 注意：不要更新 barcode 欄位，避免觸發 UNIQUE 衝突
+            const stmt = db.prepare(`
+                UPDATE barcodes 
+                SET name = ?, calories = ?, protein = ?, carbs = ?, fat = ? 
+                WHERE id = ?
+            `);
+            stmt.run(description, calories, protein, carbs, fat, currentLog.barcode_id);
+            console.log(`✅ 已精準同步更新 barcodes (ID: ${currentLog.barcode_id})`);
+        } else {
+            console.log(`⚠️ 此日誌為舊資料無 barcode_id，略過標準食物庫同步。`);
+        }
+
+        res.json({ success: true });
+        
+    } catch (error) {
+        console.error('更新食物日誌失敗:', error);
+        res.status(500).json({ error: '更新失敗' });
+    }
+
+請執行上述兩項替換，並在修改完成後回報結果。

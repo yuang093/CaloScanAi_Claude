@@ -244,6 +244,19 @@ try {
   console.warn('⚠️ food_logs.updated_at 欄位遷移警告:', err.message);
 }
 
+// Migration: ensure barcode_id column exists in food_logs
+try {
+  const foodLogPragma = db.prepare("PRAGMA table_info(food_logs)").all();
+  const foodLogColumns = foodLogPragma.map(c => c.name);
+
+  if (!foodLogColumns.includes('barcode_id')) {
+    db.exec("ALTER TABLE food_logs ADD COLUMN barcode_id INTEGER");
+    console.log('✅ 資料庫遷移完成: 新增 food_logs.barcode_id 欄位');
+  }
+} catch (err) {
+  console.warn('⚠️ food_logs.barcode_id 欄位遷移警告:', err.message);
+}
+
 // Create indexes
 try {
   db.exec(`
@@ -675,20 +688,21 @@ export const UserDB = {
 // Food log operations
 export const FoodLogDB = {
   create(userId, data) {
-    const stmt = db.prepare(`
-      INSERT INTO food_logs (user_id, image_data, meal_type, calories, protein, carbs, fat, description)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    const result = stmt.run(
-      userId,
-      data.imageData || null,
-      data.mealType || 'general',
-      data.calories || 0,
-      data.protein || 0,
-      data.carbs || 0,
-      data.fat || 0,
-      data.description || null
-    );
+    let sql, params;
+
+    // 檢查是否有傳入 barcodeId
+    if (data.barcodeId !== undefined && data.barcodeId !== null) {
+      sql = `INSERT INTO food_logs (user_id, image_data, meal_type, calories, protein, carbs, fat, description, barcode_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      params = [userId, data.imageData || null, data.mealType || 'general', data.calories || 0, data.protein || 0, data.carbs || 0, data.fat || 0, data.description || null, data.barcodeId];
+    } else {
+      sql = `INSERT INTO food_logs (user_id, image_data, meal_type, calories, protein, carbs, fat, description)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+      params = [userId, data.imageData || null, data.mealType || 'general', data.calories || 0, data.protein || 0, data.carbs || 0, data.fat || 0, data.description || null];
+    }
+
+    const stmt = db.prepare(sql);
+    const result = stmt.run(...params);
     return this.findById(result.lastInsertRowid);
   },
 

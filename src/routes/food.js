@@ -66,28 +66,12 @@ router.post('/upload', authMiddleware, async (req, res, next) => {
     console.log('[Food/upload] AI content:', content);
     const nutrition = parseNutritionalData(content);
 
-    // Store in database
-    const logEntry = FoodLogDB.create(req.user.id, {
-      imageData: base64Data, // Store full base64 image
-      mealType,
-      calories: nutrition.totalCalories || 0,
-      protein: nutrition.totalProtein || 0,
-      carbs: nutrition.totalCarbs || 0,
-      fat: nutrition.totalFat || 0,
-      description: nutrition.name || nutrition.description || 'AI 分析食物'
-    });
-
-    console.log('[Food] Food log created:', {
-      id: logEntry?.id,
-      hasImage: !!base64Data,
-      imageLength: base64Data?.length
-    });
-
     // Also add to food database (barcodes table) - generate pseudo-barcode for AI analyzed foods
     const foodName = nutrition.name || nutrition.description || 'AI 分析食物';
     const pseudoBarcode = 'AI_' + Date.now();
+    let barcodeId = null;
     try {
-      BarcodeDB.create({
+      const barcodeEntry = BarcodeDB.create({
         barcode: pseudoBarcode,
         name: foodName,
         brand: 'AI 分析',
@@ -97,11 +81,31 @@ router.post('/upload', authMiddleware, async (req, res, next) => {
         fat: nutrition.totalFat || 0,
         servingSize: '1 份'
       });
-      console.log('[Food] Food database entry created for:', foodName);
+      barcodeId = barcodeEntry?.id;
+      console.log('[Food] Food database entry created for:', foodName, 'barcodeId:', barcodeId);
     } catch (e) {
       // Ignore if already exists
       console.log('[Food] Food database entry may already exist:', e.message);
     }
+
+    // Store in database - with barcode_id correlation
+    const logEntry = FoodLogDB.create(req.user.id, {
+      imageData: base64Data, // Store full base64 image
+      mealType,
+      calories: nutrition.totalCalories || 0,
+      protein: nutrition.totalProtein || 0,
+      carbs: nutrition.totalCarbs || 0,
+      fat: nutrition.totalFat || 0,
+      description: nutrition.name || nutrition.description || 'AI 分析食物',
+      barcodeId: barcodeId
+    });
+
+    console.log('[Food] Food log created:', {
+      id: logEntry?.id,
+      hasImage: !!base64Data,
+      imageLength: base64Data?.length,
+      barcodeId: barcodeId
+    });
 
     // Update daily progress with TDEE goal
     const today = getLocalDate();
@@ -193,40 +197,22 @@ router.put('/logs/:id', authMiddleware, async (req, res) => {
     description
   });
 
-  // Sync update to barcodes table if description matches
-  if ((description || calories !== undefined) && existingLog.description) {
-    const foodName = description || existingLog.description;
-    if (!foodName || foodName.trim() === '') {
-      console.log('[Food] Skipping barcode sync - no valid food name');
+  // 精準同步：透過 barcode_id 更新 barcodes 表
+  try {
+    const currentLog = FoodLogDB.findById(parseInt(req.params.id));
+    if (currentLog && currentLog.barcode_id) {
+      const stmt = db.prepare(`
+        UPDATE barcodes
+        SET name = ?, calories = ?, protein = ?, carbs = ?, fat = ?
+        WHERE id = ?
+      `);
+      stmt.run(description || currentLog.description, calories, protein, carbs, fat, currentLog.barcode_id);
+      console.log('✅ 已精準同步更新 barcodes (ID: ' + currentLog.barcode_id + ')');
     } else {
-      // Find barcodes entry by name (AI foods have barcode like 'AI_*')
-      let barcodeEntry = null;
-      try {
-        barcodeEntry = db.prepare(`SELECT id FROM barcodes WHERE name = ?`).get(foodName);
-        if (!barcodeEntry) {
-          barcodeEntry = db.prepare(`SELECT id FROM barcodes WHERE barcode LIKE 'AI_%' AND name = ?`).get(foodName);
-        }
-      } catch (e) {
-        console.error('[Food] Barcode lookup error:', e.message);
-      }
-
-      if (barcodeEntry) {
-        try {
-          BarcodeDB.update(barcodeEntry.id, {
-            name: foodName,
-            calories: calories !== undefined ? calories : existingLog.calories,
-            protein: protein !== undefined ? protein : existingLog.protein,
-            carbs: carbs !== undefined ? carbs : existingLog.carbs,
-            fat: fat !== undefined ? fat : existingLog.fat
-          });
-          console.log('[Food] BarcodeDB synced for:', foodName);
-        } catch (e) {
-          console.error('[Food] BarcodeDB update error:', e.message);
-        }
-      } else {
-        console.log('[Food] No barcode entry found for:', foodName);
-      }
+      console.log('⚠️ 此日誌為舊資料無 barcode_id，略過標準食物庫同步。');
     }
+  } catch (error) {
+    console.error('更新食物日誌失敗:', error);
   }
 
   // Calculate goalCalories for daily progress
