@@ -1081,9 +1081,17 @@
     }
 
     function addToFoodLog() {
-      if (!analysisData) return;
+      if (!analysisData) {
+        alert('請先分析圖片');
+        return;
+      }
+      if (!currentPreview) {
+        alert('圖片資料遺失，請重新選擇圖片');
+        return;
+      }
 
       const btn = document.querySelector('#analysis-result .btn-primary');
+      if (!btn) return;
       btn.disabled = true;
       btn.textContent = '儲存中...';
 
@@ -1124,6 +1132,7 @@
         }
       })
       .catch(err => {
+        console.error('Add to log error:', err);
         alert('儲存失敗，請稍後再試');
         btn.disabled = false;
         btn.textContent = '加入日誌';

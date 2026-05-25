@@ -288,6 +288,11 @@ router.get('/barcodes', adminMiddleware, (req, res) => {
 // PUT /api/admin/barcodes/:id - Update barcode (admin only)
 router.put('/barcodes/:id', adminMiddleware, (req, res) => {
   const { barcode, name, brand, servingSize, calories, protein, carbs, fat } = req.body;
+  const id = parseInt(req.params.id, 10);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ error: '無效的食物 ID' });
+  }
 
   if (!name || calories === undefined) {
     return res.status(400).json({ error: '名稱和熱量為必填欄位' });
@@ -295,7 +300,7 @@ router.put('/barcodes/:id', adminMiddleware, (req, res) => {
 
   // Check for UNIQUE constraint violation before updating
   if (barcode) {
-    const existing = db.prepare('SELECT id FROM barcodes WHERE barcode = ? AND id != ?').get(barcode, req.params.id);
+    const existing = db.prepare('SELECT id FROM barcodes WHERE barcode = ? AND id != ?').get(barcode, id);
     if (existing) {
       return res.status(400).json({ error: '條碼號碼已存在於其他記錄' });
     }
@@ -306,13 +311,13 @@ router.put('/barcodes/:id', adminMiddleware, (req, res) => {
     SET barcode = ?, name = ?, brand = ?, serving_size = ?, calories = ?, protein = ?, carbs = ?, fat = ?
     WHERE id = ?
   `);
-  const result = stmt.run(barcode || '', name, brand || '', servingSize || '', calories, protein || 0, carbs || 0, fat || 0, req.params.id);
+  const result = stmt.run(barcode || '', name, brand || '', servingSize || '', calories, protein || 0, carbs || 0, fat || 0, id);
 
   if (result.changes === 0) {
     return res.status(404).json({ error: '食物資料不存在' });
   }
 
-  const updated = db.prepare('SELECT * FROM barcodes WHERE id = ?').get(req.params.id);
+  const updated = db.prepare('SELECT * FROM barcodes WHERE id = ?').get(id);
 
   res.json({
     success: true,
