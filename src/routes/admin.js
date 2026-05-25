@@ -293,6 +293,14 @@ router.put('/barcodes/:id', adminMiddleware, (req, res) => {
     return res.status(400).json({ error: '名稱和熱量為必填欄位' });
   }
 
+  // Check for UNIQUE constraint violation before updating
+  if (barcode) {
+    const existing = db.prepare('SELECT id FROM barcodes WHERE barcode = ? AND id != ?').get(barcode, req.params.id);
+    if (existing) {
+      return res.status(400).json({ error: '條碼號碼已存在於其他記錄' });
+    }
+  }
+
   const stmt = db.prepare(`
     UPDATE barcodes
     SET barcode = ?, name = ?, brand = ?, serving_size = ?, calories = ?, protein = ?, carbs = ?, fat = ?
