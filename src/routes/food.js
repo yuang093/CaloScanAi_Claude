@@ -194,22 +194,38 @@ router.put('/logs/:id', authMiddleware, async (req, res) => {
   });
 
   // Sync update to barcodes table if description matches
-  if (description || calories !== undefined) {
+  if ((description || calories !== undefined) && existingLog.description) {
     const foodName = description || existingLog.description;
-    // Find barcodes entry by name (AI foods have barcode like 'AI_*')
-    const barcodeEntry = db.prepare(`
-      SELECT id FROM barcodes WHERE name = ? OR (barcode LIKE 'AI_%' AND name = ?)
-    `).get(foodName, foodName);
+    if (!foodName || foodName.trim() === '') {
+      console.log('[Food] Skipping barcode sync - no valid food name');
+    } else {
+      // Find barcodes entry by name (AI foods have barcode like 'AI_*')
+      let barcodeEntry = null;
+      try {
+        barcodeEntry = db.prepare(`SELECT id FROM barcodes WHERE name = ?`).get(foodName);
+        if (!barcodeEntry) {
+          barcodeEntry = db.prepare(`SELECT id FROM barcodes WHERE barcode LIKE 'AI_%' AND name = ?`).get(foodName);
+        }
+      } catch (e) {
+        console.error('[Food] Barcode lookup error:', e.message);
+      }
 
-    if (barcodeEntry) {
-      BarcodeDB.update(barcodeEntry.id, {
-        name: foodName,
-        calories: calories !== undefined ? calories : existingLog.calories,
-        protein: protein !== undefined ? protein : existingLog.protein,
-        carbs: carbs !== undefined ? carbs : existingLog.carbs,
-        fat: fat !== undefined ? fat : existingLog.fat
-      });
-      console.log('[Food] BarcodeDB synced for:', foodName);
+      if (barcodeEntry) {
+        try {
+          BarcodeDB.update(barcodeEntry.id, {
+            name: foodName,
+            calories: calories !== undefined ? calories : existingLog.calories,
+            protein: protein !== undefined ? protein : existingLog.protein,
+            carbs: carbs !== undefined ? carbs : existingLog.carbs,
+            fat: fat !== undefined ? fat : existingLog.fat
+          });
+          console.log('[Food] BarcodeDB synced for:', foodName);
+        } catch (e) {
+          console.error('[Food] BarcodeDB update error:', e.message);
+        }
+      } else {
+        console.log('[Food] No barcode entry found for:', foodName);
+      }
     }
   }
 
