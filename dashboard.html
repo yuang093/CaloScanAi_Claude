@@ -7,6 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🥗%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="src/styles/global.css?v=2.1">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -824,19 +825,13 @@
 
   <!-- Share Achievement Card Modal -->
   <div id="share-modal" class="modal" onclick="if(event.target===this)closeShareModal()" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:400px; width:90%; position:relative;" onclick="event.stopPropagation()">
-      <button onclick="closeShareModal()" style="position:absolute; top:12px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
-      <h3 style="margin-bottom:16px; text-align:center;">🎉 分享成就</h3>
-      <div id="share-card-preview" style="background:linear-gradient(135deg, #2d6a4f, #74c69d); border-radius:16px; padding:24px; color:#fff; text-align:center; margin-bottom:16px;">
-        <div style="font-size:1.5rem; margin-bottom:8px;">🥗 CaloScanAi</div>
-        <div style="font-size:0.9rem; margin-bottom:12px;" id="share-date"></div>
-        <div style="font-size:0.8rem; margin-bottom:4px;">今日熱量攝取</div>
-        <div style="font-size:2.5rem; font-weight:bold;" id="share-calories">0</div>
-        <div style="font-size:0.8rem;">kcal</div>
-        <div style="margin-top:12px; font-size:0.85rem;" id="share-achievement"></div>
+    <div style="background:var(--color-surface); border-radius:20px; padding:20px; max-width:360px; width:95%; position:relative;" onclick="event.stopPropagation()">
+      <button onclick="closeShareModal()" style="position:absolute; top:10px; right:10px; background:none; border:none; font-size:1.5rem; cursor:pointer; z-index:10;">×</button>
+      <h3 style="margin-bottom:12px; text-align:center;">🎉 分享成就卡</h3>
+      <div style="display:flex; justify-content:center; margin-bottom:12px;">
+        <div id="share-card-preview" style="width:270px; height:480px; border-radius:16px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.3);"></div>
       </div>
-      <button onclick="downloadShareCard()" class="btn btn-primary" style="width:100%; margin-bottom:8px;">📥 下載圖片</button>
-      <button onclick="copyShareCard()" class="btn btn-secondary" style="width:100%;">📋 複製內容</button>
+      <button onclick="downloadShareCard()" class="btn btn-primary" style="width:100%;">📥 下載圖片</button>
     </div>
   </div>
 
@@ -2689,7 +2684,50 @@
     }
 
     // Share achievement card functions
-    let shareCardData = { calories: 0, goalCalories: 2000, achievement: '' };
+    let shareCardData = { calories: 0, goalCalories: 2000, achievement: '', foods: [] };
+    let currentShareStyle = 'natural';
+
+    const shareAppNames = [
+      '熱量現形記 🔍', '我的秘密 AI 營養師 🤖', '越吃越瘦的秘密 🔥',
+      '智能熱量管家 ⚡', '今天被 AI 監控了嗎？ 👀', '無痛減脂日常 💫',
+      '吃貨的贖罪券 😇', '我的健康存摺 💰'
+    ];
+
+    const shareQuotes = [
+      '「每一天的選擇，累積成健康的習慣」',
+      '「愛自己，從每一餐開始」💕',
+      '「好好吃飯，是對身體最溫柔的照顧」',
+      '「追蹤每一餐，遇見更好的自己」',
+      '「記錄每一天的改變」✨',
+      '「吃得健康，活得精彩」🌟'
+    ];
+
+    const shareStyleConfigs = {
+      natural: {
+        bg: 'linear-gradient(180deg, #f8fdf9 0%, #e8f5e9 100%)',
+        textColor: '#2d6a4f', accentColor: '#4a7c59', cardBg: '#fff'
+      },
+      playful: {
+        bg: 'linear-gradient(180deg, #fff5f8 0%, #fce4ec 100%)',
+        textColor: '#e91e63', accentColor: '#f06292', cardBg: 'rgba(255,255,255,0.9)'
+      },
+      warm: {
+        bg: 'linear-gradient(180deg, #fdf6f0 0%, #f5ebe0 100%)',
+        textColor: '#c85a3b', accentColor: '#a0522d', cardBg: 'rgba(255,255,255,0.85)'
+      },
+      dark: {
+        bg: 'linear-gradient(180deg, #0d0d1a 0%, #1a1a2e 100%)',
+        textColor: '#667eea', accentColor: '#a0aec0', cardBg: 'rgba(255,255,255,0.08)'
+      },
+      data: {
+        bg: 'linear-gradient(180deg, #f7fafc 0%, #edf2f7 100%)',
+        textColor: '#2d3748', accentColor: '#718096', cardBg: '#fff'
+      },
+      pop: {
+        bg: 'linear-gradient(180deg, #fff176 0%, #ffca28 100%)',
+        textColor: '#e91e63', accentColor: '#c2185b', cardBg: '#fff'
+      }
+    };
 
     function openShareCard() {
       const totalCal = document.getElementById('total-cal').textContent;
@@ -2699,78 +2737,91 @@
       const percent = Math.round((cal / goal) * 100);
 
       let achievement = '';
-      if (percent >= 100) {
-        achievement = '🎯 達成目標！';
-      } else if (percent >= 90) {
-        achievement = '🔥 接近目標了！';
-      } else if (percent >= 70) {
-        achievement = '💪 表現良好！';
-      } else {
-        achievement = '📈 持續加油！';
-      }
+      if (percent >= 100) achievement = '🎯 達成目標！';
+      else if (percent >= 90) achievement = '🔥 接近目標了！';
+      else if (percent >= 70) achievement = '💪 表現良好！';
+      else achievement = '📈 持續加油！';
 
-      shareCardData = { calories: cal, goalCalories: goal, achievement };
+      // 取得今日食物（最多5項）
+      const todayFoods = foodLog.slice(0, 5);
 
-      const today = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
-      document.getElementById('share-date').textContent = today;
-      document.getElementById('share-calories').textContent = cal;
-      document.getElementById('share-achievement').textContent = achievement + ' ' + percent + '%';
+      // 隨機選擇風格和標題
+      const styles = ['natural', 'playful', 'warm', 'dark', 'data', 'pop'];
+      currentShareStyle = styles[Math.floor(Math.random() * styles.length)];
 
+      shareCardData = { calories: cal, goalCalories: goal, achievement, foods: todayFoods };
+
+      renderShareCard();
       document.getElementById('share-modal').style.display = 'flex';
+    }
+
+    function renderShareCard() {
+      const config = shareStyleConfigs[currentShareStyle];
+      const { calories, foods, achievement } = shareCardData;
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+      const appName = shareAppNames[Math.floor(Math.random() * shareAppNames.length)];
+      const quote = shareQuotes[Math.floor(Math.random() * shareQuotes.length)];
+
+      const isDarkStyle = currentShareStyle === 'dark';
+      const textColor = isDarkStyle ? '#fff' : config.textColor;
+      const subTextColor = isDarkStyle ? '#a0aec0' : config.accentColor;
+      const cardBg = isDarkStyle ? 'rgba(255,255,255,0.08)' : config.cardBg;
+
+      const cardEl = document.getElementById('share-card-preview');
+      cardEl.style.background = config.bg;
+
+      let html = `
+        <div style="padding:20px; height:100%; display:flex; flex-direction:column; font-family:'Noto Sans TC',sans-serif;">
+          <!-- Header -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <div style="font-size:0.85rem; font-weight:700; color:${textColor};">${appName}</div>
+            <div style="font-size:0.7rem; color:${subTextColor}; background:${isDarkStyle?'rgba(102,126,234,0.2)':'rgba(0,0,0,0.05)'}; padding:4px 10px; border-radius:12px;">${dateStr}</div>
+          </div>
+
+          <!-- Calorie Display -->
+          <div style="text-align:center; margin:20px 0;">
+            <div style="font-size:1rem; color:${subTextColor}; margin-bottom:8px;">今日熱量攝取</div>
+            <div style="font-size:3.5rem; font-weight:900; color:${textColor}; line-height:1;">${calories.toLocaleString()}</div>
+            <div style="font-size:1.1rem; color:${subTextColor}; margin-top:4px;">kcal</div>
+            <div style="font-size:0.85rem; color:${config.textColor}; margin-top:12px; font-weight:600;">${achievement}</div>
+          </div>
+
+          <!-- Food List -->
+          <div style="flex:1; background:${cardBg}; border-radius:16px; padding:14px; ${isDarkStyle?'border:1px solid rgba(255,255,255,0.1)':''}">
+            <div style="font-size:0.75rem; color:${subTextColor}; margin-bottom:10px; font-weight:600;">🍽️ 今日食物</div>
+            ${foods.length > 0 ? foods.map((f, i) => {
+              const icons = ['🍎','🥚','🍚','🐟','🥗','🍌','🍗','🥛','🥑','🍠'];
+              return `
+              <div style="display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid ${isDarkStyle?'rgba(255,255,255,0.05)':'#f0f0f0'}; font-size:0.75rem;">
+                <span style="color:${isDarkStyle?'#e2e8f0':'#333'};">${icons[i] || '🍽️'} ${f.name || f.description || '食物'}</span>
+                <span style="color:${config.textColor}; font-weight:600;">${f.calories || 0} kcal</span>
+              </div>`;
+            }).join('') : `<div style="text-align:center; color:${subTextColor}; padding:20px 0; font-size:0.8rem;">尚無食物記錄</div>`}
+          </div>
+
+          <!-- Quote -->
+          <div style="text-align:center; margin-top:16px; font-size:0.75rem; color:${subTextColor}; font-style:italic;">${quote}</div>
+        </div>`;
+
+      cardEl.innerHTML = html;
     }
 
     function closeShareModal() {
       document.getElementById('share-modal').style.display = 'none';
     }
 
-    function downloadShareCard() {
+    async function downloadShareCard() {
       const card = document.getElementById('share-card-preview');
-      const canvas = document.createElement('canvas');
-      canvas.width = 400;
-      canvas.height = 300;
-      const ctx = canvas.getContext('2d');
-
-      // Draw gradient background
-      const gradient = ctx.createLinearGradient(0, 0, 400, 300);
-      gradient.addColorStop(0, '#2d6a4f');
-      gradient.addColorStop(1, '#74c69d');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 400, 300);
-
-      // Draw text
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 28px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('🥗 CaloScanAi', 200, 50);
-
-      ctx.font = '16px sans-serif';
-      ctx.fillText(new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' }), 200, 80);
-
-      ctx.font = '14px sans-serif';
-      ctx.fillText('今日熱量攝取', 200, 120);
-
-      ctx.font = 'bold 48px sans-serif';
-      ctx.fillText(shareCardData.calories + '', 200, 180);
-
-      ctx.font = '14px sans-serif';
-      ctx.fillText('kcal', 200, 210);
-
-      ctx.font = '18px sans-serif';
-      ctx.fillText(shareCardData.achievement + ' ' + Math.round((shareCardData.calories / shareCardData.goalCalories) * 100) + '%', 200, 260);
-
-      // Download
-      const link = document.createElement('a');
-      link.download = 'caloscanai_achievement.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    }
-
-    function copyShareCard() {
-      const text = `🥗 CaloScanAi 成就分享\n日期：${new Date().toLocaleDateString('zh-TW')}\n今日攝取：${shareCardData.calories} kcal\n${shareCardData.achievement} ${Math.round((shareCardData.calories / shareCardData.goalCalories) * 100)}%`;
-      navigator.clipboard.writeText(text).then(() => {
-        alert('已複製到剪貼簿！');
-        closeShareModal();
-      });
+      if (typeof html2canvas !== 'undefined') {
+        const canvas = await html2canvas(card, { scale: 2.5, useCORS: true, backgroundColor: null });
+        const link = document.createElement('a');
+        link.download = 'caloscanai_' + new Date().toISOString().slice(0,10) + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      } else {
+        alert('載入中，請稍後再試');
+      }
     }
 
     async function lookupBarcode() {
