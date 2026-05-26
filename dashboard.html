@@ -2748,13 +2748,8 @@
         achievement = '📈 持續加油！';
       }
 
-      // 取得今日食物（使用本地時區）
-      const localDate = new Date().toLocaleDateString('zh-TW');
-      const todayFoods = foodLog.filter(f => {
-        const d = new Date(f.created_at);
-        const dStr = d.toLocaleDateString('zh-TW');
-        return dStr === localDate;
-      }).slice(0, 5);
+      // 取得今日食物（loadFoodLog 已經用當天日期取得，所以直接使用）
+      const todayFoods = foodLog.slice(0, 5);
 
       // 隨機選擇風格
       const styles = ['natural', 'playful', 'warm', 'dark', 'data', 'pop'];
