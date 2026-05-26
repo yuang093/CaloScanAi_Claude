@@ -834,8 +834,9 @@
         <div id="share-card-preview" style="width:280px; height:496px; border-radius:16px; overflow:hidden; position:relative; box-shadow:0 8px 30px rgba(0,0,0,0.3);"></div>
       </div>
 
-      <button onclick="downloadShareCard()" class="btn btn-primary" style="width:100%; margin-bottom:8px;">📥 下載圖片</button>
-      <button onclick="copyShareCard()" class="btn btn-secondary" style="width:100%;">📋 複製內容</button>
+      <button onclick="downloadShareCard()" class="btn btn-primary" style="width:48%; margin-right:4%;">📥 下載</button>
+      <button onclick="shareCard()" class="btn btn-primary" style="width:48%;">📱 分享</button>
+      <button onclick="copyShareCard()" class="btn btn-secondary" style="width:100%; margin-top:8px;">📋 複製內容</button>
     </div>
   </div>
 
@@ -3038,6 +3039,52 @@
       // 使用 html2canvas 轉換為圖片（提高解析度）
       if (typeof html2canvas !== 'undefined') {
         const canvas = await html2canvas(card, { scale: 3, useCORS: true, backgroundColor: null });
+        const link = document.createElement('a');
+        link.download = 'caloscanai_achievement.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }
+    }
+
+    async function shareCard() {
+      const card = document.getElementById('share-card-preview');
+
+      // 使用 Web Share API（行動裝置）
+      if (navigator.share && navigator.canShare) {
+        try {
+          const canvas = await html2canvas(card, { scale: 3, useCORS: true, backgroundColor: null });
+          canvas.toBlob(async (blob) => {
+            if (blob && navigator.canShare({ files: [new File([blob], 'caloscanai.png', { type: 'image/png' })] })) {
+              await navigator.share({
+                files: [new File([blob], 'caloscanai.png', { type: 'image/png' })],
+                title: 'CaloScanAi 成就分享',
+                text: `🥗 今日飲食成就 - ${shareCardData.calories} kcal`
+              });
+            } else {
+              // 分享不支援檔案時，下載後分享文字
+              const link = document.createElement('a');
+              link.download = 'caloscanai_achievement.png';
+              link.href = canvas.toDataURL('image/png');
+              link.click();
+              alert('圖片已下載，請至相簿查看！');
+            }
+          }, 'image/png');
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.error('Share error:', err);
+            alert('分享失敗');
+          }
+        }
+      } else {
+        // 桌面瀏覽器：下載後提示用戶手動分享
+        const canvas = await html2canvas(card, { scale: 3, useCORS: true, backgroundColor: null });
+        const link = document.createElement('a');
+        link.download = 'caloscanai_achievement.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        alert('圖片已下載到下載資料夾，請手動分享到社群！');
+      }
+    }
         const link = document.createElement('a');
         link.download = 'caloscanai_achievement.png';
         link.href = canvas.toDataURL('image/png');
