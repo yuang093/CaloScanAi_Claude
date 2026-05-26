@@ -2711,12 +2711,9 @@
 
       shareCardData = { calories: cal, goalCalories: goal, achievement };
 
-      const today = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
-      document.getElementById('share-date').textContent = today;
-      document.getElementById('share-calories').textContent = cal;
-      document.getElementById('share-achievement').textContent = achievement + ' ' + percent + '%';
-
-      document.getElementById('share-modal').style.display = 'flex';
+      // 開啟新視窗顯示 Instagram Story 成就卡片
+      const cardUrl = 'CaloScanAi_Achievement_Cards.html?cal=' + cal + '&goal=' + goal;
+      window.open(cardUrl, '_blank');
     }
 
     function closeShareModal() {

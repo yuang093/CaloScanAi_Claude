@@ -1580,10 +1580,81 @@
       }
     }
 
-    // 初始化：隨機顯示
+    // 初始化：檢查 URL 參數或隨機顯示
     window.addEventListener('DOMContentLoaded', () => {
-      renderRandomCard();
+      const params = new URLSearchParams(window.location.search);
+      const cal = params.get('cal');
+      const goal = params.get('goal');
+
+      if (cal !== null) {
+        // 有 URL 參數，顯示真實數據
+        renderRealCard(parseInt(cal), parseInt(goal) || 2000);
+      } else {
+        // 沒有參數，隨機顯示
+        renderRandomCard();
+      }
     });
+
+    function renderRealCard(calories, goal) {
+      const style = getRandomStyle();
+      const appName = getRandomAppName();
+      const percent = Math.round((calories / goal) * 100);
+
+      // 估算巨量營養素
+      const protein = Math.round(calories * 0.25 / 4);
+      const carbs = Math.round(calories * 0.45 / 4);
+      const fat = Math.round(calories * 0.30 / 9);
+
+      // 隱藏所有卡片
+      document.querySelectorAll('.card-wrapper').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+      // 顯示隨機卡片
+      const card = document.getElementById('card-' + style);
+      card.classList.add('active');
+
+      // 更新 Logo 文字
+      document.querySelectorAll('[class*="-logo"]').forEach(el => {
+        el.textContent = appName;
+      });
+
+      // 更新熱量顯示
+      const calorieSelectors = [
+        '.natural-calories .number',
+        '.playful-hero .number',
+        '.warm-calories .number',
+        '.dark-main .glow',
+        '.data-chart .number',
+        '.pop-main .number'
+      ];
+      calorieSelectors.forEach(sel => {
+        const el = card.querySelector(sel);
+        if (el) el.textContent = calories.toLocaleString();
+      });
+
+      // 更新巨量營養素
+      const macroValues = card.querySelectorAll('[class*="-macro"] .value, [class*="-bar"] .value, .dark-bar .value, .playful-progress-item .val');
+      const macros = [protein + 'g', carbs + 'g', fat + 'g'];
+      macroValues.forEach((el, i) => {
+        if (macros[i]) el.textContent = macros[i];
+      });
+
+      // 顯示真實食物列表（從今日日誌）
+      const foodContainer = card.querySelector('[class*="-foods"]');
+      if (foodContainer && window.parentFoodLog) {
+        const foodItems = foodContainer.querySelectorAll('[class*="-food-item"]');
+        const foodIcons = ['🍎', '🥚', '🍚', '🐟', '🥗', '🍌', '🍗', '🥛', '🥑', '🍠'];
+
+        window.parentFoodLog.slice(0, 5).forEach((food, i) => {
+          if (foodItems[i]) {
+            const nameEl = foodItems[i].querySelector('[class*="-name"]');
+            const calEl = foodItems[i].querySelector('[class*="-cal"]');
+            if (nameEl) nameEl.textContent = `${foodIcons[i]} ${food.description || '食物'}`;
+            if (calEl) calEl.textContent = `${food.calories || 0}`;
+          }
+        });
+      }
+    }
   </script>
 </body>
 </html>
