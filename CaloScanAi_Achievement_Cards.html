@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaloScanAi 成就卡片設計</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Quicksand:wght@500;600;700&family=Playfair+Display:wght@600;700&family=Inter:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: #1a1a2e;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      color: #fff;
+      font-size: 2rem;
+      margin-bottom: 10px;
+      padding: 20px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #a0aec0;
+      font-size: 1rem;
+      margin-bottom: 25px;
+    }
+    .random-controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+    .random-btn {
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-weight: 700;
+      transition: all 0.3s;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    }
+    .random-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 30px rgba(102, 126, 234, 0.6);
+    }
+    .tab-btn {
+      display: none;
+    }
+    .card-wrapper {
+      display: none;
+      justify-content: center;
+      margin-bottom: 40px;
+    }
+    .card-wrapper.active {
+      display: flex;
+    }
+    .story-card {
+      width: 360px;
+      height: 640px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      position: relative;
+    }
+    @media (min-width: 800px) {
+      .story-card {
+        width: 450px;
+        height: 800px;
+      }
+    }
+
+    /* ==================== STYLE 1: 自然清新 (Natural) ==================== */
+    .style-natural {
+      background: linear-gradient(180deg, #f8fdf9 0%, #e8f5e9 100%);
+      font-family: 'Noto Sans TC', sans-serif;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .style-natural::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 200px;
+      background: linear-gradient(180deg, #c8e6c9 0%, transparent 100%);
+      opacity: 0.5;
+    }
+    .natural-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      z-index: 1;
+    }
+    .natural-logo {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #2d6a4f;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .natural-logo span {
+      width: 32px;
+      height: 32px;
+      background: #2d6a4f;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1rem;
+    }
+    .natural-date {
+      font-size: 0.85rem;
+      color: #4a7c59;
+      background: rgba(45, 106, 79, 0.1);
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+    .natural-calories {
+      text-align: center;
+      margin: 30px 0;
+      z-index: 1;
+    }
+    .natural-calories .number {
+      font-size: 5rem;
+      font-weight: 900;
+      color: #2d6a4f;
+      line-height: 1;
+    }
+    .natural-calories .unit {
+      font-size: 1.2rem;
+      color: #4a7c59;
+      margin-top: 5px;
+    }
+    .natural-calories .label {
+      font-size: 0.9rem;
+      color: #6a9f7a;
+      margin-top: 10px;
+    }
+    .natural-macros {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    .natural-macro {
+      background: #fff;
+      border-radius: 16px;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(45, 106, 79, 0.1);
+    }
+    .natural-macro .value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #2d6a4f;
+    }
+    .natural-macro .label {
+      font-size: 0.75rem;
+      color: #6a9f7a;
+      margin-top: 5px;
+    }
+    .natural-foods {
+      flex: 1;
+      background: #fff;
+      border-radius: 20px;
+      padding: 20px;
+      overflow: hidden;
+    }
+    .natural-foods h3 {
+      font-size: 0.9rem;
+      color: #2d6a4f;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .natural-food-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #e8f5e9;
+      font-size: 0.85rem;
+      animation: slideIn 0.5s ease forwards;
+      opacity: 0;
+    }
+    .natural-food-item:last-child {
+      border-bottom: none;
+    }
+    .natural-food-item .name {
+      color: #333;
+    }
+    .natural-food-item .cal {
+      color: #2d6a4f;
+      font-weight: 600;
+    }
+    .natural-quote {
+      text-align: center;
+      margin-top: auto;
+      padding: 20px;
+      font-size: 0.85rem;
+      color: #4a7c59;
+      font-style: italic;
+    }
+
+    /* ==================== STYLE 2: 粉嫩甜美 (Playful) ==================== */
+    .style-playful {
+      background: linear-gradient(180deg, #fff5f8 0%, #fce4ec 50%, #f8bbd9 100%);
+      font-family: 'Quicksand', sans-serif;
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .style-playful::before {
+      content: '';
+      position: absolute;
+      top: -50px;
+      right: -50px;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(255,182,193,0.6) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .style-playful::after {
+      content: '';
+      position: absolute;
+      bottom: 100px;
+      left: -30px;
+      width: 150px;
+      height: 150px;
+      background: radial-gradient(circle, rgba(255,105,180,0.3) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .playful-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      z-index: 1;
+    }
+    .playful-logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #e91e63;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .playful-logo span {
+      font-size: 1.4rem;
+    }
+    .playful-date {
+      font-size: 0.8rem;
+      color: #f06292;
+      background: rgba(255,255,255,0.8);
+      padding: 5px 12px;
+      border-radius: 15px;
+      box-shadow: 0 2px 8px rgba(233,30,99,0.2);
+    }
+    .playful-hero {
+      text-align: center;
+      margin: 20px 0;
+      z-index: 1;
+    }
+    .playful-hero .emoji {
+      font-size: 4rem;
+      margin-bottom: 10px;
+      animation: bounce 1s ease infinite;
+    }
+    .playful-hero .number {
+      font-size: 4.5rem;
+      font-weight: 700;
+      color: #e91e63;
+      line-height: 1;
+      text-shadow: 2px 2px 0 #fce4ec;
+    }
+    .playful-hero .unit {
+      font-size: 1.1rem;
+      color: #f06292;
+    }
+    .playful-progress {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .playful-progress-item {
+      text-align: center;
+    }
+    .playful-progress-item .circle {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      box-shadow: 0 4px 15px rgba(233,30,99,0.2);
+      margin-bottom: 8px;
+    }
+    .playful-progress-item .val {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #e91e63;
+    }
+    .playful-progress-item .unit {
+      font-size: 0.6rem;
+      color: #f06292;
+    }
+    .playful-progress-item .label {
+      font-size: 0.75rem;
+      color: #f06292;
+    }
+    .playful-foods {
+      flex: 1;
+      background: rgba(255,255,255,0.9);
+      border-radius: 25px;
+      padding: 20px;
+      backdrop-filter: blur(10px);
+      z-index: 1;
+    }
+    .playful-foods h3 {
+      font-size: 0.85rem;
+      color: #e91e63;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .playful-food-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px dashed #fce4ec;
+      font-size: 0.85rem;
+    }
+    .playful-food-item .icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #fce4ec, #f8bbd9);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+    }
+    .playful-food-item .name {
+      flex: 1;
+      color: #555;
+    }
+    .playful-food-item .cal {
+      color: #e91e63;
+      font-weight: 600;
+    }
+    .playful-footer {
+      text-align: center;
+      margin-top: auto;
+      padding-top: 15px;
+      z-index: 1;
+    }
+    .playful-footer .quote {
+      font-size: 0.8rem;
+      color: #f06292;
+      font-style: italic;
+    }
+
+    /* ==================== STYLE 3: 溫暖大地 (Warm) ==================== */
+    .style-warm {
+      background: linear-gradient(180deg, #fdf6f0 0%, #f5ebe0 100%);
+      font-family: 'Playfair Display', serif;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .style-warm::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c85a3b' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: 0.5;
+    }
+    .warm-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      z-index: 1;
+    }
+    .warm-logo {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #c85a3b;
+    }
+    .warm-date {
+      font-size: 0.85rem;
+      color: #a0522d;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+    .warm-calories {
+      text-align: center;
+      margin: 25px 0;
+      z-index: 1;
+    }
+    .warm-calories .ring {
+      width: 180px;
+      height: 180px;
+      margin: 0 auto 15px;
+      border-radius: 50%;
+      border: 8px solid #c85a3b;
+      border-top-color: #e8d5c4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      animation: warmRotate 20s linear infinite;
+    }
+    @keyframes warmRotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .warm-calories .number {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #c85a3b;
+      line-height: 1;
+    }
+    .warm-calories .unit {
+      font-size: 0.9rem;
+      color: #a0522d;
+    }
+    .warm-calories .label {
+      font-size: 0.85rem;
+      color: #a0522d;
+      margin-top: 5px;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+    .warm-macros {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 25px;
+    }
+    .warm-macro {
+      text-align: center;
+    }
+    .warm-macro .bar {
+      width: 50px;
+      height: 80px;
+      background: #e8d5c4;
+      border-radius: 25px;
+      position: relative;
+      margin: 0 auto 8px;
+      overflow: hidden;
+    }
+    .warm-macro .bar::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60%;
+      background: linear-gradient(180deg, #c85a3b, #e8a87c);
+      border-radius: 25px;
+    }
+    .warm-macro.protein .bar::after { height: 75%; }
+    .warm-macro.carbs .bar::after { height: 55%; }
+    .warm-macro.fat .bar::after { height: 40%; }
+    .warm-macro .value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #c85a3b;
+    }
+    .warm-macro .label {
+      font-size: 0.7rem;
+      color: #a0522d;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+    .warm-foods {
+      flex: 1;
+      background: rgba(255,255,255,0.8);
+      border-radius: 25px;
+      padding: 20px;
+      z-index: 1;
+    }
+    .warm-foods h3 {
+      font-size: 0.9rem;
+      color: #c85a3b;
+      margin-bottom: 15px;
+      text-align: center;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+    .warm-food-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #e8d5c4;
+      font-size: 0.85rem;
+    }
+    .warm-food-item .dot {
+      width: 8px;
+      height: 8px;
+      background: #c85a3b;
+      border-radius: 50%;
+      margin-right: 12px;
+    }
+    .warm-food-item .name {
+      flex: 1;
+      color: #5d4037;
+    }
+    .warm-food-item .cal {
+      color: #c85a3b;
+      font-weight: 600;
+    }
+    .warm-quote {
+      text-align: center;
+      margin-top: auto;
+      padding: 15px;
+      font-style: italic;
+      color: #a0522d;
+      font-size: 0.85rem;
+      z-index: 1;
+    }
+
+    /* ==================== STYLE 4: 深夜質感 (Dark) ==================== */
+    .style-dark {
+      background: linear-gradient(180deg, #0d0d1a 0%, #1a1a2e 50%, #16213e 100%);
+      font-family: 'Inter', sans-serif;
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .style-dark::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.15) 0%, transparent 50%);
+    }
+    .dark-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      z-index: 1;
+    }
+    .dark-logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #667eea;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dark-logo span {
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dark-date {
+      font-size: 0.8rem;
+      color: #a0aec0;
+      background: rgba(102, 126, 234, 0.2);
+      padding: 6px 12px;
+      border-radius: 15px;
+    }
+    .dark-main {
+      text-align: center;
+      margin: 25px 0;
+      z-index: 1;
+    }
+    .dark-main .glow {
+      font-size: 4.5rem;
+      font-weight: 700;
+      color: #fff;
+      text-shadow:
+        0 0 20px rgba(102, 126, 234, 0.8),
+        0 0 40px rgba(102, 126, 234, 0.5),
+        0 0 60px rgba(102, 126, 234, 0.3);
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+    @keyframes glow {
+      from { text-shadow: 0 0 20px rgba(102, 126, 234, 0.8), 0 0 40px rgba(102, 126, 234, 0.5); }
+      to { text-shadow: 0 0 30px rgba(102, 126, 234, 1), 0 0 60px rgba(102, 126, 234, 0.7); }
+    }
+    .dark-main .unit {
+      font-size: 1rem;
+      color: #667eea;
+      margin-top: 5px;
+    }
+    .dark-main .label {
+      font-size: 0.8rem;
+      color: #718096;
+      margin-top: 10px;
+    }
+    .dark-bars {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      z-index: 1;
+    }
+    .dark-bar {
+      text-align: center;
+      flex: 1;
+    }
+    .dark-bar .track {
+      width: 40px;
+      height: 100px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      margin: 0 auto 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    .dark-bar .track::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 70%;
+      background: linear-gradient(180deg, #667eea, #764ba2);
+      border-radius: 20px;
+    }
+    .dark-bar.protein .track::after { height: 80%; background: linear-gradient(180deg, #48bb78, #68d391); }
+    .dark-bar.carbs .track::after { height: 55%; background: linear-gradient(180deg, #f6ad55, #fbd38d); }
+    .dark-bar.fat .track::after { height: 45%; background: linear-gradient(180deg, #fc8181, #feb2b2); }
+    .dark-bar .value {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .dark-bar .label {
+      font-size: 0.7rem;
+      color: #718096;
+    }
+    .dark-foods {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+      z-index: 1;
+    }
+    .dark-foods h3 {
+      font-size: 0.85rem;
+      color: #667eea;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dark-food-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.85rem;
+    }
+    .dark-food-item .icon {
+      width: 24px;
+      height: 24px;
+      background: rgba(102, 126, 234, 0.2);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+      font-size: 0.8rem;
+    }
+    .dark-food-item .name {
+      flex: 1;
+      color: #e2e8f0;
+    }
+    .dark-food-item .cal {
+      color: #667eea;
+      font-weight: 600;
+    }
+    .dark-footer {
+      text-align: center;
+      margin-top: auto;
+      padding-top: 15px;
+      z-index: 1;
+    }
+    .dark-footer .quote {
+      font-size: 0.8rem;
+      color: #667eea;
+    }
+
+    /* ==================== STYLE 5: 數據視覺 (Data) ==================== */
+    .style-data {
+      background: linear-gradient(180deg, #f7fafc 0%, #edf2f7 100%);
+      font-family: 'DM Sans', sans-serif;
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
+    }
+    .data-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .data-logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #2d3748;
+    }
+    .data-date {
+      font-size: 0.8rem;
+      color: #718096;
+    }
+    .data-main {
+      text-align: center;
+      margin: 20px 0;
+      position: relative;
+    }
+    .data-chart {
+      width: 200px;
+      height: 200px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .data-chart svg {
+      transform: rotate(-90deg);
+    }
+    .data-chart circle {
+      fill: none;
+      stroke-width: 20;
+    }
+    .data-chart .bg {
+      stroke: #e2e8f0;
+    }
+    .data-chart .progress {
+      stroke: url(#calGradient);
+      stroke-dasharray: 565;
+      stroke-dashoffset: 140;
+      stroke-linecap: round;
+      animation: dataFill 1.5s ease forwards;
+    }
+    @keyframes dataFill {
+      from { stroke-dashoffset: 565; }
+      to { stroke-dashoffset: 140; }
+    }
+    .data-chart .center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .data-chart .number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #2d3748;
+      line-height: 1;
+    }
+    .data-chart .unit {
+      font-size: 0.8rem;
+      color: #718096;
+    }
+    .data-main .label {
+      font-size: 0.9rem;
+      color: #4a5568;
+      margin-top: 15px;
+    }
+    .data-macros {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+    .data-macro {
+      text-align: center;
+    }
+    .data-macro .chart {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 8px;
+    }
+    .data-macro svg {
+      transform: rotate(-90deg);
+    }
+    .data-macro circle {
+      fill: none;
+      stroke-width: 8;
+    }
+    .data-macro .bg { stroke: #e2e8f0; }
+    .data-macro .val {
+      animation: dataVal 1s ease forwards;
+    }
+    @keyframes dataVal {
+      from { stroke-dashoffset: 251; }
+      to { stroke-dashoffset: var(--target); }
+    }
+    .data-macro.p .val { stroke: #48bb78; --target: 60; }
+    .data-macro.c .val { stroke: #f6ad55; --target: 100; }
+    .data-macro.f .val { stroke: #fc8181; --target: 150; }
+    .data-macro .value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #2d3748;
+    }
+    .data-macro .label {
+      font-size: 0.7rem;
+      color: #718096;
+    }
+    .data-foods {
+      flex: 1;
+      background: #fff;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    .data-foods h3 {
+      font-size: 0.85rem;
+      color: #2d3748;
+      margin-bottom: 15px;
+    }
+    .data-food-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f7fafc;
+      font-size: 0.85rem;
+    }
+    .data-food-item .name {
+      color: #4a5568;
+    }
+    .data-food-item .cal {
+      color: #2d3748;
+      font-weight: 600;
+    }
+
+    /* ==================== STYLE 6: 普普風格 (Pop) ==================== */
+    .style-pop {
+      background: linear-gradient(180deg, #fff176 0%, #ffca28 50%, #ff8f00 100%);
+      font-family: 'Noto Sans TC', sans-serif;
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .style-pop::before {
+      content: '';
+      position: absolute;
+      top: -50px;
+      right: -50px;
+      width: 200px;
+      height: 200px;
+      background: #fff;
+      border-radius: 50%;
+      transform: scale(0.5);
+    }
+    .style-pop::after {
+      content: '';
+      position: absolute;
+      bottom: 100px;
+      left: -30px;
+      width: 100px;
+      height: 100px;
+      background: #e91e63;
+      border-radius: 50%;
+    }
+    .pop-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      z-index: 1;
+    }
+    .pop-logo {
+      font-size: 1.2rem;
+      font-weight: 900;
+      color: #e91e63;
+      background: #fff;
+      padding: 8px 16px;
+      border-radius: 25px;
+      box-shadow: 3px 3px 0 #c2185b;
+    }
+    .pop-date {
+      font-size: 0.8rem;
+      color: #fff;
+      background: #e91e63;
+      padding: 6px 12px;
+      border-radius: 15px;
+      font-weight: 700;
+    }
+    .pop-main {
+      text-align: center;
+      margin: 20px 0;
+      z-index: 1;
+    }
+    .pop-main .box {
+      display: inline-block;
+      background: #fff;
+      padding: 20px 40px;
+      border-radius: 20px;
+      box-shadow: 6px 6px 0 #c2185b;
+      transform: rotate(-2deg);
+    }
+    .pop-main .number {
+      font-size: 4rem;
+      font-weight: 900;
+      color: #e91e63;
+      line-height: 1;
+    }
+    .pop-main .unit {
+      font-size: 1.2rem;
+      color: #c2185b;
+    }
+    .pop-main .label {
+      font-size: 0.9rem;
+      color: #c2185b;
+      margin-top: 10px;
+    }
+    .pop-macros {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+      z-index: 1;
+    }
+    .pop-macro {
+      background: #fff;
+      padding: 15px 20px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 4px 4px 0 #c2185b;
+    }
+    .pop-macro .value {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #e91e63;
+    }
+    .pop-macro .label {
+      font-size: 0.7rem;
+      color: #c2185b;
+    }
+    .pop-foods {
+      flex: 1;
+      background: #fff;
+      border-radius: 25px;
+      padding: 20px;
+      z-index: 1;
+    }
+    .pop-foods h3 {
+      font-size: 0.9rem;
+      color: #e91e63;
+      margin-bottom: 15px;
+      text-align: center;
+      font-weight: 700;
+    }
+    .pop-food-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 2px dashed #ffca28;
+      font-size: 0.85rem;
+    }
+    .pop-food-item .icon {
+      width: 30px;
+      height: 30px;
+      background: #ffca28;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+    .pop-food-item .name {
+      flex: 1;
+      color: #333;
+      font-weight: 500;
+    }
+    .pop-food-item .cal {
+      color: #e91e63;
+      font-weight: 700;
+    }
+    .pop-footer {
+      text-align: center;
+      margin-top: auto;
+      padding: 15px;
+      z-index: 1;
+    }
+    .pop-footer .quote {
+      font-size: 0.85rem;
+      color: #c2185b;
+      font-weight: 700;
+    }
+
+    /* Animations */
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .natural-food-item:nth-child(1) { animation-delay: 0.1s; }
+    .natural-food-item:nth-child(2) { animation-delay: 0.2s; }
+    .natural-food-item:nth-child(3) { animation-delay: 0.3s; }
+    .natural-food-item:nth-child(4) { animation-delay: 0.4s; }
+    .natural-food-item:nth-child(5) { animation-delay: 0.5s; }
+
+    /* SVG Defs for gradients */
+    .svg-defs {
+      position: absolute;
+      width: 0;
+      height: 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- SVG Definitions -->
+  <svg class="svg-defs">
+    <defs>
+      <linearGradient id="calGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#667eea"/>
+        <stop offset="100%" style="stop-color:#764ba2"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <div class="container">
+    <h1>🍽️ 今日飲食成就卡</h1>
+    <p class="subtitle">✨ 每次刷新都會隨機產生不同風格 ✨</p>
+
+    <div class="random-controls">
+      <button class="random-btn" onclick="renderRandomCard()">🔀 隨機產生卡片</button>
+    </div>
+
+    <!-- Style 1: Natural -->
+    <div class="card-wrapper active" id="card-natural">
+      <div class="story-card style-natural">
+        <div class="natural-header">
+          <div class="natural-logo"><span>🥗</span> CaloScanAi</div>
+          <div class="natural-date">2026年5月26日</div>
+        </div>
+        <div class="natural-calories">
+          <div class="number">1,852</div>
+          <div class="unit">kcal</div>
+          <div class="label">今日攝取熱量</div>
+        </div>
+        <div class="natural-macros">
+          <div class="natural-macro">
+            <div class="value">78g</div>
+            <div class="label">蛋白質</div>
+          </div>
+          <div class="natural-macro">
+            <div class="value">195g</div>
+            <div class="label">碳水</div>
+          </div>
+          <div class="natural-macro">
+            <div class="value">62g</div>
+            <div class="label">脂肪</div>
+          </div>
+        </div>
+        <div class="natural-foods">
+          <h3>🍽️ 今日食物</h3>
+          <div class="natural-food-item">
+            <span class="name">🍎 蘋果</span>
+            <span class="cal">52 kcal</span>
+          </div>
+          <div class="natural-food-item">
+            <span class="name">🥚 水煮蛋 x2</span>
+            <span class="cal">156 kcal</span>
+          </div>
+          <div class="natural-food-item">
+            <span class="name">🍚 糙米飯</span>
+            <span class="cal">210 kcal</span>
+          </div>
+          <div class="natural-food-item">
+            <span class="name">🐟 煎鮭魚</span>
+            <span class="cal">280 kcal</span>
+          </div>
+          <div class="natural-food-item">
+            <span class="name">🥗 凱撒沙拉</span>
+            <span class="cal">185 kcal</span>
+          </div>
+        </div>
+        <div class="natural-quote">「每一天的選擇，累積成健康的習慣」</div>
+      </div>
+    </div>
+
+    <!-- Style 2: Playful -->
+    <div class="card-wrapper" id="card-playful">
+      <div class="story-card style-playful">
+        <div class="playful-header">
+          <div class="playful-logo"><span>✨</span>CaloScanAi</div>
+          <div class="playful-date">2026.05.26</div>
+        </div>
+        <div class="playful-hero">
+          <div class="emoji">🎉</div>
+          <div class="number">1,852</div>
+          <div class="unit">大卡達成</div>
+        </div>
+        <div class="playful-progress">
+          <div class="playful-progress-item">
+            <div class="circle">
+              <span class="val">78</span>
+              <span class="unit">g</span>
+            </div>
+            <div class="label">蛋白質</div>
+          </div>
+          <div class="playful-progress-item">
+            <div class="circle">
+              <span class="val">195</span>
+              <span class="unit">g</span>
+            </div>
+            <div class="label">碳水</div>
+          </div>
+          <div class="playful-progress-item">
+            <div class="circle">
+              <span class="val">62</span>
+              <span class="unit">g</span>
+            </div>
+            <div class="label">脂肪</div>
+          </div>
+        </div>
+        <div class="playful-foods">
+          <h3>✨ 今日美味時光</h3>
+          <div class="playful-food-item">
+            <div class="icon">🍎</div>
+            <span class="name">蘋果</span>
+            <span class="cal">52</span>
+          </div>
+          <div class="playful-food-item">
+            <div class="icon">🥚</div>
+            <span class="name">水煮蛋 x2</span>
+            <span class="cal">156</span>
+          </div>
+          <div class="playful-food-item">
+            <div class="icon">🍚</div>
+            <span class="name">糙米飯</span>
+            <span class="cal">210</span>
+          </div>
+          <div class="playful-food-item">
+            <div class="icon">🐟</div>
+            <span class="name">煎鮭魚</span>
+            <span class="cal">280</span>
+          </div>
+          <div class="playful-food-item">
+            <div class="icon">🥗</div>
+            <span class="name">凱撒沙拉</span>
+            <span class="cal">185</span>
+          </div>
+        </div>
+        <div class="playful-footer">
+          <div class="quote">「愛自己，從每一餐開始」💕</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Style 3: Warm -->
+    <div class="card-wrapper" id="card-warm">
+      <div class="story-card style-warm">
+        <div class="warm-header">
+          <div class="warm-logo">CaloScanAi 🍊</div>
+          <div class="warm-date">2026年5月26日</div>
+        </div>
+        <div class="warm-calories">
+          <div class="ring">
+            <div class="number">1,852</div>
+            <div class="unit">kcal</div>
+          </div>
+          <div class="label">今日熱量攝取</div>
+        </div>
+        <div class="warm-macros">
+          <div class="warm-macro protein">
+            <div class="bar"></div>
+            <div class="value">78g</div>
+            <div class="label">蛋白質</div>
+          </div>
+          <div class="warm-macro carbs">
+            <div class="bar"></div>
+            <div class="value">195g</div>
+            <div class="label">碳水</div>
+          </div>
+          <div class="warm-macro fat">
+            <div class="bar"></div>
+            <div class="value">62g</div>
+            <div class="label">脂肪</div>
+          </div>
+        </div>
+        <div class="warm-foods">
+          <h3>🍽️ 今日餐食記錄</h3>
+          <div class="warm-food-item">
+            <div class="dot"></div>
+            <span class="name">蘋果</span>
+            <span class="cal">52 kcal</span>
+          </div>
+          <div class="warm-food-item">
+            <div class="dot"></div>
+            <span class="name">水煮蛋 x2</span>
+            <span class="cal">156 kcal</span>
+          </div>
+          <div class="warm-food-item">
+            <div class="dot"></div>
+            <span class="name">糙米飯</span>
+            <span class="cal">210 kcal</span>
+          </div>
+          <div class="warm-food-item">
+            <div class="dot"></div>
+            <span class="name">煎鮭魚</span>
+            <span class="cal">280 kcal</span>
+          </div>
+          <div class="warm-food-item">
+            <div class="dot"></div>
+            <span class="name">凱撒沙拉</span>
+            <span class="cal">185 kcal</span>
+          </div>
+        </div>
+        <div class="warm-quote">「好好吃飯，是對身體最溫柔的照顧」</div>
+      </div>
+    </div>
+
+    <!-- Style 4: Dark -->
+    <div class="card-wrapper" id="card-dark">
+      <div class="story-card style-dark">
+        <div class="dark-header">
+          <div class="dark-logo"><span>◈</span> CaloScanAi</div>
+          <div class="dark-date">2026.05.26</div>
+        </div>
+        <div class="dark-main">
+          <div class="glow">1,852</div>
+          <div class="unit">kcal</div>
+          <div class="label">今日熱量攝取</div>
+        </div>
+        <div class="dark-bars">
+          <div class="dark-bar protein">
+            <div class="track"></div>
+            <div class="value">78g</div>
+            <div class="label">蛋白質</div>
+          </div>
+          <div class="dark-bar carbs">
+            <div class="track"></div>
+            <div class="value">195g</div>
+            <div class="label">碳水</div>
+          </div>
+          <div class="dark-bar fat">
+            <div class="track"></div>
+            <div class="value">62g</div>
+            <div class="label">脂肪</div>
+          </div>
+        </div>
+        <div class="dark-foods">
+          <h3>◈ 今日飲食</h3>
+          <div class="dark-food-item">
+            <div class="icon">🍎</div>
+            <span class="name">蘋果</span>
+            <span class="cal">52</span>
+          </div>
+          <div class="dark-food-item">
+            <div class="icon">🥚</div>
+            <span class="name">水煮蛋 x2</span>
+            <span class="cal">156</span>
+          </div>
+          <div class="dark-food-item">
+            <div class="icon">🍚</div>
+            <span class="name">糙米飯</span>
+            <span class="cal">210</span>
+          </div>
+          <div class="dark-food-item">
+            <div class="icon">🐟</div>
+            <span class="name">煎鮭魚</span>
+            <span class="cal">280</span>
+          </div>
+          <div class="dark-food-item">
+            <div class="icon">🥗</div>
+            <span class="name">凱撒沙拉</span>
+            <span class="cal">185</span>
+          </div>
+        </div>
+        <div class="dark-footer">
+          <div class="quote">「追蹤每一餐，遇見更好的自己」</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Style 5: Data -->
+    <div class="card-wrapper" id="card-data">
+      <div class="story-card style-data">
+        <div class="data-header">
+          <div class="data-logo">📊 CaloScanAi</div>
+          <div class="data-date">2026年5月26日</div>
+        </div>
+        <div class="data-main">
+          <div class="data-chart">
+            <svg width="200" height="200">
+              <circle class="bg" cx="100" cy="100" r="90"/>
+              <circle class="progress" cx="100" cy="100" r="90"/>
+            </svg>
+            <div class="center">
+              <div class="number">1,852</div>
+              <div class="unit">kcal</div>
+            </div>
+          </div>
+          <div class="label">今日攝取熱量</div>
+        </div>
+        <div class="data-macros">
+          <div class="data-macro p">
+            <div class="chart">
+              <svg width="80" height="80">
+                <circle class="bg" cx="40" cy="40" r="35"/>
+                <circle class="val" cx="40" cy="40" r="35"/>
+              </svg>
+            </div>
+            <div class="value">78g</div>
+            <div class="label">蛋白質</div>
+          </div>
+          <div class="data-macro c">
+            <div class="chart">
+              <svg width="80" height="80">
+                <circle class="bg" cx="40" cy="40" r="35"/>
+                <circle class="val" cx="40" cy="40" r="35"/>
+              </svg>
+            </div>
+            <div class="value">195g</div>
+            <div class="label">碳水</div>
+          </div>
+          <div class="data-macro f">
+            <div class="chart">
+              <svg width="80" height="80">
+                <circle class="bg" cx="40" cy="40" r="35"/>
+                <circle class="val" cx="40" cy="40" r="35"/>
+              </svg>
+            </div>
+            <div class="value">62g</div>
+            <div class="label">脂肪</div>
+          </div>
+        </div>
+        <div class="data-foods">
+          <h3>📋 今日食物記錄</h3>
+          <div class="data-food-item">
+            <span class="name">🍎 蘋果</span>
+            <span class="cal">52 kcal</span>
+          </div>
+          <div class="data-food-item">
+            <span class="name">🥚 水煮蛋 x2</span>
+            <span class="cal">156 kcal</span>
+          </div>
+          <div class="data-food-item">
+            <span class="name">🍚 糙米飯</span>
+            <span class="cal">210 kcal</span>
+          </div>
+          <div class="data-food-item">
+            <span class="name">🐟 煎鮭魚</span>
+            <span class="cal">280 kcal</span>
+          </div>
+          <div class="data-food-item">
+            <span class="name">🥗 凱撒沙拉</span>
+            <span class="cal">185 kcal</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Style 6: Pop -->
+    <div class="card-wrapper" id="card-pop">
+      <div class="story-card style-pop">
+        <div class="pop-header">
+          <div class="pop-logo">CaloScanAi</div>
+          <div class="pop-date">05.26</div>
+        </div>
+        <div class="pop-main">
+          <div class="box">
+            <div class="number">1,852</div>
+            <div class="unit">kcal</div>
+            <div class="label">今日達成</div>
+          </div>
+        </div>
+        <div class="pop-macros">
+          <div class="pop-macro">
+            <div class="value">78g</div>
+            <div class="label">蛋白質</div>
+          </div>
+          <div class="pop-macro">
+            <div class="value">195g</div>
+            <div class="label">碳水</div>
+          </div>
+          <div class="pop-macro">
+            <div class="value">62g</div>
+            <div class="label">脂肪</div>
+          </div>
+        </div>
+        <div class="pop-foods">
+          <h3>🍽️ 今日吃的食物</h3>
+          <div class="pop-food-item">
+            <div class="icon">🍎</div>
+            <span class="name">蘋果</span>
+            <span class="cal">52</span>
+          </div>
+          <div class="pop-food-item">
+            <div class="icon">🥚</div>
+            <span class="name">水煮蛋 x2</span>
+            <span class="cal">156</span>
+          </div>
+          <div class="pop-food-item">
+            <div class="icon">🍚</div>
+            <span class="name">糙米飯</span>
+            <span class="cal">210</span>
+          </div>
+          <div class="pop-food-item">
+            <div class="icon">🐟</div>
+            <span class="name">煎鮭魚</span>
+            <span class="cal">280</span>
+          </div>
+          <div class="pop-food-item">
+            <div class="icon">🥗</div>
+            <span class="name">凱撒沙拉</span>
+            <span class="cal">185</span>
+          </div>
+        </div>
+        <div class="pop-footer">
+          <div class="quote">「每一天都在變更好」💪</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 隨機卡片風格
+    const styles = ['natural', 'playful', 'warm', 'dark', 'data', 'pop'];
+    const randomStyle = styles[Math.floor(Math.random() * styles.length)];
+
+    // 隨機 App 名稱（全部加上 Emoji 吸引目光）
+    const appNames = [
+      '熱量現形記 🔍',        // 放大鏡 = 熱量透視
+      '我的秘密 AI 營養師 🤖', // AI 機器人
+      '越吃越瘦的秘密 🔥',   // 火焰 = 燃脂
+      '智能熱量管家 ⚡',      // 閃電 = 智能快速
+      '今天被 AI 監控了嗎？ 👀', // 眼睛 = 監控
+      '無痛減脂日常 💫',      // 星星 = 每天變好
+      '吃貨的贖罪券 😇',      // 天使 = 贖罪
+      '我的健康存摺 💰'       // 錢袋 = 存摺/財富
+    ];
+    const randomAppName = appNames[Math.floor(Math.random() * appNames.length)];
+
+    function showTab(tabName) {
+      document.querySelectorAll('.card-wrapper').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('card-' + tabName).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function getRandomStyle() {
+      return styles[Math.floor(Math.random() * styles.length)];
+    }
+
+    function shuffleArray(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function getRandomAppName() {
+      return appNames[Math.floor(Math.random() * appNames.length)];
+    }
+
+    function getRandomFoods() {
+      const allFoods = [
+        { name: '蘋果', emoji: '🍎', cal: 52 },
+        { name: '水煮蛋 x2', emoji: '🥚', cal: 156 },
+        { name: '糙米飯', emoji: '🍚', cal: 210 },
+        { name: '煎鮭魚', emoji: '🐟', cal: 280 },
+        { name: '凱撒沙拉', emoji: '🥗', cal: 185 },
+        { name: '香蕉', emoji: '🍌', cal: 89 },
+        { name: '烤雞胸', emoji: '🍗', cal: 165 },
+        { name: '希臘優格', emoji: '🥛', cal: 100 },
+        { name: '酪梨', emoji: '🥑', cal: 160 },
+        { name: '地瓜', emoji: '🍠', cal: 102 }
+      ];
+      const shuffled = shuffleArray(allFoods);
+      return shuffled.slice(0, 5);
+    }
+
+    function renderRandomCard() {
+      const style = getRandomStyle();
+      const appName = getRandomAppName();
+      const foods = getRandomFoods();
+      const totalCal = foods.reduce((sum, f) => sum + f.cal, 0);
+
+      // 根據食物計算巨量營養素（簡單估算）
+      const protein = Math.round(totalCal * 0.25 / 4);  // 25% 蛋白質
+      const carbs = Math.round(totalCal * 0.45 / 4);    // 45% 碳水
+      const fat = Math.round(totalCal * 0.30 / 9);     // 30% 脂肪
+
+      // 隱藏所有卡片
+      document.querySelectorAll('.card-wrapper').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+      // 顯示隨機卡片
+      const card = document.getElementById('card-' + style);
+      card.classList.add('active');
+
+      // 更新所有 Logo 文字
+      document.querySelectorAll('[class*="-logo"]').forEach(el => {
+        el.textContent = appName;
+      });
+
+      // 更新熱量顯示（根據風格不同選擇器）
+      const calorieSelectors = [
+        '.natural-calories .number',
+        '.playful-hero .number',
+        '.warm-calories .number',
+        '.dark-main .glow',
+        '.data-chart .number',
+        '.pop-main .number'
+      ];
+      calorieSelectors.forEach(sel => {
+        const el = card.querySelector(sel);
+        if (el) el.textContent = totalCal.toLocaleString();
+      });
+
+      // 更新巨量營養素
+      const macroValues = card.querySelectorAll('[class*="-macro"] .value, [class*="-bar"] .value, .dark-bar .value, .playful-progress-item .val');
+      const macros = [protein + 'g', carbs + 'g', fat + 'g'];
+      macroValues.forEach((el, i) => {
+        if (macros[i]) el.textContent = macros[i];
+      });
+
+      // 更新食物列表
+      const foodContainer = card.querySelector('[class*="-foods"]');
+      if (foodContainer) {
+        const foodItems = foodContainer.querySelectorAll('[class*="-food-item"]');
+        const foodIcons = ['🍎', '🥚', '🍚', '🐟', '🥗', '🍌', '🍗', '🥛', '🥑', '🍠'];
+
+        foods.forEach((food, i) => {
+          if (foodItems[i]) {
+            const nameEl = foodItems[i].querySelector('[class*="-name"]');
+            const calEl = foodItems[i].querySelector('[class*="-cal"]');
+            if (nameEl) nameEl.textContent = `${foodIcons[i]} ${food.name}`;
+            if (calEl) calEl.textContent = `${food.cal}`;
+          }
+        });
+      }
+    }
+
+    // 初始化：隨機顯示
+    window.addEventListener('DOMContentLoaded', () => {
+      renderRandomCard();
+    });
+  </script>
+</body>
+</html>
