@@ -306,14 +306,22 @@ router.get('/search', authMiddleware, async (req, res) => {
 // POST /api/food/add-from-database - Add food from database to log (authenticated)
 router.post('/add-from-database', authMiddleware, async (req, res, next) => {
   try {
-    const { barcodeId, isFavorite } = req.body;
-
-    if (!barcodeId) {
-      return res.status(400).json({ error: '食物 ID 為必填欄位' });
-    }
+    const { barcodeId, isFavorite, name, calories, protein, carbs, fat } = req.body;
 
     let food;
-    if (isFavorite) {
+
+    // 優先使用直接傳入的食物資料（copyFoodLog 場景）
+    if (name && calories !== undefined) {
+      food = {
+        name: name,
+        calories: calories || 0,
+        protein: protein || 0,
+        carbs: carbs || 0,
+        fat: fat || 0
+      };
+    }
+    // 從最愛新增
+    else if (barcodeId && isFavorite) {
       const favorite = FavoritesDB.findById(parseInt(barcodeId));
       if (!favorite || favorite.user_id !== req.user.id) {
         return res.status(404).json({ error: '找不到此最愛項目' });
@@ -325,11 +333,23 @@ router.post('/add-from-database', authMiddleware, async (req, res, next) => {
         carbs: favorite.carbs,
         fat: favorite.fat
       };
-    } else {
-      food = BarcodeDB.findById(parseInt(barcodeId));
-      if (!food) {
+      FavoritesDB.incrementUseCount(parseInt(barcodeId));
+    }
+    // 從 barcodes 資料庫新增
+    else if (barcodeId) {
+      const barcode = BarcodeDB.findById(parseInt(barcodeId));
+      if (!barcode) {
         return res.status(404).json({ error: '找不到此食物資料' });
       }
+      food = {
+        name: barcode.name,
+        calories: barcode.calories,
+        protein: barcode.protein,
+        carbs: barcode.carbs,
+        fat: barcode.fat
+      };
+    } else {
+      return res.status(400).json({ error: '食物 ID 或食物資料為必填欄位' });
     }
 
     // Create food log entry
@@ -342,11 +362,6 @@ router.post('/add-from-database', authMiddleware, async (req, res, next) => {
       fat: food.fat || 0,
       description: food.name
     });
-
-    // Increment use_count for favorite items
-    if (isFavorite && barcodeId) {
-      FavoritesDB.incrementUseCount(parseInt(barcodeId));
-    }
 
     // Update daily progress
     const today = getLocalDate();
