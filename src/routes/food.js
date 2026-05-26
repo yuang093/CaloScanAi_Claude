@@ -109,7 +109,7 @@ router.post('/upload', authMiddleware, async (req, res, next) => {
 
     // Update daily progress with TDEE goal
     const today = getLocalDate();
-    const todayStats = FoodLogDB.getTodayStats(req.user.id);
+    const todayStats = FoodLogDB.getTodayStats(req.user.id, today);
 
     // Get user's TDEE from profile for goal_calories
     let goalCalories = 2000;
@@ -240,7 +240,7 @@ router.put('/logs/:id', authMiddleware, async (req, res) => {
 
   // Update daily progress
   const today = getLocalDate();
-  const todayStats = FoodLogDB.getTodayStats(req.user.id);
+  const todayStats = FoodLogDB.getTodayStats(req.user.id, today);
   DailyProgressDB.upsert(req.user.id, today, {
     totalCalories: todayStats.total_calories,
     totalProtein: todayStats.total_protein,
@@ -268,7 +268,7 @@ router.delete('/logs/:id', authMiddleware, async (req, res) => {
   if (deleted) {
     // Update daily progress
     const today = getLocalDate();
-    const todayStats = FoodLogDB.getTodayStats(req.user.id);
+    const todayStats = FoodLogDB.getTodayStats(req.user.id, today);
     DailyProgressDB.upsert(req.user.id, today, {
       totalCalories: todayStats.total_calories,
       totalProtein: todayStats.total_protein,
@@ -365,7 +365,7 @@ router.post('/add-from-database', authMiddleware, async (req, res, next) => {
 
     // Update daily progress
     const today = getLocalDate();
-    const todayStats = FoodLogDB.getTodayStats(req.user.id);
+    const todayStats = FoodLogDB.getTodayStats(req.user.id, today);
 
     let goalCalories = 2000;
     try {

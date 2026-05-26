@@ -712,11 +712,12 @@ export const FoodLogDB = {
 
   findByUserId(userId, options = {}) {
     const { date, limit = 20, offset = 0 } = options;
+    // 使用 UTC+8 時區過濾，避免 Server 時區差異問題
     let query = 'SELECT * FROM food_logs WHERE user_id = ?';
     const params = [userId];
 
     if (date) {
-      query += ' AND date(created_at) = ?';
+      query += ' AND date(datetime(created_at, "+8 hours")) = ?';
       params.push(date);
     }
 
@@ -724,7 +725,7 @@ export const FoodLogDB = {
     params.push(limit, offset);
 
     const logs = db.prepare(query).all(...params);
-    const countQuery = db.prepare('SELECT COUNT(*) as total FROM food_logs WHERE user_id = ?' + (date ? ' AND date(created_at) = ?' : ''));
+    const countQuery = db.prepare('SELECT COUNT(*) as total FROM food_logs WHERE user_id = ?' + (date ? ' AND date(datetime(created_at, "+8 hours")) = ?' : ''));
     const count = date
       ? countQuery.get(userId, date)
       : countQuery.get(userId);
@@ -758,15 +759,10 @@ export const FoodLogDB = {
     return result.changes > 0;
   },
 
-  getTodayStats(userId) {
-    // Use explicit date calculation for Taiwan timezone
-    const now = new Date();
-    const taiwanOffset = 8 * 60; // Taiwan is UTC+8
-    const localOffset = now.getTimezoneOffset();
-    const diff = (localOffset + taiwanOffset) * 60000;
-    const taiwanDate = new Date(now.getTime() + diff);
-    const today = taiwanDate.toISOString().split('T')[0];
-    console.log('[getTodayStats] today:', today, 'userId:', userId);
+  getTodayStats(userId, date) {
+    // date 參數為 UTC+8 日期字串 (YYYY-MM-DD)
+    // 使用 SQLite datetime 轉換時區來過濾
+    console.log('[getTodayStats] date:', date, 'userId:', userId);
 
     const stmt = db.prepare(`
       SELECT
@@ -776,9 +772,9 @@ export const FoodLogDB = {
         COALESCE(SUM(fat), 0) as total_fat,
         COUNT(*) as meal_count
       FROM food_logs
-      WHERE user_id = ? AND date(created_at) = ?
+      WHERE user_id = ? AND date(datetime(created_at, "+8 hours")) = ?
     `);
-    const result = stmt.get(userId, today);
+    const result = stmt.get(userId, date);
     console.log('[getTodayStats] result:', result);
     return result;
   }

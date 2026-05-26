@@ -231,7 +231,7 @@ router.put('/food-logs/:id', adminMiddleware, (req, res) => {
 
   // Update daily progress
   const today = getLocalDate();
-  const todayStats = FoodLogDB.getTodayStats(updated.user_id);
+  const todayStats = FoodLogDB.getTodayStats(updated.user_id, today);
   DailyProgressDB.upsert(updated.user_id, today, {
     totalCalories: todayStats.total_calories,
     totalProtein: todayStats.total_protein,
@@ -261,7 +261,7 @@ router.delete('/food-logs/:id', adminMiddleware, (req, res) => {
 
   // Update daily progress
   const today = getLocalDate();
-  const todayStats = FoodLogDB.getTodayStats(log.user_id);
+  const todayStats = FoodLogDB.getTodayStats(log.user_id, today);
   DailyProgressDB.upsert(log.user_id, today, {
     totalCalories: todayStats.total_calories,
     totalProtein: todayStats.total_protein,

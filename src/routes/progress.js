@@ -13,7 +13,7 @@ router.get('/daily', authMiddleware, async (req, res, next) => {
     console.log('[progress/daily] userId:', req.user.id);
 
     // Get today's stats from food logs
-    const todayStats = FoodLogDB.getTodayStats(req.user.id);
+    const todayStats = FoodLogDB.getTodayStats(req.user.id, today);
     console.log('[progress/daily] todayStats:', todayStats);
 
     // Get user's profile for goalCalories
@@ -158,7 +158,7 @@ router.put('/goals', authMiddleware, async (req, res, next) => {
     }
 
     const today = getLocalDate();
-    const todayStats = FoodLogDB.getTodayStats(req.user.id);
+    const todayStats = FoodLogDB.getTodayStats(req.user.id, today);
 
     const progress = DailyProgressDB.upsert(req.user.id, today, {
       totalCalories: todayStats.total_calories,

@@ -256,7 +256,7 @@ router.post('/create-from-nutrition', authMiddleware, async (req, res, next) => 
 
     // Update daily progress with TDEE goal
     const today = getLocalDate();
-    const todayStats = FoodLogDB.getTodayStats(req.user.id);
+    const todayStats = FoodLogDB.getTodayStats(req.user.id, today);
 
     let goalCalories = 2000;
     try {
