@@ -1701,7 +1701,7 @@
           goalCalories = goals.calories;
 
           // Fetch today's food logs for meal breakdown
-          const todayLogsRes = await fetch('/api/food/logs?limit=50', {
+          const todayLogsRes = await fetch('/api/food/logs?date=' + getLocalDate() + '&limit=50', {
             headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
           });
           const todayLogsResult = await todayLogsRes.json();
@@ -1983,7 +1983,7 @@
       try {
         // Fetch food logs and profile in parallel
         const [logsRes, profileRes] = await Promise.all([
-          fetch('/api/food/logs?limit=50', {
+          fetch('/api/food/logs?date=' + getLocalDate() + '&limit=50', {
             headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
           }),
           fetch('/api/profile', {
@@ -2120,6 +2120,7 @@
       }
     }
 
+    function getLocalDate() { const now = new Date(); const offset = now.getTimezoneOffset() * 60000; const localDate = new Date(now.getTime() - offset); return localDate.toISOString().split('T')[0]; }
     function escapeHtml(text) {
       const div = document.createElement('div');
       div.textContent = text;
