@@ -356,6 +356,7 @@
         if (result.success) {
           localStorage.setItem('token', result.data.token);
           localStorage.setItem('user', JSON.stringify(result.data.user));
+          localStorage.setItem('isAdmin', result.data.user.role === 'admin' ? 'true' : 'false');
           window.location.href = 'dashboard.html';
         } else {
           const errMsg = typeof result.error === 'string' ? result.error : (result.error?.message || JSON.stringify(result.error));
