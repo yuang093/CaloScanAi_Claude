@@ -438,8 +438,8 @@ router.get('/favorites', authMiddleware, async (req, res) => {
 
   // 如果是最常食用排序，從 food_logs 統計
   if (sort === 'most_used') {
-    // 從 food_logs 統計各食物的食用次數
-    const logs = FoodLogDB.findByUserId(req.user.id, { limit: 500 });
+    // 從 food_logs 統計各食物的食用次數（注意：findByUserId 回傳 { logs, total }）
+    const { logs } = FoodLogDB.findByUserId(req.user.id, { limit: 500 });
     const foodCountMap = {};
     logs.forEach(log => {
       const key = log.description || '未命名';
@@ -447,18 +447,18 @@ router.get('/favorites', authMiddleware, async (req, res) => {
         foodCountMap[key] = {
           name: key,
           count: 0,
-          calories: 0,
-          protein: 0,
-          carbs: 0,
-          fat: 0,
+          total_calories: 0,
+          total_protein: 0,
+          total_carbs: 0,
+          total_fat: 0,
           image_path: log.image_path
         };
       }
       foodCountMap[key].count++;
-      foodCountMap[key].calories += (log.calories || 0);
-      foodCountMap[key].protein += (log.protein || 0);
-      foodCountMap[key].carbs += (log.carbs || 0);
-      foodCountMap[key].fat += (log.fat || 0);
+      foodCountMap[key].total_calories += (log.calories || 0);
+      foodCountMap[key].total_protein += (log.protein || 0);
+      foodCountMap[key].total_carbs += (log.carbs || 0);
+      foodCountMap[key].total_fat += (log.fat || 0);
     });
 
     // 轉為陣列並排序
@@ -468,10 +468,10 @@ router.get('/favorites', authMiddleware, async (req, res) => {
       .map(f => ({
         name: f.name,
         use_count: f.count,
-        calories: Math.round(f.calories / f.count),
-        protein: Math.round(f.protein / f.count * 10) / 10,
-        carbs: Math.round(f.carbs / f.count * 10) / 10,
-        fat: Math.round(f.fat / f.count * 10) / 10,
+        calories: Math.round(f.total_calories / f.count),
+        protein: Math.round(f.total_protein / f.count * 10) / 10,
+        carbs: Math.round(f.total_carbs / f.count * 10) / 10,
+        fat: Math.round(f.total_fat / f.count * 10) / 10,
         image_path: f.image_path,
         isStats: true
       }));
