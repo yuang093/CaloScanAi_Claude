@@ -2854,7 +2854,7 @@
       document.getElementById('share-modal').style.display = 'none';
     }
 
-    // 新分頁下載方式：iOS/Android/桌面統一處理
+    // 虛擬新頁面下載：iOS/Android/桌面統一處理
     async function downloadShareCard() {
       const card = document.getElementById('share-card-preview');
       if (typeof html2canvas === 'undefined') {
@@ -2868,55 +2868,56 @@
         downloadBtn.textContent = '處理中...';
       }
 
-      // 【防擋機制】使用者點擊當下「同步」開啟新分頁
-      const newWin = window.open('', '_blank');
-      if (newWin) {
-        newWin.document.write('<meta name="viewport" content="width=device-width, initial-scale=1.0"><h3 style="text-align:center; font-family:sans-serif; margin-top:50px; color:#666;">圖片產生中，請稍候... ⏳</h3>');
-      }
-
       try {
-        // 執行耗時的截圖作業
         const canvas = await html2canvas(card, { scale: 2.5, useCORS: true, backgroundColor: null });
         const dataUrl = canvas.toDataURL('image/png');
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-        if (newWin) {
-          // 成功開啟新分頁，替換成乾淨的儲存畫面
-          newWin.document.body.innerHTML = `
-            <div style="display:flex; flex-direction:column; align-items:center; min-height:100vh; background:#fefefe; padding:20px; font-family:sans-serif; box-sizing:border-box;">
-              <h2 style="color:#c85a3b; margin-top:10px; margin-bottom:10px;">🎉 產生完成</h2>
-              <p style="color:#333; margin-bottom:20px; font-weight:bold; text-align:center; line-height:1.5;">
-                👆 這是您的專屬卡片<br>請長按圖片並選擇「儲存影像」
-              </p>
-              <img src="${dataUrl}" style="width:100%; max-width:320px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.15); -webkit-touch-callout:default; pointer-events:auto;">
-              <button onclick="window.close()" style="margin-top:30px; padding:12px 32px; font-size:1rem; border:none; border-radius:24px; background:#e0e0e0; color:#333; cursor:pointer; font-weight:bold;">關閉本頁</button>
-            </div>
+        if (isIOS) {
+          // iOS 虛擬新頁面 (Virtual Page) 策略：100% 繞過彈窗阻擋
+          const virtualPage = document.createElement('div');
+          virtualPage.id = 'virtual-share-page';
+          virtualPage.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:#fefefe; z-index:999999; overflow-y:auto; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:60px 20px; box-sizing:border-box;';
+
+          virtualPage.innerHTML = `
+            <h2 style="color:#c85a3b; margin-bottom:12px; font-family:sans-serif;">🎉 產生完成</h2>
+            <p style="color:#333; margin-bottom:24px; font-weight:bold; text-align:center; line-height:1.5; font-family:sans-serif;">
+              👆 這是您的專屬卡片<br>請 <span style="color:#e74c3c;">長按圖片</span> 並選擇「儲存影像」
+            </p>
+            <img src="${dataUrl}" style="width:100%; max-width:320px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.15); -webkit-touch-callout:default !important; pointer-events:auto;" alt="成就卡">
+            <button id="close-virtual-page" style="margin-top:40px; padding:14px 40px; font-size:1.1rem; border:none; border-radius:28px; background:#e0e0e0; color:#333; cursor:pointer; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.1);">完成並返回</button>
           `;
+
+          document.body.appendChild(virtualPage);
+
+          // 寫入 History API，讓手機的「上一頁」手勢有效
+          history.pushState({ page: 'share' }, '', '#share');
+
+          // 點擊按鈕觸發上一頁
+          document.getElementById('close-virtual-page').addEventListener('click', () => {
+            history.back();
+          });
+
+          // 監聽系統上一頁事件來移除虛擬頁面
+          const onPopState = () => {
+            const vp = document.getElementById('virtual-share-page');
+            if (vp) vp.remove();
+            window.removeEventListener('popstate', onPopState);
+          };
+          window.addEventListener('popstate', onPopState);
+
         } else {
-          // 如果新分頁不幸被擋 (例如 IG/LINE 內建瀏覽器)
-          if (!isIOS) {
-            // 非 iOS 直接自動下載
-            const fileName = 'caloscanai_' + new Date().toISOString().slice(0,10) + '.png';
-            const link = document.createElement('a');
-            link.download = fileName;
-            link.href = dataUrl;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          } else {
-            // iOS 最終暴力解：覆蓋原本的畫面，逼迫畫面只剩下圖片
-            document.body.innerHTML = `
-              <div style="text-align:center; padding:30px; font-family:sans-serif; background:#fff; min-height:100vh;">
-                <h3 style="color:#c85a3b; margin-bottom:16px;">請長按下方圖片儲存</h3>
-                <img src="${dataUrl}" style="width:100%; max-width:350px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.2); -webkit-touch-callout:default;">
-                <p style="color:#888; margin-top:20px; font-size:0.9rem;">儲存完成後，請重新整理網頁即可恢復原狀</p>
-              </div>
-            `;
-          }
+          // Android / PC 直接觸發下載
+          const fileName = 'caloscanai_' + new Date().toISOString().slice(0,10) + '.png';
+          const link = document.createElement('a');
+          link.download = fileName;
+          link.href = dataUrl;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
         }
       } catch (err) {
         console.error('Download error:', err);
-        if (newWin) newWin.close();
         alert('圖片產生失敗，請稍後再試');
       } finally {
         if (downloadBtn) {
