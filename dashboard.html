@@ -1103,7 +1103,16 @@
       }
 
       const btn = document.querySelector('#analysis-result .btn-primary');
-      if (!btn) return;
+      if (!btn) {
+        // Fallback: find any btn-primary with 儲存中... and reset
+        document.querySelectorAll('.btn-primary').forEach(b => {
+          if (b.textContent === '儲存中...') {
+            b.disabled = false;
+            b.textContent = '加入日誌';
+          }
+        });
+        return;
+      }
       btn.disabled = true;
       btn.textContent = '儲存中...';
 
@@ -1136,6 +1145,8 @@
 
           foodLog.unshift(entry);
           renderFoodLog();
+          btn.textContent = '加入日誌';
+          btn.disabled = false;
           resetUpload();
         } else {
           alert('儲存失敗：' + result.error);
