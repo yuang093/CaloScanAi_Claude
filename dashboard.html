@@ -2861,7 +2861,7 @@
         return;
       }
 
-      // 顯示提示
+      // 顯示處理中狀態
       const downloadBtn = card.closest('.modal')?.querySelector('[onclick="downloadShareCard()"]');
       if (downloadBtn) {
         downloadBtn.disabled = true;
@@ -2871,50 +2871,46 @@
       try {
         // 1. 使用 html2canvas 將卡片轉為 canvas
         const canvas = await html2canvas(card, { scale: 2.5, useCORS: true, backgroundColor: null });
-        const dataUrl = canvas.toDataURL('image/png');
 
-        // 2. 將 dataURL 轉為 Blob
-        const blob = await (await fetch(dataUrl)).blob();
+        // 2. 直接使用 canvas.toBlob() 產生 Blob（效能更好，避免 iOS User Gesture Token 問題）
+        const blob = await new Promise((resolve, reject) => {
+          canvas.toBlob(blob => {
+            if (blob) resolve(blob);
+            else reject(new Error('Failed to create blob'));
+          }, 'image/png');
+        });
 
         // 3. 建立 File 物件（iOS Safari 需要 File 而非 Blob）
         const fileName = 'caloscanai_' + new Date().toISOString().slice(0,10) + '.png';
         const file = new File([blob], fileName, { type: 'image/png' });
 
-        // 4. 檢查是否支援 Web Share API + files
+        // 4. 檢查是否支援 Web Share API + files（iOS Safari 原生分享）
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          // iOS Safari / Android Chrome 支援：使用原生分享選單
           try {
-            await navigator.share({
-              files: [file],
-              title: 'CaloScanAi 今日攝取',
-              text: '我的今日飲食記錄！'
-            });
-            // 分享成功
+            // iOS Safari：只傳入 files，不夾帶 title/text/url（否則會隱藏「儲存影像」選項）
+            await navigator.share({ files: [file] });
           } catch (err) {
             if (err.name !== 'AbortError') {
-              // 非使用者取消的錯誤，使用 fallback
               console.error('Share failed:', err);
-              downloadViaLink(dataUrl, fileName);
+              showSaveGuideModal(canvas);
             }
           }
         } else if (navigator.share) {
           // 支援 Web Share API 但不支援分享檔案（Android 某些版本）
-          // 先嘗試下載，下載失欺則使用 fallback
           try {
             await navigator.share({
               title: 'CaloScanAi 今日攝取',
-              text: '我的今日飲食記錄！',
-              url: dataUrl
+              text: '我的今日飲食記錄！'
             });
           } catch (err) {
             if (err.name !== 'AbortError') {
               console.error('Share failed:', err);
-              downloadViaLink(dataUrl, fileName);
+              showSaveGuideModal(canvas);
             }
           }
         } else {
-          // 5. Fallback：傳統下載方式
-          downloadViaLink(dataUrl, fileName);
+          // 5. Fallback：顯示引導 Modal
+          showSaveGuideModal(canvas);
         }
       } catch (err) {
         console.error('Download error:', err);
@@ -2928,22 +2924,77 @@
       }
     }
 
-    // Fallback 下載方式：新分頁開啟 + 提示長按儲存
-    function downloadViaLink(dataUrl, fileName) {
-      // 在新分頁開啟圖片
-      const win = window.open(dataUrl, '_blank');
-      if (win) {
-        // 顯示提示
-        setTimeout(() => {
-          alert('請長按圖片並選擇「儲存影像」將圖片存入相簿');
-        }, 500);
-      } else {
-        // 如果新分頁被阻擋，使用傳統下載連結
-        const link = document.createElement('a');
-        link.download = fileName;
-        link.href = dataUrl;
-        link.click();
-      }
+    // Fallback Modal：顯示圖片 + 引導使用者長按儲存
+    function showSaveGuideModal(canvas) {
+      // 移除已存在的 Modal（防止重複）
+      const existing = document.getElementById('save-guide-modal');
+      if (existing) existing.remove();
+
+      const dataUrl = canvas.toDataURL('image/png');
+
+      // 建立 Modal Overlay
+      const modal = document.createElement('div');
+      modal.id = 'save-guide-modal';
+      modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85);
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        cursor: pointer;
+      `;
+
+      modal.innerHTML = `
+        <div style="
+          background: #fff;
+          border-radius: 16px;
+          padding: 16px;
+          max-width: 100%;
+          max-height: 80vh;
+          overflow: auto;
+          cursor: default;
+        ">
+          <img src="${dataUrl}" style="
+            width: 100%;
+            max-width: 270px;
+            height: auto;
+            border-radius: 12px;
+            display: block;
+          " alt="分享卡片">
+        </div>
+        <div style="
+          color: #fff;
+          text-align: center;
+          margin-top: 24px;
+          font-size: 1.1rem;
+          font-weight: 500;
+          text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+          line-height: 1.6;
+        ">
+          請長按圖片<br>選擇「儲存影像」存入相簿
+        </div>
+        <div style="
+          color: rgba(255,255,255,0.7);
+          text-align: center;
+          margin-top: 12px;
+          font-size: 0.9rem;
+        ">
+          點擊背景關閉
+        </div>
+      `;
+
+      // 點擊背景關閉 Modal
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      });
+
+      document.body.appendChild(modal);
     }
 
     async function lookupBarcode() {
