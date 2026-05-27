@@ -2729,7 +2729,7 @@
       }
     };
 
-    function openShareCard() {
+    async function openShareCard() {
       const totalCal = document.getElementById('total-cal').textContent;
       const goalCal = document.getElementById('goal-cal-display').textContent;
       const cal = parseInt(totalCal) || 0;
@@ -2742,8 +2742,23 @@
       else if (percent >= 70) achievement = '💪 表現良好！';
       else achievement = '📈 持續加油！';
 
-      // 取得今日食物（最多5項）
-      const todayFoods = foodLog.slice(0, 5);
+      // 直接從 API 取得今日食物（避免 foodLog 為空的問題）
+      let todayFoods = [];
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/food/logs?date=' + getLocalDate() + '&limit=5', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const result = await res.json();
+        if (result.success && result.data && result.data.logs) {
+          todayFoods = result.data.logs.map(log => ({
+            name: log.description || '未命名食物',
+            calories: log.calories || 0
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch food logs:', err);
+      }
 
       // 隨機選擇風格和標題
       const styles = ['natural', 'playful', 'warm', 'dark', 'data', 'pop'];
