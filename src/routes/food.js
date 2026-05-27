@@ -496,7 +496,7 @@ router.get('/favorites', authMiddleware, async (req, res) => {
 
 // POST /api/food/favorites - Add to favorites (authenticated)
 router.post('/favorites', authMiddleware, async (req, res) => {
-  const { barcodeId, name, brand, calories, protein, carbs, fat, servingSize } = req.body;
+  const { barcodeId, name, brand, calories, protein, carbs, fat, servingSize, imagePath } = req.body;
 
   if (!name) {
     return res.status(400).json({ error: '食物名稱為必填欄位' });
@@ -510,7 +510,8 @@ router.post('/favorites', authMiddleware, async (req, res) => {
     protein: protein || 0,
     carbs: carbs || 0,
     fat: fat || 0,
-    servingSize: servingSize || ''
+    servingSize: servingSize || '',
+    imagePath: imagePath || null
   });
 
   res.json({

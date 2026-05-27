@@ -59,10 +59,14 @@ window.searchFoodDatabase = async function() {
     if (result.success && result.data.length > 0) {
       resultsDiv.innerHTML = result.data.map(food => {
         const escapedName = food.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        const imgSrc = food.image_path ? '/uploads/' + food.image_path : 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0iI2YzZjBmYiIvPjx0ZXh0IHg9IjUwIiB5PSI2MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIyMCI+Zm9vPC90ZXh0Pjwvc3ZnPg==';
         return `
-        <div style="padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <div style="font-weight:600;">${window.escapeHtml(food.name)}</div>
+        <div style="padding:12px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:12px;">
+          <div style="width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0;background:#f3f0f0;">
+            <img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name)}</div>
             <div style="font-size:0.8rem; color:#666;">${window.escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
           </div>
           <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat})" class="btn btn-primary btn-small">加入</button>
@@ -217,15 +221,21 @@ window.loadRecentFoods = async function() {
     const container = document.getElementById('recent-list');
 
     if (result.success && result.data.length > 0) {
-      container.innerHTML = result.data.map(f => `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid var(--color-border);">
-          <div>
-            <div style="font-weight:500;">${f.description || '未命名食物'}</div>
+      container.innerHTML = result.data.map(f => {
+        const escapedName = (f.description || '未命名食物').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        const imgSrc = f.image_path ? '/uploads/' + f.image_path : 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0iI2YzZjBmYiIvPjx0ZXh0IHg9IjUwIiB5PSI2MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIyMCI+Zm9vPC90ZXh0Pjwvc3ZnPg==';
+        return `
+        <div style="display:flex; align-items:center; padding:8px; border-bottom:1px solid var(--color-border);">
+          <div style="width:44px;height:44px;border-radius:8px;overflow:hidden;margin-right:12px;flex-shrink:0;background:#f3f0f0;">
+            <img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${f.description || '未命名食物'}</div>
             <div style="font-size:0.8rem; color:var(--color-text-muted);">${f.calories} kcal</div>
           </div>
-          <button onclick="window.copyFoodLog(${f.id}, '${(f.description || '').replace(/'/g, "\\'")}', ${f.calories || 0}, ${f.protein || 0}, ${f.carbs || 0}, ${f.fat || 0})" class="btn btn-secondary btn-small">加入</button>
+          <button onclick="window.copyFoodLog(${f.id}, '${escapedName}', ${f.calories || 0}, ${f.protein || 0}, ${f.carbs || 0}, ${f.fat || 0})" class="btn btn-secondary btn-small">加入</button>
         </div>
-      `).join('');
+      `}).join('');
     } else {
       container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">尚無記錄</div>';
     }

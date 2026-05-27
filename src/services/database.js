@@ -1050,8 +1050,8 @@ export const FavoritesDB = {
 
   create(userId, data) {
     const stmt = db.prepare(`
-      INSERT INTO favorites (user_id, barcode_id, name, brand, calories, protein, carbs, fat, serving_size, use_count)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+      INSERT INTO favorites (user_id, barcode_id, name, brand, calories, protein, carbs, fat, serving_size, use_count, image_path)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
     `);
     const result = stmt.run(
       userId,
@@ -1062,7 +1062,8 @@ export const FavoritesDB = {
       data.protein || 0,
       data.carbs || 0,
       data.fat || 0,
-      data.servingSize || ''
+      data.servingSize || '',
+      data.imagePath || null
     );
     return this.findById(result.lastInsertRowid);
   },
