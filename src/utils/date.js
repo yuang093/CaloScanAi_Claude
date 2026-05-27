@@ -37,3 +37,8 @@ export function getLocalDateDaysAgo(days) {
   today.setDate(today.getDate() - days);
   return dateToLocalString(today);
 }
+
+// 瀏覽器環境：暴露到 window
+if (typeof window !== 'undefined') {
+  window.getLocalDate = getLocalDate;
+}

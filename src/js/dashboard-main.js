@@ -2,6 +2,8 @@
 // dashboard-main.js - 全域變數、初始化、主題
 // ============================================
 
+import { getLocalDate } from '../utils/date.js';
+
 // State (掛載到 window 供其他模組使用)
 window.currentImage = null;
 window.currentPreview = null;

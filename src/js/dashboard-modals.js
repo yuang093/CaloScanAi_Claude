@@ -58,7 +58,8 @@ window.searchFoodDatabase = async function() {
 
     if (result.success && result.data.length > 0) {
       resultsDiv.innerHTML = result.data.map(food => {
-        const escapedName = food.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        const escapedName = window.escapeJSLiteral(food.name);
+        const escapedImgPath = window.escapeJSLiteral(food.image_path);
         const imgSrc = window.getFoodImgSrc(food.image_path);
         return `
         <div style="padding:12px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:12px;">
@@ -69,7 +70,7 @@ window.searchFoodDatabase = async function() {
             <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name)}</div>
             <div style="font-size:0.8rem; color:#666;">${window.escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
           </div>
-          <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat}, false, ${food.image_path ? '\'' + food.image_path + '\'' : 'null'})" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
+          <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat}, false, '${escapedImgPath}')" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
         </div>
       `}).join('');
     } else if (result.success && result.data.length === 0) {
@@ -95,20 +96,23 @@ window.getFoodImgSrc = function(imagePath) {
 
 // ============ Utilities ============
 
-window.getLocalDate = function() {
-  const now = new Date();
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const taiwanDate = new Date(utc + (8 * 60 * 60 * 1000));
-  const year = taiwanDate.getFullYear();
-  const month = String(taiwanDate.getMonth() + 1).padStart(2, '0');
-  const day = String(taiwanDate.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+// getLocalDate：已合併至 date.js，請使用 window.getLocalDate (由 date.js 暴露)
 
 window.escapeHtml = function(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+};
+
+// JS 字串注入到 onclick 時的完整跳脹（單引號、雙引號、反斜線、換行）
+window.escapeJSLiteral = function(text) {
+  if (text == null) return 'null';
+  return String(text)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r');
 };
 
 // ============ Add Food From Database ============
@@ -219,7 +223,8 @@ window.loadFavorites = async function() {
 
     if (result.success && result.data.length > 0) {
       container.innerHTML = result.data.slice(0, 20).map(food => {
-        const escapedName = (food.name || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        const escapedName = window.escapeJSLiteral(food.name || '');
+        const escapedImgPath = window.escapeJSLiteral(food.image_path);
         const isStats = food.isStats;
         const imgSrc = window.getFoodImgSrc(food.image_path);
 
@@ -244,7 +249,7 @@ window.loadFavorites = async function() {
                   🥩 蛋白質 ${food.protein}g  •  🍚 碳水 ${food.carbs}g  •  🧈 脂肪 ${food.fat}g
                 </div>
               </div>
-              <button onclick="window.addFoodFromStats(${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat}, '${escapedName}', ${food.image_path ? '\'' + food.image_path + '\'' : 'null'})" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
+              <button onclick="window.addFoodFromStats(${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat}, '${escapedName}', '${escapedImgPath}')" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
             </div>
           </div>`;
         } else {
@@ -258,7 +263,7 @@ window.loadFavorites = async function() {
               <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
               <div style="font-size:0.8rem; color:var(--color-text-muted);">${window.escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
             </div>
-            <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0}, true, ${food.image_path ? '\'' + food.image_path + '\'' : 'null'})" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
+            <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0}, true, '${escapedImgPath}')" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
           </div>`;
         }
       }).join('');
@@ -281,7 +286,8 @@ window.loadRecentFoods = async function() {
 
     if (result.success && result.data.length > 0) {
       container.innerHTML = result.data.map(f => {
-        const escapedName = (f.description || '未命名食物').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        const fEscapedName = window.escapeJSLiteral(f.description || '未命名食物');
+        const fEscapedImgPath = window.escapeJSLiteral(f.image_path);
         const imgSrc = window.getFoodImgSrc(f.image_path);
         return `
         <div style="display:flex; align-items:center; padding:8px; border-bottom:1px solid var(--color-border);">
@@ -292,7 +298,7 @@ window.loadRecentFoods = async function() {
             <div style="font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${f.description || '未命名食物'}</div>
             <div style="font-size:0.8rem; color:var(--color-text-muted);">${f.calories} kcal</div>
           </div>
-          <button onclick="window.copyFoodLog(${f.id}, '${escapedName}', ${f.calories || 0}, ${f.protein || 0}, ${f.carbs || 0}, ${f.fat || 0}, ${f.image_path ? '\'' + f.image_path + '\'' : 'null'})" class="btn btn-secondary btn-small" style="flex-shrink:0;">加入</button>
+          <button onclick="window.copyFoodLog(${f.id}, '${fEscapedName}', ${f.calories || 0}, ${f.protein || 0}, ${f.carbs || 0}, ${f.fat || 0}, '${fEscapedImgPath}')" class="btn btn-secondary btn-small" style="flex-shrink:0;">加入</button>
         </div>
       `}).join('');
     } else {
