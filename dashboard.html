@@ -1817,9 +1817,11 @@
           }
 
           // Show share button if progress > 50%
+          console.log('[shareBtn] totalCalories:', totalCalories, 'goalCalories:', goalCalories, 'progressPercent:', progressPercent);
           const shareBtn = document.getElementById('share-achievement-btn');
           if (shareBtn) {
             shareBtn.style.display = progressPercent >= 50 ? 'block' : 'none';
+            console.log('[shareBtn] button display set to:', progressPercent >= 50 ? 'block' : 'none');
           }
 
           // Show quote if element exists
@@ -2741,11 +2743,14 @@
     };
 
     async function openShareCard() {
+      console.log('[openShareCard] Starting...');
       const totalCal = document.getElementById('total-cal').textContent;
       const goalCal = document.getElementById('goal-cal-display').textContent;
+      console.log('[openShareCard] totalCal:', totalCal, 'goalCal:', goalCal);
       const cal = parseInt(totalCal) || 0;
       const goal = parseInt(goalCal) || 2000;
       const percent = Math.round((cal / goal) * 100);
+      console.log('[openShareCard] cal:', cal, 'goal:', goal, 'percent:', percent);
 
       let achievement = '';
       if (percent >= 100) achievement = '🎯 達成目標！';
@@ -2757,15 +2762,21 @@
       let todayFoods = [];
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch('/api/food/logs?date=' + getLocalDate() + '&limit=5', {
+        const dateParam = getLocalDate();
+        console.log('[openShareCard] Fetching food logs for date:', dateParam);
+        const res = await fetch('/api/food/logs?date=' + dateParam + '&limit=5', {
           headers: { 'Authorization': 'Bearer ' + token }
         });
         const result = await res.json();
+        console.log('[openShareCard] Food logs API result:', JSON.stringify(result));
         if (result.success && result.data && result.data.logs) {
           todayFoods = result.data.logs.map(log => ({
             name: log.description || '未命名食物',
             calories: log.calories || 0
           }));
+          console.log('[openShareCard] todayFoods:', todayFoods);
+        } else {
+          console.log('[openShareCard] No logs found or API error');
         }
       } catch (err) {
         console.error('Failed to fetch food logs:', err);
