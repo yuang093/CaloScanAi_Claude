@@ -382,7 +382,7 @@ router.post('/add-from-database', authMiddleware, async (req, res, next) => {
 
     // Create food log entry
     const logEntry = FoodLogDB.create(req.user.id, {
-      imageData: '',
+      imagePath: null,
       mealType: 'general',
       calories: food.calories || 0,
       protein: food.protein || 0,
