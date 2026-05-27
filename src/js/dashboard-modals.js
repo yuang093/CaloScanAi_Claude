@@ -69,7 +69,7 @@ window.searchFoodDatabase = async function() {
             <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name)}</div>
             <div style="font-size:0.8rem; color:#666;">${window.escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
           </div>
-          <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat})" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
+          <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat}, false, ${food.image_path ? '\'' + food.image_path + '\'' : 'null'})" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
         </div>
       `}).join('');
     } else if (result.success && result.data.length === 0) {
@@ -99,9 +99,9 @@ window.getLocalDate = function() {
   const now = new Date();
   const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
   const taiwanDate = new Date(utc + (8 * 60 * 60 * 1000));
-  const year = taiwanDate.getUTCFullYear();
-  const month = String(taiwanDate.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(taiwanDate.getUTCDate()).padStart(2, '0');
+  const year = taiwanDate.getFullYear();
+  const month = String(taiwanDate.getMonth() + 1).padStart(2, '0');
+  const day = String(taiwanDate.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
@@ -113,7 +113,7 @@ window.escapeHtml = function(text) {
 
 // ============ Add Food From Database ============
 
-window.addFoodFromDatabase = async function(id, name, calories, protein, carbs, fat, isFavorite = false) {
+window.addFoodFromDatabase = async function(id, name, calories, protein, carbs, fat, isFavorite = false, imagePath = null) {
   try {
     const response = await fetch('/api/food/add-from-database', {
       method: 'POST',
@@ -121,7 +121,7 @@ window.addFoodFromDatabase = async function(id, name, calories, protein, carbs, 
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + localStorage.getItem('token')
       },
-      body: JSON.stringify({ barcodeId: id, isFavorite, name, calories, protein, carbs, fat })
+      body: JSON.stringify({ barcodeId: id, isFavorite, name, calories, protein, carbs, fat, imagePath: imagePath || null })
     });
     const result = await response.json();
 
@@ -258,7 +258,7 @@ window.loadFavorites = async function() {
               <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
               <div style="font-size:0.8rem; color:var(--color-text-muted);">${window.escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
             </div>
-            <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0}, true)" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
+            <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0}, true, ${food.image_path ? '\'' + food.image_path + '\'' : 'null'})" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
           </div>`;
         }
       }).join('');
