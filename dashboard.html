@@ -2850,11 +2850,7 @@
       cardEl.innerHTML = html;
     }
 
-    function closeShareModal() {
-      document.getElementById('share-modal').style.display = 'none';
-    }
-
-    // 虛擬新頁面下載：iOS/Android/桌面統一處理
+    // 原地替換下載：直接在 Modal 內置換為真實圖片
     async function downloadShareCard() {
       const card = document.getElementById('share-card-preview');
       if (typeof html2canvas === 'undefined') {
@@ -2862,67 +2858,78 @@
         return;
       }
 
-      const downloadBtn = card.closest('.modal')?.querySelector('[onclick="downloadShareCard()"]');
+      // 取得當前的 Modal 容器與按鈕
+      const modalBox = card.closest('.modal').querySelector('div');
+      const downloadBtn = modalBox.querySelector('button.btn-primary');
+
       if (downloadBtn) {
         downloadBtn.disabled = true;
-        downloadBtn.textContent = '處理中...';
+        downloadBtn.textContent = '⏳ 處理中...';
       }
 
       try {
+        // 1. 執行截圖
         const canvas = await html2canvas(card, { scale: 2.5, useCORS: true, backgroundColor: null });
         const dataUrl = canvas.toDataURL('image/png');
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-        if (isIOS) {
-          // iOS 虛擬新頁面 (Virtual Page) 策略：100% 繞過彈窗阻擋
-          const virtualPage = document.createElement('div');
-          virtualPage.id = 'virtual-share-page';
-          virtualPage.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:#fefefe; z-index:999999; overflow-y:auto; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:60px 20px; box-sizing:border-box;';
+        // 2. 【終極大絕招：原地替換】隱藏原本的 HTML 結構
+        card.style.display = 'none';
 
-          virtualPage.innerHTML = `
-            <h2 style="color:#c85a3b; margin-bottom:12px; font-family:sans-serif;">🎉 產生完成</h2>
-            <p style="color:#333; margin-bottom:24px; font-weight:bold; text-align:center; line-height:1.5; font-family:sans-serif;">
-              👆 這是您的專屬卡片<br>請 <span style="color:#e74c3c;">長按圖片</span> 並選擇「儲存影像」
-            </p>
-            <img src="${dataUrl}" style="width:100%; max-width:320px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.15); -webkit-touch-callout:default !important; pointer-events:auto;" alt="成就卡">
-            <button id="close-virtual-page" style="margin-top:40px; padding:14px 40px; font-size:1.1rem; border:none; border-radius:28px; background:#e0e0e0; color:#333; cursor:pointer; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.1);">完成並返回</button>
-          `;
+        // 移除之前可能已經產生的圖片
+        const oldImg = document.getElementById('generated-share-image');
+        if (oldImg) oldImg.remove();
 
-          document.body.appendChild(virtualPage);
+        // 3. 建立真實的 img 標籤並塞入原本卡片的位置
+        const resultImg = document.createElement('img');
+        resultImg.src = dataUrl;
+        resultImg.id = 'generated-share-image';
+        // 加上 -webkit-touch-callout 確保 iOS 可以長按
+        resultImg.style.cssText = 'width:100%; height:auto; border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.3); -webkit-touch-callout:default !important; pointer-events:auto; display:block; margin: 0 auto;';
+        card.parentNode.insertBefore(resultImg, card);
 
-          // 寫入 History API，讓手機的「上一頁」手勢有效
-          history.pushState({ page: 'share' }, '', '#share');
-
-          // 點擊按鈕觸發上一頁
-          document.getElementById('close-virtual-page').addEventListener('click', () => {
-            history.back();
-          });
-
-          // 監聽系統上一頁事件來移除虛擬頁面
-          const onPopState = () => {
-            const vp = document.getElementById('virtual-share-page');
-            if (vp) vp.remove();
-            window.removeEventListener('popstate', onPopState);
-          };
-          window.addEventListener('popstate', onPopState);
-
-        } else {
-          // Android / PC 直接觸發下載
-          const fileName = 'caloscanai_' + new Date().toISOString().slice(0,10) + '.png';
-          const link = document.createElement('a');
-          link.download = fileName;
-          link.href = dataUrl;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+        // 4. 更改 Modal 標題，引導使用者長按
+        const title = modalBox.querySelector('h3');
+        if (title) {
+          title.innerHTML = '✨ 產生成功 ✨<br><span style="font-size:0.9rem; color:#e74c3c; line-height:2;">👆 請「長按」上方圖片儲存影像</span>';
         }
+
+        // 5. 更改按鈕為「完成(關閉)」
+        if (downloadBtn) {
+          downloadBtn.textContent = '完成 (關閉)';
+          // 點擊後改為觸發關閉與還原狀態
+          downloadBtn.onclick = closeShareModal;
+          downloadBtn.disabled = false;
+        }
+
       } catch (err) {
         console.error('Download error:', err);
         alert('圖片產生失敗，請稍後再試');
-      } finally {
         if (downloadBtn) {
           downloadBtn.disabled = false;
           downloadBtn.textContent = '📥 下載圖片';
+        }
+      }
+    }
+
+    function closeShareModal() {
+      document.getElementById('share-modal').style.display = 'none';
+
+      // 【還原狀態】讓下次打開還能重新產生
+      const card = document.getElementById('share-card-preview');
+      if (card) card.style.display = 'block';
+
+      const oldImg = document.getElementById('generated-share-image');
+      if (oldImg) oldImg.remove();
+
+      const modalBox = document.querySelector('#share-modal > div');
+      if (modalBox) {
+        const title = modalBox.querySelector('h3');
+        if (title) title.innerHTML = '🎉 分享成就卡';
+
+        const downloadBtn = modalBox.querySelector('button.btn-primary');
+        if (downloadBtn) {
+          downloadBtn.textContent = '📥 下載圖片';
+          downloadBtn.onclick = downloadShareCard; // 恢復綁定下載功能
         }
       }
     }
