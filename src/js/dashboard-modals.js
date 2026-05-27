@@ -189,7 +189,9 @@ window.loadFavorites = async function() {
 
         return `
         <div style="display:flex; align-items:center; padding:10px; border-bottom:1px solid var(--color-border);">
-          ${isStats ? '<div style="width:50px;height:50px;border-radius:8px;overflow:hidden;margin-right:12px;flex-shrink:0;"><img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" /></div>' : ''}
+          <div style="width:50px;height:50px;border-radius:8px;overflow:hidden;margin-right:12px;flex-shrink:0;background:#f3f0f0;">
+            <img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />
+          </div>
           <div style="flex:1; min-width:0;">
             <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
             <div style="font-size:0.8rem; color:var(--color-text-muted);">${displaySubtitle}</div>
@@ -401,6 +403,7 @@ window.saveFoodLogItem = async function() {
         alert('已加入日誌');
         window.isCreatingFromAnalysis = false;
         window.analysisFoodData = null;
+        window.resetUpload();
       } else {
         alert(result.error || '加入失敗');
       }

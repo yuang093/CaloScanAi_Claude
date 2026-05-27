@@ -359,7 +359,8 @@ router.post('/add-from-database', authMiddleware, async (req, res, next) => {
         calories: favorite.calories,
         protein: favorite.protein,
         carbs: favorite.carbs,
-        fat: favorite.fat
+        fat: favorite.fat,
+        imagePath: favorite.image_path || null
       };
       FavoritesDB.incrementUseCount(parseInt(barcodeId));
     }
@@ -374,7 +375,8 @@ router.post('/add-from-database', authMiddleware, async (req, res, next) => {
         calories: barcode.calories,
         protein: barcode.protein,
         carbs: barcode.carbs,
-        fat: barcode.fat
+        fat: barcode.fat,
+        imagePath: barcode.image_path || null
       };
     } else {
       return res.status(400).json({ error: '食物 ID 或食物資料為必填欄位' });
@@ -382,7 +384,7 @@ router.post('/add-from-database', authMiddleware, async (req, res, next) => {
 
     // Create food log entry
     const logEntry = FoodLogDB.create(req.user.id, {
-      imagePath: null,
+      imagePath: food.imagePath || null,
       mealType: 'general',
       calories: food.calories || 0,
       protein: food.protein || 0,
