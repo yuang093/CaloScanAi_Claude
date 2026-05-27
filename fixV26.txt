@@ -1,0 +1,86 @@
+請幫我修改 dashboard.html，徹底放棄開新視窗或分享機制，改為使用「原地替換 (In-Place Replacement)」的方式，來繞過 iOS 的彈窗阻擋。
+
+請將原本的 `downloadShareCard()` 和 `closeShareModal()` 函數替換為以下程式碼：
+
+```javascript
+async function downloadShareCard() {
+  const card = document.getElementById('share-card-preview');
+  if (typeof html2canvas === 'undefined') {
+    alert('載入中，請稍後再試');
+    return;
+  }
+
+  // 精準抓取 Modal 容器與按鈕
+  const modalContent = document.querySelector('#share-modal > div');
+  const downloadBtn = modalContent.querySelector('button.btn-primary');
+
+  if (downloadBtn) {
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = '⏳ 處理中...';
+  }
+
+  try {
+    const canvas = await html2canvas(card, { scale: 2.5, useCORS: true, backgroundColor: null });
+    const dataUrl = canvas.toDataURL('image/png');
+
+    // 【大絕招：原地替換】
+    // 1. 隱藏原本無法存檔的 HTML
+    card.style.display = 'none';
+
+    // 2. 移除舊圖片(如果有的話)
+    const oldImg = document.getElementById('final-share-img');
+    if (oldImg) oldImg.remove();
+
+    // 3. 建立真實圖片並塞入 card 的父元素中
+    const img = document.createElement('img');
+    img.id = 'final-share-img';
+    img.src = dataUrl;
+    // 加上 -webkit-touch-callout:default 強制允許 iOS 長按
+    img.style.cssText = 'width:270px; height:auto; border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.3); -webkit-touch-callout:default !important; pointer-events:auto; display:block; margin:0 auto;';
+    card.parentNode.appendChild(img);
+
+    // 4. 更改標題與按鈕，引導使用者長按
+    const title = modalContent.querySelector('h3');
+    if (title) {
+      title.innerHTML = '✨ 產生成功 ✨<br><span style="font-size:0.9rem; color:#e74c3c; line-height:2;">👆 請「長按」圖片儲存影像</span>';
+    }
+
+    if (downloadBtn) {
+      downloadBtn.textContent = '完成 (關閉)';
+      // 點擊後觸發關閉與還原狀態
+      downloadBtn.onclick = closeShareModal;
+      downloadBtn.disabled = false;
+    }
+
+  } catch (err) {
+    console.error('Download error:', err);
+    alert('圖片產生失敗，請稍後再試');
+    if (downloadBtn) {
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = '📥 下載圖片';
+    }
+  }
+}
+
+function closeShareModal() {
+  document.getElementById('share-modal').style.display = 'none';
+
+  // 【還原狀態】確保下次打開還能正常顯示 HTML
+  const card = document.getElementById('share-card-preview');
+  if (card) card.style.display = 'block';
+
+  const img = document.getElementById('final-share-img');
+  if (img) img.remove();
+
+  const modalContent = document.querySelector('#share-modal > div');
+  if (modalContent) {
+    const title = modalContent.querySelector('h3');
+    if (title) title.innerHTML = '🎉 分享成就卡';
+
+    const btn = modalContent.querySelector('button.btn-primary');
+    if (btn) {
+      btn.textContent = '📥 下載圖片';
+      btn.onclick = downloadShareCard; // 重新綁定下載事件
+    }
+  }
+}

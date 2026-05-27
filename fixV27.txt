@@ -1,0 +1,37 @@
+階段一：最安全的 CSS 樣式抽離
+先將幾百行的樣式表獨立，這不會影響任何邏輯。
+
+請將以下指令給 Claude Code：
+我已經將 dashboard.html 備份完成。現在請開始幫我優化。
+第一步：請將 dashboard.html 中所有的 CSS 樣式（<style> 標籤內的內容）抽離出來。
+1. 在 src/styles/ 目錄下建立一個新檔案：dashboard.css。
+2. 將所有 CSS 樣式移入該檔案中。
+3. 將 dashboard.html 內的 <style> 區塊刪除，改用 <link rel="stylesheet" href="src/styles/dashboard.css"> 引入。
+4. 確保網頁的外觀與原本完全一致。完成後請讓我知道，再進行下一步。
+
+階段二：JavaScript 核心變數與功能拆分 (最重要的一步)
+把邏輯切開，但必須確保全域變數 (Global Variables) 和 HTML 裡的 onclick 能互相溝通。
+
+請將以下指令給 Claude Code：
+接下來請進行 JavaScript 的分拆。這是一個包含 2000 多行 JS 的單一檔案，請特別注意全域變數與 HTML onclick 事件的綁定。
+1. 請在 src/js/ 目錄下建立以下檔案：
+   - dashboard-main.js (包含全域變數狀態 currentImage, foodLog 等、DOMReady 初始化、API 認證與主題切換)
+   - dashboard-food.js (包含上傳、圖片壓縮、分析、加入日誌)
+   - dashboard-progress.js (包含每日進度、圖表載入)
+   - dashboard-modals.js (包含條碼掃描、我的最愛、食物細節等 Modal 邏輯)
+2. 將 dashboard.html 內的 <script> 邏輯按照上述分類剪下並貼入對應檔案。
+3. 【關鍵】：因為 HTML 內有大量的 onclick 綁定，如果你不使用 ES Modules (<script type="module">)，請確保所有被 HTML 呼叫的 function (如 switchPage, analyzeImage, openBarcodeScanner 等) 以及跨檔案共享的變數，都能正確掛載到 global (window) 下。
+4. 在 dashboard.html 中正確地用 <script src="..."> 引入這些拆分後的檔案（非主要邏輯請加上 defer）。
+5. 完成後請幫我檢查是否有遺漏未定義的變數。
+
+階段三：第三方套件的延遲載入 (Lazy Loading)
+這個步驟能瞬間提升您網頁的初始載入速度。
+
+請將以下指令給 Claude Code：
+最後一步，請幫我實作第三方函式庫的延遲載入 (Lazy Loading) 來優化初始效能。
+1. 關於 `html2canvas`：請將 <head> 裡的 html2canvas 引入移除。修改分享成就卡的下載功能，改為「只有當使用者第一次點擊分享/下載按鈕時」，才動態透過 JavaScript 載入 html2canvas 的腳本，載入完成後再執行截圖邏輯。
+2. 關於 `Chart.js`：同樣將 <head> 裡的引入移除。只有當使用者點擊 switchPage 切換到「歷史統計 (history)」頁面，或者需要繪製圖表時，才動態載入 Chart.js。
+3. 修改完成後，請確保這兩個功能在延遲載入後依然能正常運作。
+
+為什麼要分成三段？
+因為 3100 行的程式碼對於任何 AI 的「上下文記憶」都是一大挑戰。先切出 CSS，再切分 JS，最後做動態載入優化，能確保 Claude Code 在每一次修改時，注意力都能集中在該處理的部分，成功率會高非常多！

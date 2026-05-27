@@ -1,0 +1,84 @@
+請幫我重新撰寫 dashboard.html 中的 `downloadShareCard()` 函數。
+由於 iOS 的阻擋彈出式視窗機制會攔截 `window.open`，我們需要改用「虛擬新頁面 (Virtual Page)」結合 History API 來模擬跳出新頁面的 UX。
+
+請套用以下邏輯：
+1. 移除 `window.open` 與覆寫 `document.body.innerHTML` 的破壞性寫法。
+2. 產生圖片後，動態建立一個 `div` (id="virtual-share-page")，設定為 `fixed` 滿版白底、`z-index: 999999`，視覺上完全覆蓋當前網頁，就像開了新分頁。
+3. 裡面放入產生的圖片（必須加上 `-webkit-touch-callout: default !important;` 允許長按儲存）與一個「完成並返回」的按鈕。
+4. 使用 `history.pushState(null, '', '#share')` 改變網址 hash。
+5. 監聽 `popstate` 事件，當使用者按下「完成並返回」觸發 `history.back()`，或直接使用手機的滑動返回手勢時，移除該 `div`，無縫回到原本的日誌頁面。
+
+請直接套用以下完整程式碼：
+
+```javascript
+async function downloadShareCard() {
+  const card = document.getElementById('share-card-preview');
+  if (typeof html2canvas === 'undefined') {
+    alert('載入中，請稍後再試');
+    return;
+  }
+
+  const downloadBtn = card.closest('.modal')?.querySelector('[onclick="downloadShareCard()"]');
+  if (downloadBtn) {
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = '處理中...';
+  }
+
+  try {
+    const canvas = await html2canvas(card, { scale: 2.5, useCORS: true, backgroundColor: null });
+    const dataUrl = canvas.toDataURL('image/png');
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    if (isIOS) {
+      // iOS 虛擬新頁面 (Virtual Page) 策略：100% 繞過彈窗阻擋
+      const virtualPage = document.createElement('div');
+      virtualPage.id = 'virtual-share-page';
+      virtualPage.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:#fefefe; z-index:999999; overflow-y:auto; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:60px 20px; box-sizing:border-box;';
+
+      virtualPage.innerHTML = `
+        <h2 style="color:#c85a3b; margin-bottom:12px; font-family:sans-serif;">🎉 產生完成</h2>
+        <p style="color:#333; margin-bottom:24px; font-weight:bold; text-align:center; line-height:1.5; font-family:sans-serif;">
+          👆 這是您的專屬卡片<br>請 <span style="color:#e74c3c;">長按圖片</span> 並選擇「儲存影像」
+        </p>
+        <img src="\${dataUrl}" style="width:100%; max-width:320px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.15); -webkit-touch-callout:default !important; pointer-events:auto;" alt="成就卡">
+        <button id="close-virtual-page" style="margin-top:40px; padding:14px 40px; font-size:1.1rem; border:none; border-radius:28px; background:#e0e0e0; color:#333; cursor:pointer; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.1);">完成並返回</button>
+      `;
+
+      document.body.appendChild(virtualPage);
+
+      // 寫入 History API，讓手機的「上一頁」手勢有效
+      history.pushState({ page: 'share' }, '', '#share');
+
+      // 點擊按鈕觸發上一頁
+      document.getElementById('close-virtual-page').addEventListener('click', () => {
+         history.back();
+      });
+
+      // 監聽系統上一頁事件來移除虛擬頁面
+      const onPopState = () => {
+         const vp = document.getElementById('virtual-share-page');
+         if (vp) vp.remove();
+         window.removeEventListener('popstate', onPopState);
+      };
+      window.addEventListener('popstate', onPopState);
+
+    } else {
+      // Android / PC 直接觸發下載
+      const fileName = 'caloscanai_' + new Date().toISOString().slice(0,10) + '.png';
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  } catch (err) {
+    console.error('Download error:', err);
+    alert('圖片產生失敗，請稍後再試');
+  } finally {
+    if (downloadBtn) {
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = '📥 下載圖片';
+    }
+  }
+}

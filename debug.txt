@@ -1,24 +1,3 @@
-root@localhost:/opt/caloscanai_claude# cd /opt/caloscanai_claude && git pull && docker restart caloscanai_app && docker logs --tail 20 caloscanai_app
-Already up to date.
-caloscanai_app
-[progress/daily] today (local): 2026-05-27
-[progress/daily] userId: 1
-[getTodayStats] date: 2026-05-27 userId: 1
-❌ Error: no such column: "+8 hours" - should this be a string literal in single-quotes?
-Stack: SqliteError: no such column: "+8 hours" - should this be a string literal in single-quotes?
-    at Database.prepare (/app/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
-    at Object.getTodayStats (file:///app/src/services/database.js:767:21)
-    at file:///app/src/routes/progress.js:16:34
-    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-    at next (/app/node_modules/express/lib/router/route.js:149:13)
-    at authMiddleware (file:///app/src/middleware/auth.js:37:3)
-    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-    at next (/app/node_modules/express/lib/router/route.js:149:13)
-    at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
-    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-
-SIGTERM received. Starting graceful shutdown...
-✅ HTTP server closed
-✅ Database connection closed
-👋 Shutdown complete
-root@localhost:/opt/caloscanai_claude# 
+dashboard.html:1676 [fetchProgressData] Starting...
+dashboard.html:1688 [fetchProgressData] progressRes status: 200
+dashboard.html:1692 [fetchProgressData] progressResult: {"success":true,"data":{"date":"2026-05-27","stats":{"calories":832,"protein":14,"carbs":77,"fat":48,"mealCount":2},"goals":{"calories":2031,"caloriesPercent":41,"remaining":1199},"quote":{"id":55,"quote":"肌力訓練讓你更緊實。","author":"佚名","created_at":"2026-05-23 18:34:05"}}}
