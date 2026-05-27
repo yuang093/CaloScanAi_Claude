@@ -326,32 +326,79 @@ window.cancelEditFoodLogItem = function() {
 };
 
 window.saveFoodLogItem = async function() {
-  if (!currentFoodDetailId) return;
   const name = document.getElementById('food-detail-name-edit').value;
   const calories = parseInt(document.getElementById('food-detail-cal-edit').value) || 0;
   const protein = parseFloat(document.getElementById('food-detail-protein-edit').value) || 0;
   const carbs = parseFloat(document.getElementById('food-detail-carbs-edit').value) || 0;
   const fat = parseFloat(document.getElementById('food-detail-fat-edit').value) || 0;
 
+  const btn = document.querySelector('#food-detail-edit-buttons .btn-primary') || document.querySelector('#food-detail-edit-buttons button:first-child');
+  if (btn) { btn.disabled = true; btn.textContent = '儲存中...'; }
+
   try {
-    const res = await fetch('/api/food/logs/' + currentFoodDetailId, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + localStorage.getItem('token')
-      },
-      body: JSON.stringify({ description: name, calories, protein, carbs, fat })
-    });
-    const result = await res.json();
-    if (result.success) {
-      window.closeFoodDetailModal();
-      window.loadFoodLog();
+    if (window.isCreatingFromAnalysis) {
+      // 新建：上傳圖片
+      const base64Data = window.analysisFoodData.image.replace(/^data:image\/\w+;base64,/, '');
+      const res = await fetch('/api/food/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify({ image: base64Data, mealType: 'general' })
+      });
+      const result = await res.json();
+      if (result.success) {
+        // 如果分析資料有客製化數值，需更新 server 端的記錄
+        if (window.analysisFoodData.name !== name ||
+            window.analysisFoodData.calories !== calories ||
+            window.analysisFoodData.protein !== protein ||
+            window.analysisFoodData.carbs !== carbs ||
+            window.analysisFoodData.fat !== fat) {
+          // 更新營養值
+          await fetch('/api/food/logs/' + result.data.id, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify({ description: name, calories, protein, carbs, fat })
+          });
+        }
+        alert('已加入日誌');
+        window.isCreatingFromAnalysis = false;
+        window.analysisFoodData = null;
+      } else {
+        alert(result.error || '加入失敗');
+      }
     } else {
-      alert(result.error || '保存失敗');
+      // 編輯現有項目
+      if (!currentFoodDetailId) {
+        alert('找不到要編輯的項目');
+        return;
+      }
+      const res = await fetch('/api/food/logs/' + currentFoodDetailId, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify({ description: name, calories, protein, carbs, fat })
+      });
+      const result = await res.json();
+      if (result.success) {
+        alert('已保存');
+      } else {
+        alert(result.error || '保存失敗');
+      }
     }
+    window.closeFoodDetailModal();
+    window.loadFoodLog();
   } catch (err) {
-    alert('保存失敗');
+    alert('儲存失敗');
     console.error('Save food log error:', err);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '保存'; }
   }
 };
 
@@ -360,6 +407,7 @@ window.closeFoodDetailModal = function() {
   currentFoodDetailId = null;
   currentFoodDetailData = null;
   isEditingFoodLog = false;
+  window.isCreatingFromAnalysis = false;
 };
 
 window.deleteFoodLogItem = async function() {

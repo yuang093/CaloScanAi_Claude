@@ -196,6 +196,66 @@ window.displayAnalysisResult = function(data) {
   document.getElementById('analyze-btn').style.display = 'none';
 };
 
+// 直接打開編輯模式讓用戶修改分析結果
+window.openAnalysisEditMode = function() {
+  if (!window.analysisData || !window.currentPreview) {
+    alert('請先分析圖片');
+    return;
+  }
+
+  const data = window.analysisData;
+  // 初始化分析食物資料
+  window.analysisFoodData = {
+    name: data.name || '未命名食物',
+    calories: data.totalCalories || 0,
+    protein: data.totalProtein || 0,
+    carbs: data.totalCarbs || 0,
+    fat: data.totalFat || 0,
+    image: window.currentPreview
+  };
+
+  // 標記為新建項目（區分於編輯現有項目）
+  window.isCreatingFromAnalysis = true;
+  window.currentFoodDetailId = null;
+
+  // 設定 currentFoodDetailData 讓 editFoodLogItem() 可以運作
+  window.currentFoodDetailData = { ...window.analysisFoodData };
+
+  // 顯示圖片
+  document.getElementById('food-detail-img').src = window.currentPreview;
+
+  // 進入編輯模式
+  document.getElementById('food-detail-name').style.display = 'none';
+  document.getElementById('food-detail-name-edit').style.display = 'block';
+  document.getElementById('food-detail-name-edit').value = data.name || '未命名食物';
+
+  document.getElementById('food-detail-cal').style.display = 'none';
+  document.getElementById('food-detail-cal-edit').style.display = 'block';
+  document.getElementById('food-detail-cal-edit').value = data.totalCalories || 0;
+
+  document.getElementById('food-detail-protein').style.display = 'none';
+  document.getElementById('food-detail-protein-edit').style.display = 'block';
+  document.getElementById('food-detail-protein-edit').value = data.totalProtein || 0;
+
+  document.getElementById('food-detail-carbs').style.display = 'none';
+  document.getElementById('food-detail-carbs-edit').style.display = 'block';
+  document.getElementById('food-detail-carbs-edit').value = data.totalCarbs || 0;
+
+  document.getElementById('food-detail-fat').style.display = 'none';
+  document.getElementById('food-detail-fat-edit').style.display = 'block';
+  document.getElementById('food-detail-fat-edit').value = data.totalFat || 0;
+
+  // 隱藏檢視按鈕，顯示編輯按鈕
+  document.getElementById('food-detail-buttons').style.display = 'none';
+  document.getElementById('food-detail-edit-buttons').style.display = 'flex';
+
+  // 隱藏時間（新建項目沒有時間）
+  document.getElementById('food-detail-time').style.display = 'none';
+
+  // 打開 modal
+  document.getElementById('food-detail-modal').style.display = 'flex';
+};
+
 window.addToFoodLog = async function() {
   if (!window.analysisData) {
     alert('請先分析圖片');
