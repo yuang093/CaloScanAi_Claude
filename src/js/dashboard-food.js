@@ -1,3 +1,13 @@
+// Fallback SVG for food images
+const FOOD_FALLBACK_SVG = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0iI2YzZjBmYiIvPjx0ZXh0IHg9IjUwIiB5PSI2MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIyMCI+Zm9vPC90ZXh0Pjwvc3ZnPg==';
+
+window.getFoodImgSrc = function(imagePath) {
+  if (imagePath && imagePath !== 'null' && imagePath !== 'undefined' && imagePath.trim() !== '') {
+    return '/uploads/' + imagePath;
+  }
+  return FOOD_FALLBACK_SVG;
+};
+
 // ============================================
 // dashboard-food.js - 食物上傳、分析、加日誌
 // ============================================
@@ -336,7 +346,7 @@ window.renderFoodLog = function() {
 
   container.innerHTML = window.foodLog.map(item => `
     <div class="food-log-item" onclick="window.showFoodDetail(${item.id})" style="cursor:pointer;">
-      <img class="food-log-img" src="${item.image || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0iI2YzZjBmYiIvPjx0ZXh0IHg9IjUwIiB5PSI2MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIyMCI+Zm9vPC90ZXh0Pjwvc3ZnPg=='}" alt="${item.name}">
+      <img class="food-log-img" src="${item.image}" alt="${item.name}">
       <div class="food-log-info">
         <div class="food-log-name" style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.name || '未命名'}</div>
         <div class="food-log-time">${item.time}</div>
@@ -394,7 +404,7 @@ window.loadFoodLog = async function() {
 
     window.foodLog = (logsResult.data?.logs || []).map(log => ({
       id: log.id,
-      image: (log.image_path && log.image_path !== 'null') ? '/uploads/' + log.image_path : null,
+      image: window.getFoodImgSrc(log.image_path),
       name: log.description || '未命名食物',
       calories: log.calories || 0,
       protein: log.protein || 0,

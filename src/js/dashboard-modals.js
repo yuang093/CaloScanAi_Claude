@@ -59,7 +59,7 @@ window.searchFoodDatabase = async function() {
     if (result.success && result.data.length > 0) {
       resultsDiv.innerHTML = result.data.map(food => {
         const escapedName = food.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
-        const imgSrc = (food.image_path && food.image_path !== 'null') ? '/uploads/' + food.image_path : 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0iI2YzZjBmYiIvPjx0ZXh0IHg9IjUwIiB5PSI2MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIyMCI+Zm9vPC90ZXh0Pjwvc3ZnPg==';
+        const imgSrc = window.getFoodImgSrc(food.image_path);
         return `
         <div style="padding:12px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:12px;">
           <div style="width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0;background:#f3f0f0;">
@@ -81,6 +81,16 @@ window.searchFoodDatabase = async function() {
     resultsDiv.innerHTML = '<div style="text-align:center; color:#e74c3c; padding:20px;">網路錯誤</div>';
     console.error('Food search error:', err);
   }
+};
+
+// ============ Food Image Helper ============
+const FALLBACK_SVG = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0iI2YzZjBmYiIvPjx0ZXh0IHg9IjUwIiB5PSI2MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIyMCI+Zm9vPC90ZXh0Pjwvc3ZnPg==';
+
+window.getFoodImgSrc = function(imagePath) {
+  if (imagePath && imagePath !== 'null' && imagePath !== 'undefined' && imagePath.trim() !== '') {
+    return '/uploads/' + imagePath;
+  }
+  return FALLBACK_SVG;
 };
 
 // ============ Utilities ============
@@ -189,7 +199,7 @@ window.loadFavorites = async function() {
         const displaySubtitle = isStats
           ? `已食用 ${food.use_count} 次 • ${food.calories} kcal`
           : `${window.escapeHtml(food.brand || '')} • ${food.calories} kcal`;
-        const imgSrc = (food.image_path && food.image_path !== 'null') ? '/uploads/' + food.image_path : 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0iI2YzZjBmYiIvPjx0ZXh0IHg9IjUwIiB5PSI2MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIyMCI+Zm9vPC90ZXh0Pjwvc3ZnPg==';
+        const imgSrc = window.getFoodImgSrc(food.image_path);
 
         return `
         <div style="display:flex; align-items:center; padding:10px; border-bottom:1px solid var(--color-border);">
@@ -223,7 +233,7 @@ window.loadRecentFoods = async function() {
     if (result.success && result.data.length > 0) {
       container.innerHTML = result.data.map(f => {
         const escapedName = (f.description || '未命名食物').replace(/'/g, "\\'").replace(/"/g, '\\"');
-        const imgSrc = f.image_path ? '/uploads/' + f.image_path : 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0iI2YzZjBmYiIvPjx0ZXh0IHg9IjUwIiB5PSI2MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIyMCI+Zm9vPC90ZXh0Pjwvc3ZnPg==';
+        const imgSrc = window.getFoodImgSrc(f.image_path);
         return `
         <div style="display:flex; align-items:center; padding:8px; border-bottom:1px solid var(--color-border);">
           <div style="width:44px;height:44px;border-radius:8px;overflow:hidden;margin-right:12px;flex-shrink:0;background:#f3f0f0;">
