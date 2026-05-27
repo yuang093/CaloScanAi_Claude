@@ -345,7 +345,8 @@ router.post('/add-from-database', authMiddleware, async (req, res, next) => {
         calories: calories || 0,
         protein: protein || 0,
         carbs: carbs || 0,
-        fat: fat || 0
+        fat: fat || 0,
+        imagePath: req.body.imagePath || null
       };
     }
     // 從最愛新增

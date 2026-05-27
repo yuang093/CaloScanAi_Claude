@@ -137,7 +137,7 @@ window.addFoodFromDatabase = async function(id, name, calories, protein, carbs, 
 
 // ============ Add Food From Statistics (Most Used) ============
 
-window.addFoodFromStats = async function(calories, protein, carbs, fat, name) {
+window.addFoodFromStats = async function(calories, protein, carbs, fat, name, imagePath) {
   try {
     const response = await fetch('/api/food/add-from-database', {
       method: 'POST',
@@ -145,7 +145,7 @@ window.addFoodFromStats = async function(calories, protein, carbs, fat, name) {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + localStorage.getItem('token')
       },
-      body: JSON.stringify({ name, calories, protein, carbs, fat })
+      body: JSON.stringify({ name, calories, protein, carbs, fat, imagePath: imagePath || null })
     });
     const result = await response.json();
 
@@ -206,11 +206,11 @@ window.loadFavorites = async function() {
           <div style="width:50px;height:50px;border-radius:8px;overflow:hidden;margin-right:12px;flex-shrink:0;background:#f3f0f0;">
             <img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />
           </div>
-          <div style="flex:1; min-width:0;">
+          <div style="flex:1; min-width:0; padding-right:12px;">
             <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
             <div style="font-size:0.8rem; color:var(--color-text-muted);">${displaySubtitle}</div>
           </div>
-          <button onclick="${isStats ? 'window.addFoodFromStats(' + food.calories + ', ' + food.protein + ', ' + food.carbs + ', ' + food.fat + ', \'' + escapedName + '\')' : 'window.addFoodFromDatabase(' + food.id + ', \'' + escapedName + '\', ' + (food.calories || 0) + ', ' + (food.protein || 0) + ', ' + (food.carbs || 0) + ', ' + (food.fat || 0) + ', true)'}" class="btn btn-primary btn-small">加入</button>
+          <button onclick="${isStats ? 'window.addFoodFromStats(' + food.calories + ', ' + food.protein + ', ' + food.carbs + ', ' + food.fat + ', \'' + escapedName + '\', \'' + (food.image_path || '') + '\')' : 'window.addFoodFromDatabase(' + food.id + ', \'' + escapedName + '\', ' + (food.calories || 0) + ', ' + (food.protein || 0) + ', ' + (food.carbs || 0) + ', ' + (food.fat || 0) + ', true)'}" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
         </div>
       `}).join('');
     } else {
@@ -239,11 +239,11 @@ window.loadRecentFoods = async function() {
           <div style="width:44px;height:44px;border-radius:8px;overflow:hidden;margin-right:12px;flex-shrink:0;background:#f3f0f0;">
             <img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />
           </div>
-          <div style="flex:1; min-width:0;">
+          <div style="flex:1; min-width:0; padding-right:12px;">
             <div style="font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${f.description || '未命名食物'}</div>
             <div style="font-size:0.8rem; color:var(--color-text-muted);">${f.calories} kcal</div>
           </div>
-          <button onclick="window.copyFoodLog(${f.id}, '${escapedName}', ${f.calories || 0}, ${f.protein || 0}, ${f.carbs || 0}, ${f.fat || 0})" class="btn btn-secondary btn-small">加入</button>
+          <button onclick="window.copyFoodLog(${f.id}, '${escapedName}', ${f.calories || 0}, ${f.protein || 0}, ${f.carbs || 0}, ${f.fat || 0}, '${f.image_path || ''}')" class="btn btn-secondary btn-small" style="flex-shrink:0;">加入</button>
         </div>
       `}).join('');
     } else {
@@ -296,7 +296,7 @@ window.removeFavorite = async function(favoriteId) {
   }
 };
 
-window.copyFoodLog = async function(id, name, calories, protein, carbs, fat) {
+window.copyFoodLog = async function(id, name, calories, protein, carbs, fat, imagePath) {
   try {
     const response = await fetch('/api/food/add-from-database', {
       method: 'POST',
@@ -304,7 +304,7 @@ window.copyFoodLog = async function(id, name, calories, protein, carbs, fat) {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + localStorage.getItem('token')
       },
-      body: JSON.stringify({ name, calories, protein, carbs, fat })
+      body: JSON.stringify({ name, calories, protein, carbs, fat, imagePath: imagePath || null })
     });
     const result = await response.json();
     if (result.success) {
@@ -405,12 +405,18 @@ window.saveFoodLogItem = async function() {
       const result = await res.json();
       if (result.success) {
         // 如果分析資料有客製化數值，需更新 server 端的記錄
-        if (window.analysisFoodData.name !== name ||
+        const needsUpdate = window.analysisFoodData.name !== name ||
             window.analysisFoodData.calories !== calories ||
             window.analysisFoodData.protein !== protein ||
             window.analysisFoodData.carbs !== carbs ||
-            window.analysisFoodData.fat !== fat) {
-          // 更新營養值
+            window.analysisFoodData.fat !== fat;
+
+        alert('已加入日誌');
+        window.isCreatingFromAnalysis = false;
+        window.analysisFoodData = null;
+        window.resetUpload();
+
+        if (needsUpdate) {
           await fetch('/api/food/logs/' + result.data.id, {
             method: 'PUT',
             headers: {
@@ -420,10 +426,6 @@ window.saveFoodLogItem = async function() {
             body: JSON.stringify({ description: name, calories, protein, carbs, fat })
           });
         }
-        alert('已加入日誌');
-        window.isCreatingFromAnalysis = false;
-        window.analysisFoodData = null;
-        window.resetUpload();
       } else {
         alert(result.error || '加入失敗');
       }
