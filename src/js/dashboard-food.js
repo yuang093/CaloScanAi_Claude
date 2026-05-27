@@ -394,7 +394,7 @@ window.loadFoodLog = async function() {
 
     window.foodLog = (logsResult.data?.logs || []).map(log => ({
       id: log.id,
-      image: log.image_path ? '/uploads/' + log.image_path : null,
+      image: (log.image_path && log.image_path !== 'null') ? '/uploads/' + log.image_path : null,
       name: log.description || '未命名食物',
       calories: log.calories || 0,
       protein: log.protein || 0,
