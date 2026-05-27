@@ -53,13 +53,14 @@ try {
     CREATE TABLE IF NOT EXISTS food_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
-      image_data TEXT,
+      image_path TEXT,
       meal_type TEXT DEFAULT 'general',
       calories INTEGER DEFAULT 0,
       protein REAL DEFAULT 0,
       carbs REAL DEFAULT 0,
       fat REAL DEFAULT 0,
       description TEXT,
+      barcode_id INTEGER,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -97,6 +98,7 @@ try {
       carbs REAL DEFAULT 0,
       fat REAL DEFAULT 0,
       serving_size TEXT,
+      image_path TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
@@ -113,6 +115,7 @@ try {
       fat REAL DEFAULT 0,
       serving_size TEXT,
       use_count INTEGER DEFAULT 0,
+      image_path TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (barcode_id) REFERENCES barcodes(id) ON DELETE SET NULL
@@ -253,8 +256,38 @@ try {
     db.exec("ALTER TABLE food_logs ADD COLUMN barcode_id INTEGER");
     console.log('✅ 資料庫遷移完成: 新增 food_logs.barcode_id 欄位');
   }
+
+  // 遷移 image_path（新於 barcode_id）
+  if (!foodLogColumns.includes('image_path')) {
+    db.exec("ALTER TABLE food_logs ADD COLUMN image_path TEXT");
+    console.log('✅ 資料庫遷移完成: 新增 food_logs.image_path 欄位');
+  }
 } catch (err) {
-  console.warn('⚠️ food_logs.barcode_id 欄位遷移警告:', err.message);
+  console.warn('⚠️ food_logs.image_path 欄位遷移警告:', err.message);
+}
+
+// 遷移 barcodes.image_path
+try {
+  const barcodePragma = db.prepare("PRAGMA table_info(barcodes)").all();
+  const barcodeColumns = barcodePragma.map(c => c.name);
+  if (!barcodeColumns.includes('image_path')) {
+    db.exec("ALTER TABLE barcodes ADD COLUMN image_path TEXT");
+    console.log('✅ 資料庫遷移完成: 新增 barcodes.image_path 欄位');
+  }
+} catch (err) {
+  console.warn('⚠️ barcodes.image_path 欄位遷移警告:', err.message);
+}
+
+// 遷移 favorites.image_path
+try {
+  const favPragma = db.prepare("PRAGMA table_info(favorites)").all();
+  const favColumns = favPragma.map(c => c.name);
+  if (!favColumns.includes('image_path')) {
+    db.exec("ALTER TABLE favorites ADD COLUMN image_path TEXT");
+    console.log('✅ 資料庫遷移完成: 新增 favorites.image_path 欄位');
+  }
+} catch (err) {
+  console.warn('⚠️ favorites.image_path 欄位遷移警告:', err.message);
 }
 
 // Create indexes
@@ -692,13 +725,13 @@ export const FoodLogDB = {
 
     // 檢查是否有傳入 barcodeId
     if (data.barcodeId !== undefined && data.barcodeId !== null) {
-      sql = `INSERT INTO food_logs (user_id, image_data, meal_type, calories, protein, carbs, fat, description, barcode_id)
+      sql = `INSERT INTO food_logs (user_id, image_path, meal_type, calories, protein, carbs, fat, description, barcode_id)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-      params = [userId, data.imageData || null, data.mealType || 'general', data.calories || 0, data.protein || 0, data.carbs || 0, data.fat || 0, data.description || null, data.barcodeId];
+      params = [userId, data.imagePath || null, data.mealType || 'general', data.calories || 0, data.protein || 0, data.carbs || 0, data.fat || 0, data.description || null, data.barcodeId];
     } else {
-      sql = `INSERT INTO food_logs (user_id, image_data, meal_type, calories, protein, carbs, fat, description)
+      sql = `INSERT INTO food_logs (user_id, image_path, meal_type, calories, protein, carbs, fat, description)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-      params = [userId, data.imageData || null, data.mealType || 'general', data.calories || 0, data.protein || 0, data.carbs || 0, data.fat || 0, data.description || null];
+      params = [userId, data.imagePath || null, data.mealType || 'general', data.calories || 0, data.protein || 0, data.carbs || 0, data.fat || 0, data.description || null];
     }
 
     const stmt = db.prepare(sql);
@@ -866,8 +899,8 @@ export const BarcodeDB = {
 
   create(data) {
     const stmt = db.prepare(`
-      INSERT INTO barcodes (barcode, name, brand, calories, protein, carbs, fat, serving_size)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO barcodes (barcode, name, brand, calories, protein, carbs, fat, serving_size, image_path)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const result = stmt.run(
       data.barcode,
@@ -877,7 +910,8 @@ export const BarcodeDB = {
       data.protein || 0,
       data.carbs || 0,
       data.fat || 0,
-      data.servingSize || '未知'
+      data.servingSize || '未知',
+      data.imagePath || null
     );
     return this.findByBarcode(data.barcode);
   },
@@ -886,7 +920,7 @@ export const BarcodeDB = {
     // Only update barcode if explicitly provided (to preserve UNIQUE constraint)
     if (data.barcode !== undefined) {
       const stmt = db.prepare(`
-        UPDATE barcodes SET barcode = ?, name = ?, brand = ?, calories = ?, protein = ?, carbs = ?, fat = ?, serving_size = ?
+        UPDATE barcodes SET barcode = ?, name = ?, brand = ?, calories = ?, protein = ?, carbs = ?, fat = ?, serving_size = ?, image_path = ?
         WHERE id = ?
       `);
       stmt.run(
@@ -897,13 +931,13 @@ export const BarcodeDB = {
         data.protein || 0,
         data.carbs || 0,
         data.fat || 0,
-        data.servingSize || '',
+        data.servingSize || '', data.imagePath || null,
         id
       );
     } else {
       // Update without changing barcode
       const stmt = db.prepare(`
-        UPDATE barcodes SET name = ?, brand = ?, calories = ?, protein = ?, carbs = ?, fat = ?, serving_size = ?
+        UPDATE barcodes SET name = ?, brand = ?, calories = ?, protein = ?, carbs = ?, fat = ?, serving_size = ?, image_path = ?
         WHERE id = ?
       `);
       stmt.run(
@@ -913,7 +947,7 @@ export const BarcodeDB = {
         data.protein || 0,
 	data.carbs || 0,
         data.fat || 0,
-        data.servingSize || '',
+        data.servingSize || '', data.imagePath || null,
         id
       );
     }
@@ -928,7 +962,7 @@ export const BarcodeDB = {
     const existing = this.findByBarcode(data.barcode);
     if (existing) {
       const stmt = db.prepare(`
-        UPDATE barcodes SET name = ?, brand = ?, calories = ?, protein = ?, carbs = ?, fat = ?, serving_size = ?
+        UPDATE barcodes SET name = ?, brand = ?, calories = ?, protein = ?, carbs = ?, fat = ?, serving_size = ?, image_path = ?
         WHERE barcode = ?
       `);
       stmt.run(data.name, data.brand || '未知', data.calories || 0, data.protein || 0, data.carbs || 0, data.fat || 0, data.servingSize || '未知', data.barcode);

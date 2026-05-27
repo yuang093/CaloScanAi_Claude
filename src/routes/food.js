@@ -1,13 +1,23 @@
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { analyzeFoodImage, parseNutritionalData } from '../services/minimax.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { FoodLogDB, DailyProgressDB, UserProfileDB, BarcodeDB, FavoritesDB, ShoppingDB } from '../services/database.js';
 import db from '../services/database.js';
 import { getLocalDate } from '../utils/date.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const UPLOADS_DIR = join(__dirname, '../../uploads');
 const router = express.Router();
 
-// POST /api/food/analyze - Analyze food image (public endpoint)
+// Ensure uploads directory exists
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
 router.post('/analyze', async (req, res, next) => {
   try {
     const { image, prompt } = req.body;
@@ -66,6 +76,23 @@ router.post('/upload', authMiddleware, async (req, res, next) => {
     console.log('[Food/upload] AI content:', content);
     const nutrition = parseNutritionalData(content);
 
+    // Store image to file system
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0].replace(/-/g, '/'); // YYYY/MM/DD
+    const subDir = 'foods/' + dateStr;
+    const targetDir = join(UPLOADS_DIR, subDir);
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+    const filename = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.jpg';
+    const imagePath = subDir + '/' + filename;
+    const fullPath = join(UPLOADS_DIR, imagePath);
+
+    // Write image file
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+    fs.writeFileSync(fullPath, imageBuffer);
+    console.log('[Food/upload] Image saved to:', fullPath);
+
     // Also add to food database (barcodes table) - generate pseudo-barcode for AI analyzed foods
     const foodName = nutrition.name || nutrition.description || 'AI 分析食物';
     const pseudoBarcode = 'AI_' + Date.now();
@@ -79,7 +106,8 @@ router.post('/upload', authMiddleware, async (req, res, next) => {
         protein: nutrition.totalProtein || 0,
         carbs: nutrition.totalCarbs || 0,
         fat: nutrition.totalFat || 0,
-        servingSize: '1 份'
+        servingSize: '1 份',
+        imagePath: imagePath
       });
       barcodeId = barcodeEntry?.id;
       console.log('[Food] Food database entry created for:', foodName, 'barcodeId:', barcodeId);
@@ -88,9 +116,9 @@ router.post('/upload', authMiddleware, async (req, res, next) => {
       console.log('[Food] Food database entry may already exist:', e.message);
     }
 
-    // Store in database - with barcode_id correlation
+    // Store in database - with barcode_id correlation (using imagePath instead of base64)
     const logEntry = FoodLogDB.create(req.user.id, {
-      imageData: base64Data, // Store full base64 image
+      imagePath: imagePath,
       mealType,
       calories: nutrition.totalCalories || 0,
       protein: nutrition.totalProtein || 0,
