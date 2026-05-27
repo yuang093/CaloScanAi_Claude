@@ -1694,6 +1694,7 @@
         let goalCalories = 2000;
 
         if (progressResult.success) {
+          console.log('[fetchProgressData] Entering success block');
           const { stats, goals, quote } = progressResult.data;
 
           // Update nutrition values (round to 1 decimal)
@@ -1707,10 +1708,13 @@
           goalCalories = goals.calories;
 
           // Fetch today's food logs for meal breakdown
+          console.log('[fetchProgressData] Fetching food logs for date:', getLocalDate());
           const todayLogsRes = await fetch('/api/food/logs?date=' + getLocalDate() + '&limit=50', {
             headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
           });
+          console.log('[fetchProgressData] todayLogsRes status:', todayLogsRes.status);
           const todayLogsResult = await todayLogsRes.json();
+          console.log('[fetchProgressData] todayLogsResult:', JSON.stringify(todayLogsResult));
           const todayLogs = todayLogsResult.data?.logs || [];
 
           // Calculate meal totals and food names
@@ -1751,7 +1755,9 @@
           document.getElementById('goal-cal-display').textContent = goalCalories;
 
           // Update progress bar
+          console.log('[fetchProgressData] totalCalories:', totalCalories, 'goalCalories:', goalCalories);
           const progressPercent = Math.min((totalCalories / goalCalories) * 100, 100);
+          console.log('[fetchProgressData] progressPercent:', progressPercent);
           const progressBar = document.getElementById('progress-bar-fill');
           if (progressBar) {
             progressBar.style.width = progressPercent + '%';
