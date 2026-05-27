@@ -338,7 +338,7 @@ window.renderFoodLog = function() {
     <div class="food-log-item" onclick="window.showFoodDetail(${item.id})" style="cursor:pointer;">
       <img class="food-log-img" src="${item.image || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22/>'}" alt="${item.name}">
       <div class="food-log-info">
-        <div class="food-log-cal">${item.calories} kcal</div>
+        <div class="food-log-name" style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.name || '未命名'}</div>
         <div class="food-log-time">${item.time}</div>
       </div>
     </div>
