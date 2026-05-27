@@ -2858,9 +2858,9 @@
         return;
       }
 
-      // 取得當前的 Modal 容器與按鈕
-      const modalBox = card.closest('.modal').querySelector('div');
-      const downloadBtn = modalBox.querySelector('button.btn-primary');
+      // 精準抓取 Modal 容器與按鈕
+      const modalContent = document.querySelector('#share-modal > div');
+      const downloadBtn = modalContent.querySelector('button.btn-primary');
 
       if (downloadBtn) {
         downloadBtn.disabled = true;
@@ -2868,35 +2868,34 @@
       }
 
       try {
-        // 1. 執行截圖
         const canvas = await html2canvas(card, { scale: 2.5, useCORS: true, backgroundColor: null });
         const dataUrl = canvas.toDataURL('image/png');
 
-        // 2. 【終極大絕招：原地替換】隱藏原本的 HTML 結構
+        // 【大絕招：原地替換】
+        // 1. 隱藏原本無法存檔的 HTML
         card.style.display = 'none';
 
-        // 移除之前可能已經產生的圖片
-        const oldImg = document.getElementById('generated-share-image');
+        // 2. 移除舊圖片(如果有的話)
+        const oldImg = document.getElementById('final-share-img');
         if (oldImg) oldImg.remove();
 
-        // 3. 建立真實的 img 標籤並塞入原本卡片的位置
-        const resultImg = document.createElement('img');
-        resultImg.src = dataUrl;
-        resultImg.id = 'generated-share-image';
-        // 加上 -webkit-touch-callout 確保 iOS 可以長按
-        resultImg.style.cssText = 'width:100%; height:auto; border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.3); -webkit-touch-callout:default !important; pointer-events:auto; display:block; margin: 0 auto;';
-        card.parentNode.insertBefore(resultImg, card);
+        // 3. 建立真實圖片並塞入 card 的父元素中
+        const img = document.createElement('img');
+        img.id = 'final-share-img';
+        img.src = dataUrl;
+        // 加上 -webkit-touch-callout:default 強制允許 iOS 長按
+        img.style.cssText = 'width:270px; height:auto; border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.3); -webkit-touch-callout:default !important; pointer-events:auto; display:block; margin:0 auto;';
+        card.parentNode.appendChild(img);
 
-        // 4. 更改 Modal 標題，引導使用者長按
-        const title = modalBox.querySelector('h3');
+        // 4. 更改標題與按鈕，引導使用者長按
+        const title = modalContent.querySelector('h3');
         if (title) {
-          title.innerHTML = '✨ 產生成功 ✨<br><span style="font-size:0.9rem; color:#e74c3c; line-height:2;">👆 請「長按」上方圖片儲存影像</span>';
+          title.innerHTML = '✨ 產生成功 ✨<br><span style="font-size:0.9rem; color:#e74c3c; line-height:2;">👆 請「長按」圖片儲存影像</span>';
         }
 
-        // 5. 更改按鈕為「完成(關閉)」
         if (downloadBtn) {
           downloadBtn.textContent = '完成 (關閉)';
-          // 點擊後改為觸發關閉與還原狀態
+          // 點擊後觸發關閉與還原狀態
           downloadBtn.onclick = closeShareModal;
           downloadBtn.disabled = false;
         }
@@ -2914,22 +2913,22 @@
     function closeShareModal() {
       document.getElementById('share-modal').style.display = 'none';
 
-      // 【還原狀態】讓下次打開還能重新產生
+      // 【還原狀態】確保下次打開還能正常顯示 HTML
       const card = document.getElementById('share-card-preview');
       if (card) card.style.display = 'block';
 
-      const oldImg = document.getElementById('generated-share-image');
-      if (oldImg) oldImg.remove();
+      const img = document.getElementById('final-share-img');
+      if (img) img.remove();
 
-      const modalBox = document.querySelector('#share-modal > div');
-      if (modalBox) {
-        const title = modalBox.querySelector('h3');
+      const modalContent = document.querySelector('#share-modal > div');
+      if (modalContent) {
+        const title = modalContent.querySelector('h3');
         if (title) title.innerHTML = '🎉 分享成就卡';
 
-        const downloadBtn = modalBox.querySelector('button.btn-primary');
-        if (downloadBtn) {
-          downloadBtn.textContent = '📥 下載圖片';
-          downloadBtn.onclick = downloadShareCard; // 恢復綁定下載功能
+        const btn = modalContent.querySelector('button.btn-primary');
+        if (btn) {
+          btn.textContent = '📥 下載圖片';
+          btn.onclick = downloadShareCard; // 重新綁定下載事件
         }
       }
     }
