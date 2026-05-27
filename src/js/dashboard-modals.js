@@ -121,6 +121,32 @@ window.addFoodFromDatabase = async function(id, name, calories, protein, carbs, 
   }
 };
 
+// ============ Add Food From Statistics (Most Used) ============
+
+window.addFoodFromStats = async function(calories, protein, carbs, fat, name) {
+  try {
+    const response = await fetch('/api/food/add-from-database', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+      },
+      body: JSON.stringify({ name, calories, protein, carbs, fat })
+    });
+    const result = await response.json();
+
+    if (result.success) {
+      alert('已加入日誌');
+      window.loadFoodLog();
+    } else {
+      alert(result.error || '加入失敗');
+    }
+  } catch (err) {
+    alert('網路錯誤');
+    console.error('Add from stats error:', err);
+  }
+};
+
 // ============ Donation Modal ============
 
 window.openDonationModal = function() {
@@ -155,13 +181,20 @@ window.loadFavorites = async function() {
     if (result.success && result.data.length > 0) {
       container.innerHTML = result.data.slice(0, 20).map(food => {
         const escapedName = (food.name || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        const isStats = food.isStats;
+        const displaySubtitle = isStats
+          ? `已食用 ${food.use_count} 次 • ${food.calories} kcal`
+          : `${window.escapeHtml(food.brand || '')} • ${food.calories} kcal`;
+        const imgSrc = food.image_path ? '/uploads/' + food.image_path : 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0iI2YzZjBmYiIvPjx0ZXh0IHg9IjUwIiB5PSI2MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIyMCI+Zm9vPC90ZXh0Pjwvc3ZnPg==';
+
         return `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--color-border);">
-          <div>
-            <div style="font-weight:600;">${window.escapeHtml(food.name || '未命名')}</div>
-            <div style="font-size:0.8rem; color:var(--color-text-muted);">${window.escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
+        <div style="display:flex; align-items:center; padding:10px; border-bottom:1px solid var(--color-border);">
+          ${isStats ? '<div style="width:50px;height:50px;border-radius:8px;overflow:hidden;margin-right:12px;flex-shrink:0;"><img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" /></div>' : ''}
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
+            <div style="font-size:0.8rem; color:var(--color-text-muted);">${displaySubtitle}</div>
           </div>
-          <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0}, true)" class="btn btn-primary btn-small">加入</button>
+          <button onclick="${isStats ? 'window.addFoodFromStats(' + food.calories + ', ' + food.protein + ', ' + food.carbs + ', ' + food.fat + ', \'' + escapedName + '\')' : 'window.addFoodFromDatabase(' + food.id + ', \'' + escapedName + '\', ' + (food.calories || 0) + ', ' + (food.protein || 0) + ', ' + (food.carbs || 0) + ', ' + (food.fat || 0) + ', true)'}" class="btn btn-primary btn-small">加入</button>
         </div>
       `}).join('');
     } else {
@@ -1160,8 +1193,14 @@ window.openShoppingFormModal = function(mode, listId) {
   shoppingFormListId = listId;
   document.getElementById('shopping-form-title').textContent = mode === 'list' ? '新增購物清單' : '新增物品';
   document.getElementById('shopping-form-name-input').value = '';
-  document.getElementById('shopping-form-cal-div').style.display = mode === 'item' ? 'block' : 'none';
+  document.getElementById('shopping-form-list-section').style.display = mode === 'list' ? 'block' : 'none';
+  document.getElementById('shopping-form-item-section').style.display = mode === 'item' ? 'block' : 'none';
+  // Reset item fields
+  document.getElementById('shopping-form-item-name-input').value = '';
   document.getElementById('shopping-form-cal-input').value = '';
+  document.getElementById('shopping-form-protein-input').value = '';
+  document.getElementById('shopping-form-carbs-input').value = '';
+  document.getElementById('shopping-form-fat-input').value = '';
   document.getElementById('shopping-form-modal').style.display = 'flex';
 };
 
@@ -1172,13 +1211,12 @@ window.closeShoppingFormModal = function() {
 };
 
 window.submitShoppingForm = async function() {
-  const name = document.getElementById('shopping-form-name-input').value.trim();
-  if (!name) {
-    alert('請輸入名稱');
-    return;
-  }
-
   if (shoppingFormMode === 'list') {
+    const name = document.getElementById('shopping-form-name-input').value.trim();
+    if (!name) {
+      alert('請輸入清單名稱');
+      return;
+    }
     try {
       const response = await fetch('/api/food/shopping-lists', {
         method: 'POST',
@@ -1197,7 +1235,16 @@ window.submitShoppingForm = async function() {
       console.error('Create shopping list error:', error);
     }
   } else {
+    const itemName = document.getElementById('shopping-form-item-name-input').value.trim();
+    if (!itemName) {
+      alert('請輸入物品名稱');
+      return;
+    }
     const calories = parseInt(document.getElementById('shopping-form-cal-input').value) || 0;
+    const protein = parseFloat(document.getElementById('shopping-form-protein-input').value) || 0;
+    const carbs = parseFloat(document.getElementById('shopping-form-carbs-input').value) || 0;
+    const fat = parseFloat(document.getElementById('shopping-form-fat-input').value) || 0;
+
     try {
       const response = await fetch('/api/food/shopping-lists/' + shoppingFormListId + '/items', {
         method: 'POST',
@@ -1205,7 +1252,7 @@ window.submitShoppingForm = async function() {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + localStorage.getItem('token')
         },
-        body: JSON.stringify({ name, calories })
+        body: JSON.stringify({ name: itemName, calories, protein, carbs, fat })
       });
       const result = await response.json();
       if (result.success) {

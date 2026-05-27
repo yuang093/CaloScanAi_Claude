@@ -437,11 +437,31 @@
     <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:400px; width:90%; position:relative;" onclick="event.stopPropagation()">
       <button onclick="closeShoppingFormModal()" style="position:absolute; top:12px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
       <h3 id="shopping-form-title" style="margin-bottom:16px;">新增購物清單</h3>
-      <div style="margin-bottom:16px;">
+      <div id="shopping-form-list-section" style="margin-bottom:16px;">
         <input type="text" id="shopping-form-name-input" placeholder="清單名稱" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px; box-sizing:border-box;">
       </div>
-      <div id="shopping-form-cal-div" style="margin-bottom:16px; display:none;">
-        <input type="number" id="shopping-form-cal-input" placeholder="熱量（可選）" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px; box-sizing:border-box;">
+      <div id="shopping-form-item-section" style="display:none;">
+        <div style="margin-bottom:12px;">
+          <input type="text" id="shopping-form-item-name-input" placeholder="物品名稱" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px; box-sizing:border-box;">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div>
+            <label style="font-size:0.8rem; color:var(--color-text-muted);">熱量 (kcal)</label>
+            <input type="number" id="shopping-form-cal-input" placeholder="0" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px; box-sizing:border-box;">
+          </div>
+          <div>
+            <label style="font-size:0.8rem; color:var(--color-text-muted);">蛋白質 (g)</label>
+            <input type="number" id="shopping-form-protein-input" placeholder="0" step="0.1" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px; box-sizing:border-box;">
+          </div>
+          <div>
+            <label style="font-size:0.8rem; color:var(--color-text-muted);">碳水 (g)</label>
+            <input type="number" id="shopping-form-carbs-input" placeholder="0" step="0.1" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px; box-sizing:border-box;">
+          </div>
+          <div>
+            <label style="font-size:0.8rem; color:var(--color-text-muted);">脂肪 (g)</label>
+            <input type="number" id="shopping-form-fat-input" placeholder="0" step="0.1" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px; box-sizing:border-box;">
+          </div>
+        </div>
       </div>
       <button onclick="submitShoppingForm()" class="btn btn-primary" style="width:100%;">確認</button>
     </div>

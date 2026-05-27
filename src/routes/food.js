@@ -435,7 +435,55 @@ router.post('/add-from-database', authMiddleware, async (req, res, next) => {
 // GET /api/food/favorites - Get user's favorites (authenticated)
 router.get('/favorites', authMiddleware, async (req, res) => {
   const { sort = 'recent' } = req.query;
-  const validSorts = ['recent', 'most_used', 'name'];
+
+  // 如果是最常食用排序，從 food_logs 統計
+  if (sort === 'most_used') {
+    // 從 food_logs 統計各食物的食用次數
+    const logs = FoodLogDB.findByUserId(req.user.id, { limit: 500 });
+    const foodCountMap = {};
+    logs.forEach(log => {
+      const key = log.description || '未命名';
+      if (!foodCountMap[key]) {
+        foodCountMap[key] = {
+          name: key,
+          count: 0,
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+          image_path: log.image_path
+        };
+      }
+      foodCountMap[key].count++;
+      foodCountMap[key].calories += (log.calories || 0);
+      foodCountMap[key].protein += (log.protein || 0);
+      foodCountMap[key].carbs += (log.carbs || 0);
+      foodCountMap[key].fat += (log.fat || 0);
+    });
+
+    // 轉為陣列並排序
+    const mostEaten = Object.values(foodCountMap)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20)
+      .map(f => ({
+        name: f.name,
+        use_count: f.count,
+        calories: Math.round(f.calories / f.count),
+        protein: Math.round(f.protein / f.count * 10) / 10,
+        carbs: Math.round(f.carbs / f.count * 10) / 10,
+        fat: Math.round(f.fat / f.count * 10) / 10,
+        image_path: f.image_path,
+        isStats: true
+      }));
+
+    return res.json({
+      success: true,
+      data: mostEaten
+    });
+  }
+
+  // 一般排序（recent 或 name）
+  const validSorts = ['recent', 'name'];
   const sortParam = validSorts.includes(sort) ? sort : 'recent';
   const favorites = FavoritesDB.findByUserId(req.user.id, { sort: sortParam });
   res.json({

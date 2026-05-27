@@ -1009,7 +1009,15 @@ export const ShoppingDB = {
     const list = this.findById(id);
     if (!list || list.user_id !== userId) return null;
     const items = JSON.parse(list.items || '[]');
-    items.push({ id: Date.now(), name: item.name, checked: false, calories: item.calories || 0 });
+    items.push({
+      id: Date.now(),
+      name: item.name,
+      checked: false,
+      calories: item.calories || 0,
+      protein: item.protein || 0,
+      carbs: item.carbs || 0,
+      fat: item.fat || 0
+    });
     return this.update(id, userId, { items });
   },
 
