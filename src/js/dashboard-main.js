@@ -49,13 +49,13 @@ window.toggleThemeDropdown = function() {
 
 window.logout = function() {
   localStorage.removeItem('token');
-  window.location.href = 'login.html';
+  window.location.href = 'index.html';
 };
 
 window.checkAuth = function() {
   const token = localStorage.getItem('token');
   if (!token) {
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
     return false;
   }
   return true;
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Verify token by calling /api/auth/me
   const token = localStorage.getItem('token');
   if (!token) {
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
     return;
   }
 
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   } catch (err) {
     console.error('Auth check failed:', err);
     localStorage.removeItem('token');
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
     return;
   }
 
