@@ -824,6 +824,7 @@ export const DailyProgressDB = {
         total_protein = excluded.total_protein,
         total_carbs = excluded.total_carbs,
         total_fat = excluded.total_fat,
+        goal_calories = excluded.goal_calories,
         updated_at = CURRENT_TIMESTAMP
     `);
     stmt.run(
@@ -859,7 +860,56 @@ export const DailyProgressDB = {
     query += ' ORDER BY date DESC LIMIT ?';
     params.push(limit);
 
-    return db.prepare(query).all(...params);
+    const progressRecords = db.prepare(query).all(...params);
+
+    // Fallback: 從 food_logs 即時計算彌補沒有 progress 記錄的日期
+    const foodLogsQuery = `
+      SELECT
+        datetime(created_at, '+8 hours') as date,
+        SUM(calories) as total_calories,
+        SUM(protein) as total_protein,
+        SUM(carbs) as total_carbs,
+        SUM(fat) as total_fat,
+        COUNT(*) as meal_count
+      FROM food_logs
+      WHERE user_id = ?
+        ${startDate ? " AND datetime(created_at, '+8 hours') >= ?" : ''}
+        ${endDate ? " AND datetime(created_at, '+8 hours') <= ?" : ''}
+      GROUP BY date(datetime(created_at, '+8 hours'))
+      ORDER BY date DESC
+      LIMIT ?
+    `;
+    const foodParams = [userId];
+    if (startDate) foodParams.push(startDate);
+    if (endDate) foodParams.push(endDate);
+    foodParams.push(limit);
+
+    const foodLogsStats = db.prepare(foodLogsQuery).all(...foodParams);
+
+    // Merge: 如果 food_logs 有某天但 progress 沒有，仍要顯示
+    const progressDates = new Set(progressRecords.map(p => p.date));
+    const merged = [...progressRecords];
+
+    foodLogsStats.forEach(fl => {
+      const d = fl.date instanceof Date ? fl.date.toISOString().split('T')[0] : fl.date;
+      if (!progressDates.has(d)) {
+        merged.push({
+          user_id: userId,
+          date: d,
+          total_calories: fl.total_calories,
+          total_protein: fl.total_protein,
+          total_carbs: fl.total_carbs,
+          total_fat: fl.total_fat,
+          goal_calories: 2000,
+          meal_count: fl.meal_count
+        });
+        progressDates.add(d);
+      }
+    });
+
+    // 重新排序並限制
+    merged.sort((a, b) => b.date.localeCompare(a.date));
+    return merged.slice(0, limit);
   }
 };
 

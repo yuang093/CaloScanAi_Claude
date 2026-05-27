@@ -380,13 +380,11 @@
   <div id="favorites-modal" class="modal" onclick="if(event.target===this)closeFavoritesModal()" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
     <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; position:relative;" onclick="event.stopPropagation()">
       <button onclick="closeFavoritesModal()" style="position:absolute; top:8px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer; z-index:10;">×</button>
-      <h3 style="margin-bottom:16px;">⭐ 我的最愛</h3>
-      <div style="display:flex; gap:8px; margin-bottom:12px;">
-        <select id="favorites-sort-select" onchange="loadFavorites()" style="padding:6px 12px; border-radius:8px; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); font-size:0.85rem;">
-          <option value="recent">最近新增</option>
-          <option value="most_used">最常使用</option>
-          <option value="name">按名稱</option>
-        </select>
+      <h3 id="favorites-modal-title" style="margin-bottom:16px;">⭐ 我的最愛</h3>
+      <div style="display:flex; gap:8px; margin-bottom:16px;">
+        <button id="favorites-sort-recent" onclick="setFavoritesSort('recent')" class="btn btn-secondary btn-small" style="flex:1;">最近新增</button>
+        <button id="favorites-sort-most_used" onclick="setFavoritesSort('most_used')" class="btn btn-secondary btn-small" style="flex:1;">最常食用</button>
+        <button id="favorites-sort-name" onclick="setFavoritesSort('name')" class="btn btn-secondary btn-small" style="flex:1;">名稱排序</button>
       </div>
       <div id="favorites-list" style="margin-bottom:16px;"></div>
       <h4 style="margin-bottom:12px;">📋 最近的食物</h4>

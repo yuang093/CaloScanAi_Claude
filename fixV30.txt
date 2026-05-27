@@ -1,0 +1,124 @@
+請修復 CaloScanAi_Claude 專案中的以下三個 Bug：
+
+---
+
+## Bug 1：我的最愛加入食物不會進入今日紀錄
+
+**問題位置：** `src/js/dashboard-modals.js` - `addFoodFromDatabase()` 函數（第 116 行）
+
+**根本原因：**
+當從「我的最愛」呼叫 `addFoodFromDatabase(id, name, calories, protein, carbs, fat, isFavorite=true)` 時，
+API 呼叫的 body 只傳了 `{ barcodeId: id, isFavorite }`，
+沒有傳 `name, calories, protein, carbs, fat`。
+
+後端 `POST /api/food/add-from-database`（`src/routes/food.js` 第 337 行）的邏輯是：
+1. 先判斷有沒有 `name && calories !== undefined` → 直接用傳入資料
+2. 再判斷 `barcodeId && isFavorite` → 去 FavoritesDB 查
+
+當 sort 為 `most_used` 時，回傳的資料 `isStats: true`，
+此時呼叫的是 `addFoodFromStats(calories, protein, carbs, fat, name, imagePath)` — 這條路徑是正確的。
+
+但當 sort 為 `recent` 或 `name` 時，呼叫的是 `addFoodFromDatabase(food.id, ..., true)`，
+這時後端去 FavoritesDB 查 `barcodeId`，但 `food.id` 是 `favorites` 表的 id，應該是正確的。
+
+**請確認並修復：**
+在 `addFoodFromDatabase` 函數中，當 `isFavorite=true` 時，
+同時把 `name, calories, protein, carbs, fat` 也傳入 body，
+讓後端優先走第一條邏輯（直接用傳入資料），避免依賴 barcodeId 查找失敗：
+
+```js
+body: JSON.stringify({ barcodeId: id, isFavorite, name, calories, protein, carbs, fat })
+```
+
+另外，`addFoodFromDatabase` 呼叫成功後要呼叫 `window.loadFoodLog()` 刷新今日紀錄，
+請確認這行有被執行（目前有，但需確認是否有 early return 跳過）。
+
+---
+
+## Bug 2：歷史統計數據不見了
+
+**問題位置：** `src/services/database.js` - `DailyProgressDB.upsert()` 第 818 行
+
+**根本原因：**
+`upsert` 的 SQL ON CONFLICT 更新區塊缺少 `goal_calories` 的更新：
+
+```sql
+ON CONFLICT(user_id, date) DO UPDATE SET
+  total_calories = excluded.total_calories,
+  total_protein = excluded.total_protein,
+  total_carbs = excluded.total_carbs,
+  total_fat = excluded.total_fat,
+  updated_at = CURRENT_TIMESTAMP
+  -- ❌ 缺少 goal_calories = excluded.goal_calories
+```
+
+但更嚴重的問題是：歷史統計顯示「尚無歷史資料」，
+原因是 `DailyProgressDB.findByUserId` 只查 `daily_progress` 表，
+而 `daily_progress` 只有在新增或刪除食物時才寫入，
+如果使用者沒有觸發 upsert（例如重啟後沒有飲食記錄），資料就不存在。
+
+**請執行以下修復：**
+
+1. 修復 `DailyProgressDB.upsert` 加入 `goal_calories = excluded.goal_calories`
+
+2. 在 `GET /api/progress/history`（`src/routes/progress.js` 第 129 行）中，
+   改為同時查詢 `food_logs` 表做聚合，不只依賴 `daily_progress`：
+   若 `daily_progress` 沒有某天的資料，就從 `food_logs` 即時計算補上，
+   確保有食物記錄的日期都能顯示在歷史統計中。
+
+   修改 `DailyProgressDB.findByUserId` 或在 progress route 中加入 fallback 查詢：
+```sql
+   SELECT 
+     date,
+     SUM(calories) as total_calories,
+     SUM(protein) as total_protein,
+     SUM(carbs) as total_carbs,
+     SUM(fat) as total_fat
+   FROM food_logs
+   WHERE user_id = ? AND date BETWEEN ? AND ?
+   GROUP BY date
+   ORDER BY date DESC
+```
+
+---
+
+## Bug 3：我的最愛「最常使用」介面太亂，需要改善 UI
+
+**問題位置：** `src/js/dashboard-modals.js` - `window.loadFavorites()` 第 191 行的 HTML 渲染部分
+
+**問題描述：**
+當 sort 選 `most_used` 時，每筆資料會顯示 `已食用 N 次 • XXX kcal`，
+但整體 list 排版太密集，資訊過多導致畫面雜亂。
+
+**請重新設計 most_used 模式的卡片 UI：**
+┌──────────────────────────────────────────────┐
+│ 🥗 [食物圖片]  雞胸肉沙拉              [加入] │
+│               📊 食用 12 次  •  350 kcal      │
+│               🥩 蛋白質 28g  脂肪 8g          │
+└──────────────────────────────────────────────┘
+
+具體要求：
+1. `isStats: true` 的資料顯示 badge「📊 最常食用」標籤（小圓角標籤）
+2. 額外顯示蛋白質、碳水、脂肪（小字體，一行）
+3. 卡片間距加大（padding 從 10px 改 14px），加入淡色背景 `#fafafa`
+4. 加入次數顯示 badge，例如 `🔥 12次` 放在食物名稱旁邊
+5. 排序選單（sort-select）改為更明顯的按鈕組，不用 select dropdown：
+
+[最近新增]  [最常食用]  [名稱排序]
+
+使用 toggle button 樣式，選中的按鈕有 active 狀態
+6. modal 標題從「我的最愛」改為顯示目前模式，例如「我的最愛 · 最常食用」
+
+---
+
+## 測試確認清單
+
+修改完成後請確認：
+- [ ] 從「我的最愛」點「加入」後，dashboard 食物日誌立即更新
+- [ ] `/api/progress/history` API 有回傳有食物記錄日期的資料
+- [ ] 歷史統計頁面折線圖、柱狀圖正常顯示
+- [ ] 「最常使用」切換後 UI 排版整齊不雜亂
+- [ ] 三種排序切換按鈕正常運作
+
+關鍵 Bug 摘要：
+#問題根本原因位置1最愛加入不進日誌isFavorite 路徑沒傳食物營養資料、可能 FavoritesDB 查找失敗dashboard-modals.js:1242歷史統計數據不見DailyProgressDB 只讀 daily_progress 表，沒有 fallback 從 food_logs 聚合database.js:828 + progress.js:1333最常使用 UI 太亂HTML 模板缺乏層次、使用 <select> 而非 toggle 按鈕dashboard-modals.js:207

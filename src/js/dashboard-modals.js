@@ -121,7 +121,7 @@ window.addFoodFromDatabase = async function(id, name, calories, protein, carbs, 
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + localStorage.getItem('token')
       },
-      body: JSON.stringify({ barcodeId: id, isFavorite })
+      body: JSON.stringify({ barcodeId: id, isFavorite, name, calories, protein, carbs, fat })
     });
     const result = await response.json();
 
@@ -186,9 +186,31 @@ window.closeFavoritesModal = function() {
   document.getElementById('favorites-modal').style.display = 'none';
 };
 
+let currentFavoritesSort = 'recent';
+
+window.setFavoritesSort = function(sort) {
+  currentFavoritesSort = sort;
+  // Update button states
+  document.querySelectorAll('[id^="favorites-sort-"]').forEach(btn => {
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-secondary');
+  });
+  const activeBtn = document.getElementById('favorites-sort-' + sort);
+  if (activeBtn) {
+    activeBtn.classList.remove('btn-secondary');
+    activeBtn.classList.add('btn-primary');
+  }
+  // Update modal title
+  const titles = { recent: '最近新增', most_used: '最常食用', name: '名稱排序' };
+  const titleEl = document.getElementById('favorites-modal-title');
+  if (titleEl) titleEl.textContent = '⭐ 我的最愛 · ' + (titles[sort] || sort);
+  // Reload
+  window.loadFavorites();
+};
+
 window.loadFavorites = async function() {
   try {
-    const sort = document.getElementById('favorites-sort-select')?.value || 'recent';
+    const sort = currentFavoritesSort;
     const response = await fetch(`/api/food/favorites?sort=${sort}`, {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     });
@@ -199,23 +221,47 @@ window.loadFavorites = async function() {
       container.innerHTML = result.data.slice(0, 20).map(food => {
         const escapedName = (food.name || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
         const isStats = food.isStats;
-        const displaySubtitle = isStats
-          ? `已食用 ${food.use_count} 次 • ${food.calories} kcal`
-          : `${window.escapeHtml(food.brand || '')} • ${food.calories} kcal`;
         const imgSrc = window.getFoodImgSrc(food.image_path);
 
-        return `
-        <div style="display:flex; align-items:center; padding:10px; border-bottom:1px solid var(--color-border);">
-          <div style="width:50px;height:50px;border-radius:8px;overflow:hidden;margin-right:12px;flex-shrink:0;background:#f3f0f0;">
-            <img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />
-          </div>
-          <div style="flex:1; min-width:0; padding-right:12px;">
-            <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
-            <div style="font-size:0.8rem; color:var(--color-text-muted);">${displaySubtitle}</div>
-          </div>
-          <button onclick="${isStats ? 'window.addFoodFromStats(' + food.calories + ', ' + food.protein + ', ' + food.carbs + ', ' + food.fat + ', \'' + escapedName + '\', ' + (food.image_path ? '\'' + food.image_path + '\'' : 'null') + ')' : 'window.addFoodFromDatabase(' + food.id + ', \'' + escapedName + '\', ' + (food.calories || 0) + ', ' + (food.protein || 0) + ', ' + (food.carbs || 0) + ', ' + (food.fat || 0) + ', true)'}" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
-        </div>
-      `}).join('');
+        if (isStats) {
+          // 最常食用模式 - 卡片式 UI
+          return `
+          <div style="background:#fafafa; border-radius:12px; padding:14px; margin-bottom:10px; border:1px solid var(--color-border);">
+            <div style="display:flex; align-items:flex-start; gap:12px;">
+              <div style="width:56px;height:56px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#f3f0f0;">
+                <img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />
+              </div>
+              <div style="flex:1; min-width:0;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                  <span style="background:#e8f5e9; color:#2d6a4f; font-size:0.7rem; padding:2px 8px; border-radius:12px; font-weight:600;">📊 最常食用</span>
+                  <span style="background:#fff3e0; color:#e65100; font-size:0.7rem; padding:2px 8px; border-radius:12px; font-weight:600;">🔥 ${food.use_count}次</span>
+                </div>
+                <div style="font-weight:600; font-size:1rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
+                <div style="font-size:0.85rem; color:#666; margin-top:4px;">
+                  ${food.calories} kcal
+                </div>
+                <div style="font-size:0.75rem; color:var(--color-text-muted); margin-top:4px;">
+                  🥩 蛋白質 ${food.protein}g  •  🍚 碳水 ${food.carbs}g  •  🧈 脂肪 ${food.fat}g
+                </div>
+              </div>
+              <button onclick="window.addFoodFromStats(${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat}, '${escapedName}', ${food.image_path ? '\'' + food.image_path + '\'' : 'null'})" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
+            </div>
+          </div>`;
+        } else {
+          // 一般最愛模式
+          return `
+          <div style="display:flex; align-items:center; padding:10px; border-bottom:1px solid var(--color-border);">
+            <div style="width:50px;height:50px;border-radius:8px;overflow:hidden;margin-right:12px;flex-shrink:0;background:#f3f0f0;">
+              <img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />
+            </div>
+            <div style="flex:1; min-width:0; padding-right:12px;">
+              <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
+              <div style="font-size:0.8rem; color:var(--color-text-muted);">${window.escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
+            </div>
+            <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0}, true)" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
+          </div>`;
+        }
+      }).join('');
     } else {
       container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">尚無最愛食物</div>';
     }
