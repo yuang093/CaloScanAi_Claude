@@ -461,6 +461,10 @@ router.get('/favorites', authMiddleware, async (req, res) => {
       foodCountMap[key].total_protein += (log.protein || 0);
       foodCountMap[key].total_carbs += (log.carbs || 0);
       foodCountMap[key].total_fat += (log.fat || 0);
+      // 優先保留有圖片的 image_path
+      if (!foodCountMap[key].image_path && log.image_path) {
+        foodCountMap[key].image_path = log.image_path;
+      }
     });
 
     // 轉為陣列並排序

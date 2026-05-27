@@ -1215,10 +1215,8 @@ window.openShoppingFormModal = function(mode, listId) {
   shoppingFormMode = mode;
   shoppingFormListId = listId;
   document.getElementById('shopping-form-title').textContent = mode === 'list' ? '新增購物清單' : '新增物品';
+  // Reset all fields
   document.getElementById('shopping-form-name-input').value = '';
-  document.getElementById('shopping-form-list-section').style.display = mode === 'list' ? 'block' : 'none';
-  document.getElementById('shopping-form-item-section').style.display = mode === 'item' ? 'block' : 'none';
-  // Reset item fields
   document.getElementById('shopping-form-item-name-input').value = '';
   document.getElementById('shopping-form-cal-input').value = '';
   document.getElementById('shopping-form-protein-input').value = '';
@@ -1234,42 +1232,39 @@ window.closeShoppingFormModal = function() {
 };
 
 window.submitShoppingForm = async function() {
-  if (shoppingFormMode === 'list') {
-    const name = document.getElementById('shopping-form-name-input').value.trim();
-    if (!name) {
-      alert('請輸入清單名稱');
-      return;
-    }
-    try {
-      const response = await fetch('/api/food/shopping-lists', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + localStorage.getItem('token')
-        },
-        body: JSON.stringify({ name })
-      });
-      const result = await response.json();
-      if (result.success) {
-        window.closeShoppingFormModal();
-        window.loadShoppingLists();
-      }
-    } catch (error) {
-      console.error('Create shopping list error:', error);
-    }
-  } else {
-    const itemName = document.getElementById('shopping-form-item-name-input').value.trim();
-    if (!itemName) {
-      alert('請輸入物品名稱');
-      return;
-    }
-    const calories = parseInt(document.getElementById('shopping-form-cal-input').value) || 0;
-    const protein = parseFloat(document.getElementById('shopping-form-protein-input').value) || 0;
-    const carbs = parseFloat(document.getElementById('shopping-form-carbs-input').value) || 0;
-    const fat = parseFloat(document.getElementById('shopping-form-fat-input').value) || 0;
+  const name = document.getElementById('shopping-form-name-input').value.trim();
+  const itemName = document.getElementById('shopping-form-item-name-input').value.trim();
+  const calories = parseInt(document.getElementById('shopping-form-cal-input').value) || 0;
+  const protein = parseFloat(document.getElementById('shopping-form-protein-input').value) || 0;
+  const carbs = parseFloat(document.getElementById('shopping-form-carbs-input').value) || 0;
+  const fat = parseFloat(document.getElementById('shopping-form-fat-input').value) || 0;
 
-    try {
-      const response = await fetch('/api/food/shopping-lists/' + shoppingFormListId + '/items', {
+  if (!name) {
+    alert('請輸入清單名稱');
+    return;
+  }
+
+  try {
+    // Create the list first
+    const response = await fetch('/api/food/shopping-lists', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+      },
+      body: JSON.stringify({ name })
+    });
+    const result = await response.json();
+    if (!result.success) {
+      alert(result.error || '建立失敗');
+      return;
+    }
+
+    const listId = result.data.id;
+
+    // If item name is provided, add it to the list
+    if (itemName) {
+      await fetch('/api/food/shopping-lists/' + listId + '/items', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1277,14 +1272,13 @@ window.submitShoppingForm = async function() {
         },
         body: JSON.stringify({ name: itemName, calories, protein, carbs, fat })
       });
-      const result = await response.json();
-      if (result.success) {
-        window.closeShoppingFormModal();
-        window.loadShoppingLists();
-      }
-    } catch (error) {
-      console.error('Add item error:', error);
     }
+
+    window.closeShoppingFormModal();
+    window.loadShoppingLists();
+  } catch (error) {
+    console.error('Submit shopping form error:', error);
+    alert('發生錯誤，請稍後再試');
   }
 };
 

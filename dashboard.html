@@ -434,15 +434,15 @@
 
   <!-- Shopping Form Modal -->
   <div id="shopping-form-modal" class="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:400px; width:90%; position:relative;" onclick="event.stopPropagation()">
+    <div style="background:var(--color-surface); border-radius:20px; padding:24px; max-width:420px; width:90%; position:relative;" onclick="event.stopPropagation()">
       <button onclick="closeShoppingFormModal()" style="position:absolute; top:12px; right:12px; background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
       <h3 id="shopping-form-title" style="margin-bottom:16px;">新增購物清單</h3>
-      <div id="shopping-form-list-section" style="margin-bottom:16px;">
-        <input type="text" id="shopping-form-name-input" placeholder="清單名稱" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px; box-sizing:border-box;">
+      <div style="margin-bottom:12px;">
+        <input type="text" id="shopping-form-name-input" placeholder="清單名稱（例：本週食材）" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px; box-sizing:border-box;">
       </div>
-      <div id="shopping-form-item-section" style="display:none;">
+      <div id="shopping-form-list-section">
         <div style="margin-bottom:12px;">
-          <input type="text" id="shopping-form-item-name-input" placeholder="物品名稱" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px; box-sizing:border-box;">
+          <input type="text" id="shopping-form-item-name-input" placeholder="物品名稱（例：雞胸肉）" style="width:100%; padding:12px; border:1px solid var(--color-border); border-radius:10px; box-sizing:border-box;">
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
           <div>
