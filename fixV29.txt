@@ -1,0 +1,36 @@
+我已經幫你找出 3 個深層 Bug 的根本原因！請嚴格依照以下指示修改：
+
+1. 【核心：跨日半夜的時區 Bug】
+症狀：在台灣半夜 00:00~08:00 之間新增記錄時，前端會抓到昨天的日期，導致新增的食物沒有出現在「今日紀錄」。
+修改要求：
+- 在 `src/js/dashboard-modals.js` 與 `src/utils/date.js` 中，將 `getLocalDate()` 徹底替換為以下最穩定的寫法（利用 epoch 位移）：
+  ```javascript
+  // dashboard-modals.js 寫法
+  window.getLocalDate = function() {
+    const now = new Date();
+    const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    return taiwanTime.toISOString().split('T')[0];
+  };
+
+(請同步修改 src/utils/date.js 中對應的 export function)
+
+2. 【修復 UI 誤導：加入後關閉 Modal】
+症狀：使用者在「我的最愛」點擊加入後，雖然成功寫入資料庫，但 Modal 沒有關閉，導致使用者誤以為沒加入成功。
+修改要求：在 src/js/dashboard-modals.js 的 addFoodFromDatabase、addFoodFromStats、copyFoodLog 函式的 if (result.success) 區塊內，除了 window.loadFoodLog() 之外，必須加上這行來關閉視窗：
+if (typeof window.closeFavoritesModal === 'function') window.closeFavoritesModal();
+
+3. 【修復真實照片遺失 (參數漏接) 與 CSS 破版】
+症狀：上次要求補上的 imagePath 參數完全沒有傳遞到後端，且列表排版擠壓。
+修改要求：
+
+在 src/js/dashboard-modals.js 中，將 addFoodFromDatabase、addFoodFromStats、copyFoodLog 的 function 參數加上 imagePath = null，並將 imagePath 放入 JSON.stringify 的 body 中。
+
+在 loadFavorites 與 loadRecentFoods 產生 HTML 的地方，將 image_path 當作最後一個參數傳入 onclick 事件中（例如 ${food.image_path ? '\'' + food.image_path + '\'' : 'null'}）。
+
+確保生成的列表 <img> 與 <button> 加上 flex-shrink: 0;，中間文字區塊加上 flex: 1; min-width: 0; padding-right: 12px; 避免文字過長破版。
+
+在 src/routes/food.js 的 POST /api/food/add-from-database 路由中，找到 if (name && calories !== undefined) 區塊，手動加上 imagePath: req.body.imagePath || null。
+
+請一次將以上 3 點修正完成並檢查有無遺漏！
+
+

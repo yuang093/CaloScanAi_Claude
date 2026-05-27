@@ -65,11 +65,11 @@ window.searchFoodDatabase = async function() {
           <div style="width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0;background:#f3f0f0;">
             <img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />
           </div>
-          <div style="flex:1; min-width:0;">
+          <div style="flex:1; min-width:0; padding-right:12px;">
             <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name)}</div>
             <div style="font-size:0.8rem; color:#666;">${window.escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
           </div>
-          <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat})" class="btn btn-primary btn-small">加入</button>
+          <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat})" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
         </div>
       `}).join('');
     } else if (result.success && result.data.length === 0) {
@@ -99,7 +99,10 @@ window.getLocalDate = function() {
   const now = new Date();
   const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
   const taiwanDate = new Date(utc + (8 * 60 * 60 * 1000));
-  return taiwanDate.toISOString().split('T')[0];
+  const year = taiwanDate.getUTCFullYear();
+  const month = String(taiwanDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(taiwanDate.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 window.escapeHtml = function(text) {
@@ -126,11 +129,11 @@ window.addFoodFromDatabase = async function(id, name, calories, protein, carbs, 
       alert('已加入日誌');
       window.closeBarcodeModal();
       window.loadFoodLog();
+      if (typeof window.closeFavoritesModal === 'function') window.closeFavoritesModal();
     } else {
       alert(result.error || '加入失敗');
     }
   } catch (err) {
-    alert('網路錯誤');
     console.error('Add from database error:', err);
   }
 };
@@ -152,11 +155,11 @@ window.addFoodFromStats = async function(calories, protein, carbs, fat, name, im
     if (result.success) {
       alert('已加入日誌');
       window.loadFoodLog();
+      if (typeof window.closeFavoritesModal === 'function') window.closeFavoritesModal();
     } else {
       alert(result.error || '加入失敗');
     }
   } catch (err) {
-    alert('網路錯誤');
     console.error('Add from stats error:', err);
   }
 };
@@ -210,7 +213,7 @@ window.loadFavorites = async function() {
             <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
             <div style="font-size:0.8rem; color:var(--color-text-muted);">${displaySubtitle}</div>
           </div>
-          <button onclick="${isStats ? 'window.addFoodFromStats(' + food.calories + ', ' + food.protein + ', ' + food.carbs + ', ' + food.fat + ', \'' + escapedName + '\', \'' + (food.image_path || '') + '\')' : 'window.addFoodFromDatabase(' + food.id + ', \'' + escapedName + '\', ' + (food.calories || 0) + ', ' + (food.protein || 0) + ', ' + (food.carbs || 0) + ', ' + (food.fat || 0) + ', true)'}" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
+          <button onclick="${isStats ? 'window.addFoodFromStats(' + food.calories + ', ' + food.protein + ', ' + food.carbs + ', ' + food.fat + ', \'' + escapedName + '\', ' + (food.image_path ? '\'' + food.image_path + '\'' : 'null') + ')' : 'window.addFoodFromDatabase(' + food.id + ', \'' + escapedName + '\', ' + (food.calories || 0) + ', ' + (food.protein || 0) + ', ' + (food.carbs || 0) + ', ' + (food.fat || 0) + ', true)'}" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
         </div>
       `}).join('');
     } else {
@@ -243,7 +246,7 @@ window.loadRecentFoods = async function() {
             <div style="font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${f.description || '未命名食物'}</div>
             <div style="font-size:0.8rem; color:var(--color-text-muted);">${f.calories} kcal</div>
           </div>
-          <button onclick="window.copyFoodLog(${f.id}, '${escapedName}', ${f.calories || 0}, ${f.protein || 0}, ${f.carbs || 0}, ${f.fat || 0}, '${f.image_path || ''}')" class="btn btn-secondary btn-small" style="flex-shrink:0;">加入</button>
+          <button onclick="window.copyFoodLog(${f.id}, '${escapedName}', ${f.calories || 0}, ${f.protein || 0}, ${f.carbs || 0}, ${f.fat || 0}, ${f.image_path ? '\'' + f.image_path + '\'' : 'null'})" class="btn btn-secondary btn-small" style="flex-shrink:0;">加入</button>
         </div>
       `}).join('');
     } else {
@@ -268,6 +271,7 @@ window.addFavoriteToLog = async function(favoriteId) {
     if (result.success) {
       alert('已加入日誌');
       window.loadFoodLog();
+      if (typeof window.closeFavoritesModal === 'function') window.closeFavoritesModal();
     } else {
       alert(result.error || '加入失敗');
     }
@@ -310,11 +314,11 @@ window.copyFoodLog = async function(id, name, calories, protein, carbs, fat, ima
     if (result.success) {
       alert('已加入日誌');
       window.loadFoodLog();
+      if (typeof window.closeFavoritesModal === 'function') window.closeFavoritesModal();
     } else {
       alert(result.error || '加入失敗');
     }
   } catch (err) {
-    alert('網路錯誤');
     console.error('Copy food log error:', err);
   }
 };
