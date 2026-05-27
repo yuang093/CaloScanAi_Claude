@@ -334,7 +334,7 @@ router.get('/search', authMiddleware, async (req, res) => {
 // POST /api/food/add-from-database - Add food from database to log (authenticated)
 router.post('/add-from-database', authMiddleware, async (req, res, next) => {
   try {
-    const { barcodeId, isFavorite, name, calories, protein, carbs, fat } = req.body;
+    const { barcodeId, isFavorite, name, calories, protein, carbs, fat, imagePath } = req.body;
 
     let food;
 
@@ -346,7 +346,7 @@ router.post('/add-from-database', authMiddleware, async (req, res, next) => {
         protein: protein || 0,
         carbs: carbs || 0,
         fat: fat || 0,
-        imagePath: req.body.imagePath || null
+        imagePath: imagePath || null
       };
     }
     // 從最愛新增
