@@ -717,7 +717,7 @@ export const FoodLogDB = {
     const params = [userId];
 
     if (date) {
-      query += ' AND date(datetime(created_at, "+8 hours")) = ?';
+      query += " AND date(datetime(created_at, '+8 hours')) = ?";
       params.push(date);
     }
 
@@ -725,7 +725,7 @@ export const FoodLogDB = {
     params.push(limit, offset);
 
     const logs = db.prepare(query).all(...params);
-    const countQuery = db.prepare('SELECT COUNT(*) as total FROM food_logs WHERE user_id = ?' + (date ? ' AND date(datetime(created_at, "+8 hours")) = ?' : ''));
+    const countQuery = db.prepare('SELECT COUNT(*) as total FROM food_logs WHERE user_id = ?' + (date ? " AND date(datetime(created_at, '+8 hours')) = ?" : ''));
     const count = date
       ? countQuery.get(userId, date)
       : countQuery.get(userId);
@@ -772,7 +772,7 @@ export const FoodLogDB = {
         COALESCE(SUM(fat), 0) as total_fat,
         COUNT(*) as meal_count
       FROM food_logs
-      WHERE user_id = ? AND date(datetime(created_at, "+8 hours")) = ?
+      WHERE user_id = ? AND date(datetime(created_at, '+8 hours')) = ?
     `);
     const result = stmt.get(userId, date);
     console.log('[getTodayStats] result:', result);

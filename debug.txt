@@ -1,52 +1,24 @@
-root@localhost:/opt/caloscanai_claude# docker compose logs app --tail=30
-caloscanai_app  | ⚠️ barcodes.updated_at 欄位設定警告: Cannot add a column with non-constant default
-caloscanai_app  | ⚠️ APP_URL not set, CORS is open to all origins
-caloscanai_app  | 🚀 CaloScanAi API running on port 3000
-caloscanai_app  | 📊 Health check: http://localhost:3000/health
-caloscanai_app  | file:///app/src/routes/food.js:199
-caloscanai_app  |     const barcodeEntry = db.prepare(`
-caloscanai_app  |                          ^
-caloscanai_app  | 
-caloscanai_app  | ReferenceError: db is not defined
-caloscanai_app  |     at file:///app/src/routes/food.js:199:26
-caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-caloscanai_app  |     at next (/app/node_modules/express/lib/router/route.js:149:13)
-caloscanai_app  |     at authMiddleware (file:///app/src/middleware/auth.js:37:3)
-caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-caloscanai_app  |     at next (/app/node_modules/express/lib/router/route.js:149:13)
-caloscanai_app  |     at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
-caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-caloscanai_app  |     at /app/node_modules/express/lib/router/index.js:284:15
-caloscanai_app  |     at param (/app/node_modules/express/lib/router/index.js:365:14)
-caloscanai_app  | 
-caloscanai_app  | Node.js v20.20.2
-caloscanai_app  | ⚠️ barcodes.updated_at 欄位設定警告: Cannot add a column with non-constant default
-caloscanai_app  | ⚠️ APP_URL not set, CORS is open to all origins
-caloscanai_app  | 🚀 CaloScanAi API running on port 3000
-caloscanai_app  | 📊 Health check: http://localhost:3000/health
-root@localhost:/opt/caloscanai_claude# docker compose logs -f app
-caloscanai_app  | ⚠️ barcodes.updated_at 欄位設定警告: Cannot add a column with non-constant default
-caloscanai_app  | ⚠️ APP_URL not set, CORS is open to all origins
-caloscanai_app  | 🚀 CaloScanAi API running on port 3000
-caloscanai_app  | 📊 Health check: http://localhost:3000/health
-caloscanai_app  | file:///app/src/routes/food.js:199
-caloscanai_app  |     const barcodeEntry = db.prepare(`
-caloscanai_app  |                          ^
-caloscanai_app  | 
-caloscanai_app  | ReferenceError: db is not defined
-caloscanai_app  |     at file:///app/src/routes/food.js:199:26
-caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-caloscanai_app  |     at next (/app/node_modules/express/lib/router/route.js:149:13)
-caloscanai_app  |     at authMiddleware (file:///app/src/middleware/auth.js:37:3)
-caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-caloscanai_app  |     at next (/app/node_modules/express/lib/router/route.js:149:13)
-caloscanai_app  |     at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
-caloscanai_app  |     at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-caloscanai_app  |     at /app/node_modules/express/lib/router/index.js:284:15
-caloscanai_app  |     at param (/app/node_modules/express/lib/router/index.js:365:14)
-caloscanai_app  | 
-caloscanai_app  | Node.js v20.20.2
-caloscanai_app  | ⚠️ barcodes.updated_at 欄位設定警告: Cannot add a column with non-constant default
-caloscanai_app  | ⚠️ APP_URL not set, CORS is open to all origins
-caloscanai_app  | 🚀 CaloScanAi API running on port 3000
-caloscanai_app  | 📊 Health check: http://localhost:3000/health
+root@localhost:/opt/caloscanai_claude# cd /opt/caloscanai_claude && git pull && docker restart caloscanai_app && docker logs --tail 20 caloscanai_app
+Already up to date.
+caloscanai_app
+[progress/daily] today (local): 2026-05-27
+[progress/daily] userId: 1
+[getTodayStats] date: 2026-05-27 userId: 1
+❌ Error: no such column: "+8 hours" - should this be a string literal in single-quotes?
+Stack: SqliteError: no such column: "+8 hours" - should this be a string literal in single-quotes?
+    at Database.prepare (/app/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    at Object.getTodayStats (file:///app/src/services/database.js:767:21)
+    at file:///app/src/routes/progress.js:16:34
+    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+    at next (/app/node_modules/express/lib/router/route.js:149:13)
+    at authMiddleware (file:///app/src/middleware/auth.js:37:3)
+    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+    at next (/app/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/app/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+
+SIGTERM received. Starting graceful shutdown...
+✅ HTTP server closed
+✅ Database connection closed
+👋 Shutdown complete
+root@localhost:/opt/caloscanai_claude# 
