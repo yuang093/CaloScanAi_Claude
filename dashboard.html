@@ -2856,14 +2856,93 @@
 
     async function downloadShareCard() {
       const card = document.getElementById('share-card-preview');
-      if (typeof html2canvas !== 'undefined') {
-        const canvas = await html2canvas(card, { scale: 2.5, useCORS: true, backgroundColor: null });
-        const link = document.createElement('a');
-        link.download = 'caloscanai_' + new Date().toISOString().slice(0,10) + '.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      } else {
+      if (typeof html2canvas === 'undefined') {
         alert('載入中，請稍後再試');
+        return;
+      }
+
+      // 顯示提示
+      const downloadBtn = card.closest('.modal')?.querySelector('[onclick="downloadShareCard()"]');
+      if (downloadBtn) {
+        downloadBtn.disabled = true;
+        downloadBtn.textContent = '處理中...';
+      }
+
+      try {
+        // 1. 使用 html2canvas 將卡片轉為 canvas
+        const canvas = await html2canvas(card, { scale: 2.5, useCORS: true, backgroundColor: null });
+        const dataUrl = canvas.toDataURL('image/png');
+
+        // 2. 將 dataURL 轉為 Blob
+        const blob = await (await fetch(dataUrl)).blob();
+
+        // 3. 建立 File 物件（iOS Safari 需要 File 而非 Blob）
+        const fileName = 'caloscanai_' + new Date().toISOString().slice(0,10) + '.png';
+        const file = new File([blob], fileName, { type: 'image/png' });
+
+        // 4. 檢查是否支援 Web Share API + files
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          // iOS Safari / Android Chrome 支援：使用原生分享選單
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'CaloScanAi 今日攝取',
+              text: '我的今日飲食記錄！'
+            });
+            // 分享成功
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              // 非使用者取消的錯誤，使用 fallback
+              console.error('Share failed:', err);
+              downloadViaLink(dataUrl, fileName);
+            }
+          }
+        } else if (navigator.share) {
+          // 支援 Web Share API 但不支援分享檔案（Android 某些版本）
+          // 先嘗試下載，下載失欺則使用 fallback
+          try {
+            await navigator.share({
+              title: 'CaloScanAi 今日攝取',
+              text: '我的今日飲食記錄！',
+              url: dataUrl
+            });
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              console.error('Share failed:', err);
+              downloadViaLink(dataUrl, fileName);
+            }
+          }
+        } else {
+          // 5. Fallback：傳統下載方式
+          downloadViaLink(dataUrl, fileName);
+        }
+      } catch (err) {
+        console.error('Download error:', err);
+        alert('下載失敗，請稍後再試');
+      } finally {
+        // 恢復按鈕狀態
+        if (downloadBtn) {
+          downloadBtn.disabled = false;
+          downloadBtn.textContent = '📥 下載圖片';
+        }
+      }
+    }
+
+    // Fallback 下載方式：新分頁開啟 + 提示長按儲存
+    function downloadViaLink(dataUrl, fileName) {
+      // 在新分頁開啟圖片
+      const win = window.open(dataUrl, '_blank');
+      if (win) {
+        // 顯示提示
+        setTimeout(() => {
+          alert('請長按圖片並選擇「儲存影像」將圖片存入相簿');
+        }, 500);
+      } else {
+        // 如果新分頁被阻擋，使用傳統下載連結
+        const link = document.createElement('a');
+        link.download = fileName;
+        link.href = dataUrl;
+        link.click();
       }
     }
 
