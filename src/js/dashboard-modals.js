@@ -188,7 +188,7 @@ window.loadRecentFoods = async function() {
             <div style="font-weight:500;">${f.description || '未命名食物'}</div>
             <div style="font-size:0.8rem; color:var(--color-text-muted);">${f.calories} kcal</div>
           </div>
-          <button onclick="window.copyFoodLog(${f.id})" class="btn btn-secondary btn-small">加入</button>
+          <button onclick="window.copyFoodLog(${f.id}, '${(f.description || '').replace(/'/g, "\\'")}', ${f.calories || 0}, ${f.protein || 0}, ${f.carbs || 0}, ${f.fat || 0})" class="btn btn-secondary btn-small">加入</button>
         </div>
       `).join('');
     } else {
@@ -241,7 +241,7 @@ window.removeFavorite = async function(favoriteId) {
   }
 };
 
-window.copyFoodLog = async function(id) {
+window.copyFoodLog = async function(id, name, calories, protein, carbs, fat) {
   try {
     const response = await fetch('/api/food/add-from-database', {
       method: 'POST',
@@ -249,7 +249,7 @@ window.copyFoodLog = async function(id) {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + localStorage.getItem('token')
       },
-      body: JSON.stringify({ barcodeId: id, isFavorite: true })
+      body: JSON.stringify({ name, calories, protein, carbs, fat })
     });
     const result = await response.json();
     if (result.success) {
