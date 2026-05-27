@@ -2854,7 +2854,7 @@
       document.getElementById('share-modal').style.display = 'none';
     }
 
-    // 雙軌制下載：iOS 長按 / Android&桌面 <a> 下載
+    // 新分頁下載方式：iOS/Android/桌面統一處理
     async function downloadShareCard() {
       const card = document.getElementById('share-card-preview');
       if (typeof html2canvas === 'undefined') {
@@ -2868,75 +2868,62 @@
         downloadBtn.textContent = '處理中...';
       }
 
+      // 【防擋機制】使用者點擊當下「同步」開啟新分頁
+      const newWin = window.open('', '_blank');
+      if (newWin) {
+        newWin.document.write('<meta name="viewport" content="width=device-width, initial-scale=1.0"><h3 style="text-align:center; font-family:sans-serif; margin-top:50px; color:#666;">圖片產生中，請稍候... ⏳</h3>');
+      }
+
       try {
-        // 1. html2canvas 轉 canvas
+        // 執行耗時的截圖作業
         const canvas = await html2canvas(card, { scale: 2.5, useCORS: true, backgroundColor: null });
-
-        // 2. 轉為 DataURL
         const dataUrl = canvas.toDataURL('image/png');
-        const fileName = 'caloscanai_' + new Date().toISOString().slice(0,10) + '.png';
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-        // 3. 偵測 iOS 裝置
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-        if (isIOS) {
-          // iOS：顯示長按引導 Modal
-          showSaveGuideModal(dataUrl);
+        if (newWin) {
+          // 成功開啟新分頁，替換成乾淨的儲存畫面
+          newWin.document.body.innerHTML = `
+            <div style="display:flex; flex-direction:column; align-items:center; min-height:100vh; background:#fefefe; padding:20px; font-family:sans-serif; box-sizing:border-box;">
+              <h2 style="color:#c85a3b; margin-top:10px; margin-bottom:10px;">🎉 產生完成</h2>
+              <p style="color:#333; margin-bottom:20px; font-weight:bold; text-align:center; line-height:1.5;">
+                👆 這是您的專屬卡片<br>請長按圖片並選擇「儲存影像」
+              </p>
+              <img src="${dataUrl}" style="width:100%; max-width:320px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.15); -webkit-touch-callout:default; pointer-events:auto;">
+              <button onclick="window.close()" style="margin-top:30px; padding:12px 32px; font-size:1rem; border:none; border-radius:24px; background:#e0e0e0; color:#333; cursor:pointer; font-weight:bold;">關閉本頁</button>
+            </div>
+          `;
         } else {
-          // Android / 桌面瀏覽器：直接 <a> 下載
-          const link = document.createElement('a');
-          link.download = fileName;
-          link.href = dataUrl;
-          link.click();
+          // 如果新分頁不幸被擋 (例如 IG/LINE 內建瀏覽器)
+          if (!isIOS) {
+            // 非 iOS 直接自動下載
+            const fileName = 'caloscanai_' + new Date().toISOString().slice(0,10) + '.png';
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } else {
+            // iOS 最終暴力解：覆蓋原本的畫面，逼迫畫面只剩下圖片
+            document.body.innerHTML = `
+              <div style="text-align:center; padding:30px; font-family:sans-serif; background:#fff; min-height:100vh;">
+                <h3 style="color:#c85a3b; margin-bottom:16px;">請長按下方圖片儲存</h3>
+                <img src="${dataUrl}" style="width:100%; max-width:350px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.2); -webkit-touch-callout:default;">
+                <p style="color:#888; margin-top:20px; font-size:0.9rem;">儲存完成後，請重新整理網頁即可恢復原狀</p>
+              </div>
+            `;
+          }
         }
       } catch (err) {
         console.error('Download error:', err);
-        alert('下載失敗，請稍後再試');
+        if (newWin) newWin.close();
+        alert('圖片產生失敗，請稍後再試');
       } finally {
         if (downloadBtn) {
           downloadBtn.disabled = false;
           downloadBtn.textContent = '📥 下載圖片';
         }
       }
-    }
-
-    // iOS Fallback Modal：顯示圖片 + 長按儲存提示
-    function showSaveGuideModal(dataUrl) {
-      const existing = document.getElementById('save-guide-modal');
-      if (existing) existing.remove();
-
-      const modal = document.createElement('div');
-      modal.id = 'save-guide-modal';
-      modal.style.cssText = `
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.9);
-        z-index: 99999;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        cursor: pointer;
-      `;
-
-      modal.innerHTML = `
-        <div style="background:#fff;border-radius:16px;padding:12px;max-width:100%;max-height:75vh;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.5);">
-          <img src="${dataUrl}" style="width:100%;max-width:280px;height:auto;border-radius:8px;display:block;-webkit-touch-callout:default;" alt="請長按儲存">
-        </div>
-        <div style="color:#fff;text-align:center;margin-top:24px;font-size:1.15rem;font-weight:bold;line-height:1.5;letter-spacing:1px;">
-          👆 請長按上方圖片<br>並選擇「儲存影像」
-        </div>
-        <div style="color:rgba(255,255,255,0.6);text-align:center;margin-top:16px;font-size:0.9rem;">
-          (點擊背景即可關閉)
-        </div>
-      `;
-
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.remove();
-      });
-
-      document.body.appendChild(modal);
     }
 
     async function lookupBarcode() {
