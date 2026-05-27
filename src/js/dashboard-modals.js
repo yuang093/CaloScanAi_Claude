@@ -188,7 +188,7 @@ window.loadRecentFoods = async function() {
             <div style="font-weight:500;">${f.description || '未命名食物'}</div>
             <div style="font-size:0.8rem; color:var(--color-text-muted);">${f.calories} kcal</div>
           </div>
-          <button onclick="window.copyFoodLog(${f.id})" class="btn btn-secondary btn-small">複製</button>
+          <button onclick="window.copyFoodLog(${f.id})" class="btn btn-secondary btn-small">加入</button>
         </div>
       `).join('');
     } else {
@@ -243,16 +243,20 @@ window.removeFavorite = async function(favoriteId) {
 
 window.copyFoodLog = async function(id) {
   try {
-    const response = await fetch('/api/food/copy/' + id, {
+    const response = await fetch('/api/food/add-from-database', {
       method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+      },
+      body: JSON.stringify({ barcodeId: id, isFavorite: true })
     });
     const result = await response.json();
     if (result.success) {
-      alert('已複製到日誌');
+      alert('已加入日誌');
       window.loadFoodLog();
     } else {
-      alert(result.error || '複製失敗');
+      alert(result.error || '加入失敗');
     }
   } catch (err) {
     alert('網路錯誤');
