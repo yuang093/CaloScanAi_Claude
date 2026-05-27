@@ -2854,6 +2854,7 @@
       document.getElementById('share-modal').style.display = 'none';
     }
 
+    // 雙軌制下載：iOS 長按 / Android&桌面 <a> 下載
     async function downloadShareCard() {
       const card = document.getElementById('share-card-preview');
       if (typeof html2canvas === 'undefined') {
@@ -2871,42 +2872,22 @@
         // 1. html2canvas 轉 canvas
         const canvas = await html2canvas(card, { scale: 2.5, useCORS: true, backgroundColor: null });
 
-        // 2. canvas.toBlob() 直接產生 Blob（效能更好）
-        const blob = await new Promise((resolve, reject) => {
-          canvas.toBlob(blob => {
-            if (blob) resolve(blob);
-            else reject(new Error('toBlob failed'));
-          }, 'image/png');
-        });
-
-        // 3. 建立 File 物件
+        // 2. 轉為 DataURL
+        const dataUrl = canvas.toDataURL('image/png');
         const fileName = 'caloscanai_' + new Date().toISOString().slice(0,10) + '.png';
-        const file = new File([blob], fileName, { type: 'image/png' });
 
-        // 4. 檢查 Web Share API + files 支援
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            // iOS Safari：只傳 files，不夾帶 title/text/url
-            await navigator.share({ files: [file] });
-            // 分享成功，不做任何事
-          } catch (err) {
-            // 任何錯誤都觸發 Fallback（包含 AbortError、使用者取消、分享失敗）
-            console.error('Share error:', err);
-            showSaveGuideModal(canvas);
-          }
-        } else if (navigator.share) {
-          try {
-            await navigator.share({
-              title: 'CaloScanAi 今日攝取',
-              text: '我的今日飲食記錄！'
-            });
-          } catch (err) {
-            console.error('Share error:', err);
-            showSaveGuideModal(canvas);
-          }
+        // 3. 偵測 iOS 裝置
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        if (isIOS) {
+          // iOS：顯示長按引導 Modal
+          showSaveGuideModal(dataUrl);
         } else {
-          // 環境不支援，直接 Fallback
-          showSaveGuideModal(canvas);
+          // Android / 桌面瀏覽器：直接 <a> 下載
+          const link = document.createElement('a');
+          link.download = fileName;
+          link.href = dataUrl;
+          link.click();
         }
       } catch (err) {
         console.error('Download error:', err);
@@ -2919,12 +2900,10 @@
       }
     }
 
-    // Fallback Modal：z-index:99999 + base64 DataURL 長按儲存
-    function showSaveGuideModal(canvas) {
+    // iOS Fallback Modal：顯示圖片 + 長按儲存提示
+    function showSaveGuideModal(dataUrl) {
       const existing = document.getElementById('save-guide-modal');
       if (existing) existing.remove();
-
-      const dataUrl = canvas.toDataURL('image/png');
 
       const modal = document.createElement('div');
       modal.id = 'save-guide-modal';
