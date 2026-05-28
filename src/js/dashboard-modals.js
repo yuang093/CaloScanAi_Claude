@@ -246,7 +246,7 @@ window.loadFavorites = async function() {
                   ${food.calories} kcal | 蛋白 ${food.protein}g | 碳水 ${food.carbs}g | 脂肪 ${food.fat}g
                 </div>
               </div>
-              <button onclick="window.addFoodFromStats(${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat}, '${escapedName}', '${escapedImgPath}')" class="btn btn-primary btn-small" style="flex-shrink:0; padding:6px 12px; font-size:0.75rem;">加入</button>
+              <button onclick="window.addFoodFromStats(${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat}, '${escapedName}', '${escapedImgPath}')" style="flex-shrink:0; padding:4px 10px; font-size:0.72rem; background:var(--color-primary); color:white; border:none; border-radius:6px; cursor:pointer;">加入</button>
             </div>
           </div>`;
         } else {
@@ -260,7 +260,7 @@ window.loadFavorites = async function() {
               <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
               <div style="font-size:0.8rem; color:var(--color-text-muted);">${window.escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
             </div>
-            <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0}, true, '${escapedImgPath}')" class="btn btn-primary btn-small" style="flex-shrink:0; padding:6px 12px; font-size:0.75rem;">加入</button>
+            <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0}, true, '${escapedImgPath}')" style="flex-shrink:0; padding:4px 10px; font-size:0.72rem; background:var(--color-primary); color:white; border:none; border-radius:6px; cursor:pointer;">加入</button>
           </div>`;
         }
       }).join('');
@@ -295,7 +295,7 @@ window.loadRecentFoods = async function() {
             <div style="font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${f.description || '未命名食物'}</div>
             <div style="font-size:0.8rem; color:var(--color-text-muted);">${f.calories} kcal</div>
           </div>
-          <button onclick="window.copyFoodLog(${f.id}, '${fEscapedName}', ${f.calories || 0}, ${f.protein || 0}, ${f.carbs || 0}, ${f.fat || 0}, '${fEscapedImgPath}')" class="btn btn-secondary btn-small" style="flex-shrink:0;">加入</button>
+          <button onclick="window.copyFoodLog(${f.id}, '${fEscapedName}', ${f.calories || 0}, ${f.protein || 0}, ${f.carbs || 0}, ${f.fat || 0}, '${fEscapedImgPath}')" style="flex-shrink:0; padding:4px 10px; font-size:0.72rem; background:var(--color-surface); color:var(--color-text); border:1.5px solid var(--color-border); border-radius:6px; cursor:pointer;">加入</button>
         </div>
       `}).join('');
     } else {
