@@ -674,13 +674,17 @@ router.get('/db/download', adminMiddleware, (req, res) => {
       return res.status(404).json({ error: '資料庫檔案不存在' });
     }
 
+    // 讀取檔案為緩衝區（避免 sendFile 被鎖定）
+    const fileBuffer = fs.readFileSync(dbFile);
     const filename = `caloscanai_${new Date().toISOString().slice(0, 10)}.db`;
+
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Type', 'application/x-sqlite3');
-    res.sendFile(dbFile);
+    res.setHeader('Content-Length', fileBuffer.length);
+    res.end(fileBuffer);
   } catch (error) {
     console.error('DB download error:', error);
-    res.status(500).json({ error: '下載失敗' });
+    res.status(500).json({ error: '下載失敗: ' + error.message });
   }
 });
 
