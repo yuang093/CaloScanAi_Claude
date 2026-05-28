@@ -6,9 +6,7 @@ import { getLocalDate } from '../utils/date.js';
 import db from '../services/database.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { execSync } from 'child_process';
 import fs from 'fs';
-import path from 'path';
 
 const router = express.Router();
 
@@ -573,8 +571,8 @@ router.get('/db/backup', adminMiddleware, (req, res) => {
     const filename = `caloscanai_${dateStr}.db`;
     const destPath = join(backupDir, filename);
 
-    // 使用 shell 執行 SQLite VACUUM INTO 確保備份完整性
-    execSync(`sqlite3 "${dbFile}" ".backup '${destPath}'"`, { stdio: 'pipe' });
+    // 使用 Node.js 直接複製檔案（無需 sqlite3 CLI）
+    fs.copyFileSync(dbFile, destPath);
 
     const stats = fs.statSync(destPath);
     const backups = fs.readdirSync(backupDir).filter(f => f.endsWith('.db')).sort().reverse();
@@ -632,10 +630,11 @@ router.post('/db/restore/:filename', adminMiddleware, (req, res) => {
     }
 
     // 先備份當前資料庫（以防萬一）
+    fs.mkdirSync(backupDir, { recursive: true });
     const backupName = `before_restore_${Date.now()}.db`;
-    execSync(`sqlite3 "${dbFile}" ".backup '${join(backupDir, backupName)}'"`, { stdio: 'pipe' });
+    fs.copyFileSync(dbFile, join(backupDir, backupName));
 
-    // 關閉資料庫連接（讓 Docker 容器可以複製檔案）
+    // 關閉資料庫連接
     db.close();
 
     // 複製備份檔案到資料庫位置
@@ -682,7 +681,7 @@ router.post('/db/upload', adminMiddleware, (req, res) => {
     // 先備份當前資料庫
     fs.mkdirSync(backupDir, { recursive: true });
     const backupName = `before_upload_${Date.now()}.db`;
-    execSync(`sqlite3 "${dbFile}" ".backup '${join(backupDir, backupName)}'"`, { stdio: 'pipe' });
+    fs.copyFileSync(dbFile, join(backupDir, backupName));
 
     // 關閉資料庫連接
     db.close();
