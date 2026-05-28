@@ -284,6 +284,7 @@ window.loadHistoryData = async function(period) {
     if (period === 'monthly') days = 30;
     if (period === '90days') days = 90;
 
+    const endDate = new Date();
     const startDateObj = new Date();
     startDateObj.setDate(startDateObj.getDate() - days);
 
