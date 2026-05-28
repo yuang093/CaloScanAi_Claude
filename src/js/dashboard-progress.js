@@ -383,8 +383,11 @@ window.exportHistoryCSV = async function() {
       const day = String(taiwan.getDate()).padStart(2, '0');
       return `${y}-${m}-${day}`;
     };
-    const endDateStr = toLocalDateStr(endDate);
-    const startDateStr = toLocalDateStr(startDate);
+    const endDateObj = new Date();
+    const startDateObj = new Date();
+    startDateObj.setDate(startDateObj.getDate() - days);
+    const endDateStr = toLocalDateStr(endDateObj);
+    const startDateStr = toLocalDateStr(startDateObj);
 
     const response = await fetch('/api/progress/history?startDate=' + startDateStr + '&endDate=' + endDateStr + '&limit=' + days, {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
@@ -424,8 +427,11 @@ window.exportHistoryPDF = async function() {
       const day = String(taiwan.getDate()).padStart(2, '0');
       return `${y}-${m}-${day}`;
     };
-    const endDateStr = toLocalDateStr(endDate);
-    const startDateStr = toLocalDateStr(startDate);
+    const endDateObj = new Date();
+    const startDateObj = new Date();
+    startDateObj.setDate(startDateObj.getDate() - days);
+    const endDateStr = toLocalDateStr(endDateObj);
+    const startDateStr = toLocalDateStr(startDateObj);
 
     const response = await fetch('/api/progress/history?startDate=' + startDateStr + '&endDate=' + endDateStr + '&limit=' + days, {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
