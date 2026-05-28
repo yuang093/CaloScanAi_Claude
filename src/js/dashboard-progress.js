@@ -284,13 +284,21 @@ window.loadHistoryData = async function(period) {
     if (period === 'monthly') days = 30;
     if (period === '90days') days = 90;
 
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    const startDateObj = new Date();
+    startDateObj.setDate(startDateObj.getDate() - days);
 
-    const formatDate = (d) => d.toISOString().split('T')[0];
+    const toLocalDateStr = (d) => {
+      const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+      const taiwan = new Date(utc + (8 * 60 * 60 * 1000));
+      const y = taiwan.getFullYear();
+      const m = String(taiwan.getMonth() + 1).padStart(2, '0');
+      const day = String(taiwan.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    const endDateStr = toLocalDateStr(endDate);
+    const startDateStr = toLocalDateStr(startDateObj);
 
-    const response = await fetch('/api/progress/history?startDate=' + formatDate(startDate) + '&endDate=' + formatDate(endDate) + '&limit=' + days, {
+    const response = await fetch('/api/progress/history?startDate=' + startDateStr + '&endDate=' + endDateStr + '&limit=' + days, {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     });
     const result = await response.json();
@@ -366,12 +374,18 @@ window.loadHistoryData = async function(period) {
 window.exportHistoryCSV = async function() {
   try {
     let days = 30;
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    const formatDate = (d) => d.toISOString().split('T')[0];
+    const toLocalDateStr = (d) => {
+      const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+      const taiwan = new Date(utc + (8 * 60 * 60 * 1000));
+      const y = taiwan.getFullYear();
+      const m = String(taiwan.getMonth() + 1).padStart(2, '0');
+      const day = String(taiwan.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    const endDateStr = toLocalDateStr(endDate);
+    const startDateStr = toLocalDateStr(startDate);
 
-    const response = await fetch('/api/progress/history?startDate=' + formatDate(startDate) + '&endDate=' + formatDate(endDate) + '&limit=' + days, {
+    const response = await fetch('/api/progress/history?startDate=' + startDateStr + '&endDate=' + endDateStr + '&limit=' + days, {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     });
     const result = await response.json();
@@ -390,7 +404,7 @@ window.exportHistoryCSV = async function() {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'caloscanai_history_' + formatDate(endDate) + '.csv';
+    link.download = 'caloscanai_history_' + endDateStr + '.csv';
     link.click();
   } catch (error) {
     console.error('Export CSV error:', error);
@@ -401,12 +415,18 @@ window.exportHistoryCSV = async function() {
 window.exportHistoryPDF = async function() {
   try {
     let days = 30;
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    const formatDate = (d) => d.toISOString().split('T')[0];
+    const toLocalDateStr = (d) => {
+      const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+      const taiwan = new Date(utc + (8 * 60 * 60 * 1000));
+      const y = taiwan.getFullYear();
+      const m = String(taiwan.getMonth() + 1).padStart(2, '0');
+      const day = String(taiwan.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    const endDateStr = toLocalDateStr(endDate);
+    const startDateStr = toLocalDateStr(startDate);
 
-    const response = await fetch('/api/progress/history?startDate=' + formatDate(startDate) + '&endDate=' + formatDate(endDate) + '&limit=' + days, {
+    const response = await fetch('/api/progress/history?startDate=' + startDateStr + '&endDate=' + endDateStr + '&limit=' + days, {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     });
     const result = await response.json();
@@ -422,6 +442,9 @@ window.exportHistoryPDF = async function() {
     const avgPro = Math.round(records.reduce((sum, r) => sum + r.total_protein, 0) / records.length * 10) / 10;
     const avgCarbs = Math.round(records.reduce((sum, r) => sum + r.total_carbs, 0) / records.length * 10) / 10;
     const avgFat = Math.round(records.reduce((sum, r) => sum + r.total_fat, 0) / records.length * 10) / 10;
+
+    const safeDate = (d) => d == null ? '' : String(d).replace(/</g, '<').replace(/>/g, '>');
+    const safeNum = (n) => n == null ? 0 : (isNaN(n) ? 0 : Number(n));
 
     // Create printable HTML and open in new window
     const win = window.open('', '_blank');
@@ -446,10 +469,10 @@ window.exportHistoryPDF = async function() {
         </style>
       </head>
       <body>
-        <h1>🥗 CaloScanAi 健康報表</h1>
-        <p>報表日期：${formatDate(endDate)}</p>
+        <h1>CaloScanAi 健康報表</h1>
+        <p>報表日期：${endDateStr}</p>
 
-        <h2>📊 統計摘要</h2>
+        <h2>統計摘要</h2>
         <div class="summary">
           <div class="summary-item">
             <h3>${avgCal}</h3>
@@ -483,11 +506,11 @@ window.exportHistoryPDF = async function() {
           <tbody>
             ${records.map(r => `
               <tr>
-                <td>${r.date}</td>
-                <td>${r.total_calories}</td>
-                <td>${r.total_protein}</td>
-                <td>${r.total_carbs}</td>
-                <td>${r.total_fat}</td>
+                <td>${safeDate(r.date)}</td>
+                <td>${safeNum(r.total_calories)}</td>
+                <td>${safeNum(r.total_protein)}</td>
+                <td>${safeNum(r.total_carbs)}</td>
+                <td>${safeNum(r.total_fat)}</td>
               </tr>
             `).join('')}
           </tbody>

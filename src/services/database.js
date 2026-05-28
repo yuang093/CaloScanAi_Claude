@@ -891,7 +891,7 @@ export const DailyProgressDB = {
     const merged = [...progressRecords];
 
     foodLogsStats.forEach(fl => {
-      const d = fl.date instanceof Date ? fl.date.toISOString().split('T')[0] : fl.date;
+      const d = fl.date; // SQLite datetime already returns string in YYYY-MM-DD format
       if (!progressDates.has(d)) {
         merged.push({
           user_id: userId,
@@ -900,7 +900,7 @@ export const DailyProgressDB = {
           total_protein: fl.total_protein,
           total_carbs: fl.total_carbs,
           total_fat: fl.total_fat,
-          goal_calories: 2000,
+          goal_calories: fl.goal_calories ?? 2000,
           meal_count: fl.meal_count
         });
         progressDates.add(d);

@@ -344,15 +344,19 @@ window.renderFoodLog = function() {
     return;
   }
 
-  container.innerHTML = window.foodLog.map(item => `
+  container.innerHTML = window.foodLog.map(item => {
+    const safeName = item.name
+      ? String(item.name).replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>')
+      : '未命名';
+    return `
     <div class="food-log-item" onclick="window.showFoodDetail(${item.id})" style="cursor:pointer;">
       <img class="food-log-img" src="${item.image}" alt="${item.name}">
       <div class="food-log-info">
-        <div class="food-log-name" style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.name || '未命名'}</div>
+        <div class="food-log-name" style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${safeName}</div>
         <div class="food-log-time">${item.time}</div>
       </div>
     </div>
-  `).join('');
+  `;}).join('');
 };
 
 window.updateProgressTotals = function(goalCalories = 2000) {
