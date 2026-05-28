@@ -212,7 +212,8 @@ window.fetchProgressData = async function() {
       window.generateRecommendation(stats, goalCalories, profileResult.data);
     }
   } catch (error) {
-    console.error('Failed to fetch progress:', error);
+    console.error("Failed to fetch progress:", error);
+    const progressPage = document.getElementById("progress-page"); if (progressPage && progressPage.style.display !== "none") { const errorDiv = document.getElementById("progress-error") || (function() { const d = document.createElement("div"); d.id = "progress-error"; d.style.cssText = "color:#721c24;background:#f8d7da;border:1px solid #f5c6cb;padding:12px;border-radius:8px;margin:16px 0;"; d.textContent = "載入進度失敗，請稍後再試"; progressPage.prepend(d); return d; })(); errorDiv.style.display = "block"; }
   }
 };
 
