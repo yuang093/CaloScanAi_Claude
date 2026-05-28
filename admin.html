@@ -1084,9 +1084,13 @@
 
         if (result.success && result.data.length > 0) {
           container.innerHTML = result.data.map(b => `
-            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee;">
-              <span>📁 ${b.filename}</span>
-              <span style="color:#666;">${(b.size/1024/1024).toFixed(2)} MB</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #eee;">
+              <div>
+                <span>📁 ${b.filename}</span>
+                <span style="color:#666; margin-left:12px;">${(b.size/1024/1024).toFixed(2)} MB</span>
+                <span style="color:#999; font-size:0.8rem; margin-left:12px;">${new Date(b.createdAt).toLocaleString('zh-TW', {timeZone:'Asia/Taipei'})}</span>
+              </div>
+              <button onclick="deleteVpsBackup('${b.filename}')" style="padding:4px 10px; font-size:0.72rem; background:#e74c3c; color:white; border:none; border-radius:6px; cursor:pointer;">刪除</button>
             </div>
           `).join('');
           select.innerHTML = '<option value="">-- 選擇備份檔案 --</option>' +
@@ -1096,6 +1100,24 @@
         }
       } catch (error) {
         document.getElementById('vps-backup-list').innerHTML = '<span style="color:red;">載入失敗</span>';
+      }
+    }
+
+    async function deleteVpsBackup(filename) {
+      if (!confirm('確定要刪除備份檔案 ' + filename + ' 嗎？')) return;
+      try {
+        const response = await fetch('/api/admin/db/' + filename, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+        if (result.success) {
+          listVpsBackups();
+        } else {
+          alert(result.error || '刪除失敗');
+        }
+      } catch (error) {
+        alert('刪除失敗');
       }
     }
 

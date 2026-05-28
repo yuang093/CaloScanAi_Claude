@@ -634,10 +634,7 @@ router.post('/db/restore/:filename', adminMiddleware, (req, res) => {
     const backupName = `before_restore_${Date.now()}.db`;
     fs.copyFileSync(dbFile, join(backupDir, backupName));
 
-    // 關閉資料庫連接
-    db.close();
-
-    // 複製備份檔案到資料庫位置
+    // 複製備份檔案到資料庫位置（不關閉連接，讓 better-sqlite3 自行處理）
     fs.copyFileSync(srcPath, dbFile);
 
     res.json({
@@ -647,6 +644,25 @@ router.post('/db/restore/:filename', adminMiddleware, (req, res) => {
   } catch (error) {
     console.error('DB restore error:', error);
     res.status(500).json({ error: '還原失敗: ' + error.message });
+  }
+});
+
+// DELETE /api/admin/db/:filename - 刪除 VPS 備份
+router.delete('/db/:filename', adminMiddleware, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_.\-:]/g, '');
+    const filePath = join(backupDir, safeFilename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: '備份檔案不存在' });
+    }
+
+    fs.unlinkSync(filePath);
+    res.json({ success: true, message: '刪除成功' });
+  } catch (error) {
+    console.error('Delete backup error:', error);
+    res.status(500).json({ error: '刪除失敗: ' + error.message });
   }
 });
 
