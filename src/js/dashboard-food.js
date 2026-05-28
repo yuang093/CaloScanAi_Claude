@@ -165,6 +165,30 @@ window.analyzeImage = async function() {
   btn.innerHTML = '<span class="loading-spinner"></span> 分析中...';
 
   try {
+    // 嘗試使用 TensorFlow 分類器（快速路徑）
+    const previewImg = document.getElementById('preview-image');
+    if (previewImg) {
+      const tfResult = await window.classifyFoodWithTF(previewImg);
+      if (tfResult && tfResult.confidence >= 0.7) {
+        // TF 分類器高置信度，直接使用快取結果
+        console.log('[Food] Quick match from TF classifier:', tfResult.label);
+        window.analysisData = {
+          name: tfResult.label,
+          totalCalories: 0,
+          totalProtein: 0,
+          totalCarbs: 0,
+          totalFat: 0,
+          description: '（快速匹配）',
+          isQuickMatch: true,
+          tfConfidence: tfResult.confidence
+        };
+        window.displayAnalysisResult(window.analysisData);
+        btn.disabled = false;
+        btn.textContent = '分析食物';
+        return;
+      }
+    }
+
     const base64Data = window.currentPreview.replace(/^data:image\/\w+;base64,/, '');
 
     const res = await fetch('/api/food/analyze', {
@@ -307,6 +331,14 @@ window.addToFoodLog = async function() {
 
     const result = await res.json();
     if (result.success) {
+      // 如果是快速匹配（TF分類器），訓練分類器
+      if (window.analysisData.isQuickMatch && window.analysisData.name) {
+        const previewImg = document.getElementById('preview-image');
+        if (previewImg) {
+          window.trainFoodClassifier(previewImg, window.analysisData.name);
+        }
+      }
+
       const entry = {
         id: result.data.id,
         image: window.currentPreview,
