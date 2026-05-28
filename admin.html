@@ -456,47 +456,75 @@
     <div id="backup-tab" class="tab-content" style="display:none;">
       <div class="section">
         <div class="section-header">
-          <h2 class="section-title">資料庫備份</h2>
+          <h2 class="section-title">備份管理</h2>
         </div>
 
-        <!-- 資料庫檔案備份 -->
+        <!-- ========== 資料庫備份（只有 .db）========== -->
         <div style="background:var(--color-surface,#fff); padding:24px; border-radius:12px; margin-bottom:20px;">
-          <h4 style="margin-bottom:16px;">💾 資料庫檔案備份（SQLite .db）</h4>
-          <p style="color:var(--color-text-muted,#666); margin-bottom:16px; font-size:0.9rem;">
-            備份完整的 SQLite 資料庫檔案，可以直接在任何 CaloScanAi 環境還原。
+          <h4 style="margin-bottom:8px;">🗄️ 資料庫備份（不含照片）</h4>
+          <p style="color:var(--color-text-muted,#666); margin-bottom:16px; font-size:0.85rem;">
+            僅備份 SQLite 資料庫，適用於快速转移设定。
           </p>
-          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
             <button onclick="backupDbToVps()" class="btn btn-primary">備份到 VPS</button>
             <button onclick="downloadDbToPc()" class="btn btn-secondary">下載到電腦</button>
             <button onclick="listVpsBackups()" class="btn btn-secondary">查看 VPS 備份</button>
           </div>
-          <div id="db-backup-status" style="margin-top:12px;"></div>
-        </div>
+          <div id="db-backup-status" style="margin-bottom:12px;"></div>
 
-        <!-- VPS 備份列表 -->
-        <div style="background:var(--color-surface,#fff); padding:24px; border-radius:12px; margin-bottom:20px;">
-          <h4 style="margin-bottom:16px;">🗂️ VPS 備份列表</h4>
-          <div id="vps-backup-list" style="max-height:300px; overflow-y:auto;">
-            <div style="color:#999; text-align:center; padding:20px;">點擊「查看 VPS 備份」載入列表</div>
+          <!-- DB 列表 -->
+          <div id="vps-backup-list" style="max-height:250px; overflow-y:auto;"></div>
+
+          <!-- DB 還原 -->
+          <div style="display:flex; gap:12px; align-items:center; margin-top:12px; flex-wrap:wrap;">
+            <select id="vps-backup-select" style="padding:10px; border-radius:8px; border:1.5px solid var(--color-border); flex:1; min-width:200px;">
+              <option value="">-- 選擇 DB 檔案 --</option>
+            </select>
+            <button onclick="restoreFromVps()" class="btn btn-primary">還原 DB</button>
+          </div>
+          <div id="vps-restore-status" style="margin-top:8px;"></div>
+
+          <!-- DB 上傳還原 -->
+          <div style="margin-top:16px; padding-top:16px; border-top:1px dashed #ddd;">
+            <p style="color:var(--color-text-muted,#666); font-size:0.85rem; margin-bottom:8px;">從電腦上傳 .db 檔案還原：</p>
+            <input type="file" id="db-upload-input" accept=".db" style="display:none;" onchange="uploadDbFromPc(event)">
+            <button onclick="document.getElementById('db-upload-input').click()" class="btn btn-secondary">選擇 .db 檔案上傳還原</button>
+            <div id="db-upload-status" style="margin-top:8px;"></div>
           </div>
         </div>
 
-        <!-- 還原資料庫 -->
+        <!-- ========== 完整備份（資料庫 + 照片）========== -->
         <div style="background:var(--color-surface,#fff); padding:24px; border-radius:12px; margin-bottom:20px;">
-          <h4 style="margin-bottom:16px;">🔄 從 VPS 還原</h4>
-          <select id="vps-backup-select" style="padding:10px; border-radius:8px; border:1.5px solid var(--color-border); margin-bottom:12px; width:100%;">
-            <option value="">-- 選擇備份檔案 --</option>
-          </select>
-          <button onclick="restoreFromVps()" class="btn btn-primary">還原選中的備份</button>
-          <div id="vps-restore-status" style="margin-top:12px;"></div>
-        </div>
+          <h4 style="margin-bottom:8px;">📦 完整備份（資料庫 + 照片）</h4>
+          <p style="color:var(--color-text-muted,#666); margin-bottom:16px; font-size:0.85rem;">
+            備份資料庫和上傳的照片，適合完整遷移或災難復原。
+          </p>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+            <button onclick="backupFullToVps()" class="btn btn-primary">備份到 VPS</button>
+            <button onclick="downloadFullToPc()" class="btn btn-secondary">下載到電腦</button>
+            <button onclick="listFullBackups()" class="btn btn-secondary">查看完整備份</button>
+          </div>
+          <div id="full-backup-status" style="margin-bottom:12px;"></div>
 
-        <!-- 上傳還原 -->
-        <div style="background:var(--color-surface,#fff); padding:24px; border-radius:12px;">
-          <h4 style="margin-bottom:16px;">📁 從電腦上傳還原</h4>
-          <input type="file" id="db-upload-input" accept=".db" style="display:none;" onchange="uploadDbFromPc(event)">
-          <button onclick="document.getElementById('db-upload-input').click()" class="btn btn-secondary">選擇 .db 檔案</button>
-          <div id="db-upload-status" style="margin-top:12px;"></div>
+          <!-- 完整備份列表 -->
+          <div id="vps-full-list" style="max-height:250px; overflow-y:auto;"></div>
+
+          <!-- 完整備份還原 -->
+          <div style="display:flex; gap:12px; align-items:center; margin-top:12px; flex-wrap:wrap;">
+            <select id="vps-full-select" style="padding:10px; border-radius:8px; border:1.5px solid var(--color-border); flex:1; min-width:200px;">
+              <option value="">-- 選擇完整備份 --</option>
+            </select>
+            <button onclick="restoreFromVpsFull()" class="btn btn-primary">還原完整備份</button>
+          </div>
+          <div id="vps-full-restore-status" style="margin-top:8px;"></div>
+
+          <!-- 完整備份上傳還原 -->
+          <div style="margin-top:16px; padding-top:16px; border-top:1px dashed #ddd;">
+            <p style="color:var(--color-text-muted,#666); font-size:0.85rem; margin-bottom:8px;">從電腦上傳完整備份（.zip）還原：</p>
+            <input type="file" id="full-upload-input" accept=".zip" style="display:none;" onchange="uploadFullFromPc(event)">
+            <button onclick="document.getElementById('full-upload-input').click()" class="btn btn-secondary">選擇 .zip 檔案上傳還原</button>
+            <div id="full-upload-status" style="margin-top:8px;"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1176,6 +1204,163 @@
         }
       } catch (error) {
         document.getElementById('db-upload-status').innerHTML = '<span style="color:red;">❌ 上傳失敗</span>';
+      }
+      event.target.value = '';
+    }
+
+    // ============ 完整備份功能（資料庫 + 照片）===========
+
+    async function backupFullToVps() {
+      try {
+        document.getElementById('full-backup-status').innerHTML = '<span style="color:#666;">備份中（可能需要幾分鐘）...</span>';
+        const response = await fetch('/api/admin/full/backup', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+        if (result.success) {
+          document.getElementById('full-backup-status').innerHTML = '<span style="color:green;">✅ ' + result.message + '</span>';
+          listFullBackups();
+        } else {
+          document.getElementById('full-backup-status').innerHTML = '<span style="color:red;">❌ ' + result.error + '</span>';
+        }
+      } catch (error) {
+        document.getElementById('full-backup-status').innerHTML = '<span style="color:red;">❌ 備份失敗</span>';
+      }
+    }
+
+    async function downloadFullToPc() {
+      const filename = document.getElementById('vps-full-select').value;
+      if (!filename) {
+        alert('請先在下方選擇要下載的完整備份');
+        return;
+      }
+      try {
+        document.getElementById('full-backup-status').innerHTML = '<span style="color:#666;">下載中...</span>';
+        const response = await fetch('/api/admin/full/download/' + filename, {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          document.getElementById('full-backup-status').innerHTML = '<span style="color:green;">✅ 下載成功</span>';
+        } else {
+          document.getElementById('full-backup-status').innerHTML = '<span style="color:red;">❌ 下載失敗</span>';
+        }
+      } catch (error) {
+        document.getElementById('full-backup-status').innerHTML = '<span style="color:red;">❌ 下載失敗</span>';
+      }
+    }
+
+    async function listFullBackups() {
+      try {
+        const response = await fetch('/api/admin/full/list', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+        const container = document.getElementById('vps-full-list');
+        const select = document.getElementById('vps-full-select');
+
+        if (result.success && result.data.length > 0) {
+          container.innerHTML = result.data.map(b => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #eee;">
+              <div>
+                <span>📦 ${b.filename}</span>
+                <span style="color:#666; margin-left:12px;">${(b.size/1024/1024).toFixed(2)} MB</span>
+                <span style="color:#999; font-size:0.8rem; margin-left:12px;">${new Date(b.createdAt).toLocaleString('zh-TW', {timeZone:'Asia/Taipei'})}</span>
+              </div>
+              <button onclick="deleteFullBackup('${b.filename}')" style="padding:4px 10px; font-size:0.72rem; background:#e74c3c; color:white; border:none; border-radius:6px; cursor:pointer;">刪除</button>
+            </div>
+          `).join('');
+          select.innerHTML = '<option value="">-- 選擇完整備份 --</option>' +
+            result.data.map(b => `<option value="${b.filename}">${b.filename}</option>`).join('');
+        } else {
+          container.innerHTML = '<div style="color:#999; text-align:center; padding:20px;">尚無完整備份</div>';
+        }
+      } catch (error) {
+        document.getElementById('vps-full-list').innerHTML = '<span style="color:red;">載入失敗</span>';
+      }
+    }
+
+    async function deleteFullBackup(filename) {
+      if (!confirm('確定要刪除完整備份 ' + filename + ' 嗎？')) return;
+      try {
+        const response = await fetch('/api/admin/full/' + filename, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+        if (result.success) {
+          listFullBackups();
+        } else {
+          alert(result.error || '刪除失敗');
+        }
+      } catch (error) {
+        alert('刪除失敗');
+      }
+    }
+
+    async function restoreFromVpsFull() {
+      const filename = document.getElementById('vps-full-select').value;
+      if (!filename) {
+        alert('請選擇要還原的完整備份');
+        return;
+      }
+      if (!confirm('確定要還原嗎？會同時還原資料庫和照片，目前資料會先自動備份。')) return;
+
+      try {
+        document.getElementById('vps-full-restore-status').innerHTML = '<span style="color:#666;">還原中（可能需要幾分鐘）...</span>';
+        const response = await fetch('/api/admin/full/restore/' + filename, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+        if (result.success) {
+          document.getElementById('vps-full-restore-status').innerHTML = '<span style="color:green;">✅ ' + result.message + '</span>';
+        } else {
+          document.getElementById('vps-full-restore-status').innerHTML = '<span style="color:red;">❌ ' + result.error + '</span>';
+        }
+      } catch (error) {
+        document.getElementById('vps-full-restore-status').innerHTML = '<span style="color:red;">❌ 還原失敗</span>';
+      }
+    }
+
+    async function uploadFullFromPc(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!confirm('確定要還原嗎？會同時還原資料庫和照片，目前資料會先自動備份。')) {
+        event.target.value = '';
+        return;
+      }
+
+      try {
+        document.getElementById('full-upload-status').innerHTML = '<span style="color:#666;">上傳中（可能需要幾分鐘）...</span>';
+        const arrayBuffer = await file.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+        const response = await fetch('/api/admin/full/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify({ zipData: base64 })
+        });
+        const result = await response.json();
+        if (result.success) {
+          document.getElementById('full-upload-status').innerHTML = '<span style="color:green;">✅ ' + result.message + '</span>';
+        } else {
+          document.getElementById('full-upload-status').innerHTML = '<span style="color:red;">❌ ' + result.error + '</span>';
+        }
+      } catch (error) {
+        document.getElementById('full-upload-status').innerHTML = '<span style="color:red;">❌ 上傳失敗</span>';
       }
       event.target.value = '';
     }

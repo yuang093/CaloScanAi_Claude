@@ -553,6 +553,8 @@ const __dirname = dirname(__filename);
 // 取得實際的 data 目錄路徑（從 server/index.js 往上两级）
 const dataDir = join(process.cwd(), 'data');
 const backupDir = join(dataDir, 'backups/db'); // 放在 data volume 內
+const uploadsDir = join(process.cwd(), 'uploads'); // 上傳照片目錄
+const fullBackupDir = join(dataDir, 'backups/full'); // 完整備份目錄
 
 // GET /api/admin/db/backup - 備份資料庫到 VPS
 router.get('/db/backup', adminMiddleware, (req, res) => {
@@ -703,9 +705,6 @@ router.post('/db/upload', adminMiddleware, (req, res) => {
     const backupName = `before_upload_${Date.now()}.db`;
     fs.copyFileSync(dbFile, join(backupDir, backupName));
 
-    // 關閉資料庫連接
-    db.close();
-
     // 寫入新資料庫檔案
     fs.writeFileSync(dbFile, buffer);
 
@@ -718,5 +717,250 @@ router.post('/db/upload', adminMiddleware, (req, res) => {
     res.status(500).json({ error: '上傳失敗: ' + error.message });
   }
 });
+
+// ==================== 完整備份（資料庫 + 照片）====================
+
+// GET /api/admin/full/backup - 完整備份到 VPS（資料庫 + 照片）
+router.get('/full/backup', adminMiddleware, (req, res) => {
+  try {
+    const dbFile = join(dataDir, 'caloscanai.db');
+    if (!fs.existsSync(dbFile)) {
+      return res.status(404).json({ error: '資料庫檔案不存在' });
+    }
+
+    fs.mkdirSync(fullBackupDir, { recursive: true });
+    fs.mkdirSync(backupDir, { recursive: true });
+
+    const date = new Date();
+    const dateStr = date.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const backupName = `full_backup_${dateStr}`;
+    const backupFolder = join(fullBackupDir, backupName);
+    fs.mkdirSync(backupFolder, { recursive: true });
+
+    // 複製資料庫
+    fs.copyFileSync(dbFile, join(backupFolder, 'caloscanai.db'));
+
+    // 複製照片目錄
+    if (fs.existsSync(uploadsDir)) {
+      copyDirRecursive(uploadsDir, join(backupFolder, 'uploads'));
+    }
+
+    // 壓縮成 zip
+    const { execSync } = require('child_process');
+    const zipPath = join(fullBackupDir, backupName + '.zip');
+    execSync(`cd "${fullBackupDir}" && zip -r "${backupName}.zip" "${backupName}"`, { stdio: 'pipe' });
+
+    // 刪除未壓縮的資料夾
+    fs.rmSync(backupFolder, { recursive: true });
+
+    const stats = fs.statSync(zipPath);
+    const backups = fs.readdirSync(fullBackupDir).filter(f => f.endsWith('.zip')).sort().reverse();
+
+    res.json({
+      success: true,
+      message: '完整備份成功（資料庫 + 照片）',
+      data: {
+        filename: backupName + '.zip',
+        size: stats.size,
+        createdAt: stats.mtime.toISOString(),
+        backups: backups.slice(0, 10)
+      }
+    });
+  } catch (error) {
+    console.error('Full backup error:', error);
+    res.status(500).json({ error: '完整備份失敗: ' + error.message });
+  }
+});
+
+// GET /api/admin/full/list - 列出 VPS 完整備份
+router.get('/full/list', adminMiddleware, (req, res) => {
+  try {
+    fs.mkdirSync(fullBackupDir, { recursive: true });
+    const backups = fs.readdirSync(fullBackupDir)
+      .filter(f => f.endsWith('.zip'))
+      .map(f => {
+        const stats = fs.statSync(join(fullBackupDir, f));
+        return {
+          filename: f,
+          size: stats.size,
+          createdAt: stats.mtime.toISOString()
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({ success: true, data: backups });
+  } catch (error) {
+    console.error('List full backups error:', error);
+    res.status(500).json({ error: '取得備份列表失敗' });
+  }
+});
+
+// GET /api/admin/full/download/:filename - 下載完整備份到電腦
+router.get('/full/download/:filename', adminMiddleware, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_.\-:]/g, '');
+    const filePath = join(fullBackupDir, safeFilename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: '備份檔案不存在' });
+    }
+
+    const fileBuffer = fs.readFileSync(filePath);
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Length', fileBuffer.length);
+    res.end(fileBuffer);
+  } catch (error) {
+    console.error('Full backup download error:', error);
+    res.status(500).json({ error: '下載失敗' });
+  }
+});
+
+// POST /api/admin/full/restore/:filename - 從 VPS 完整備份還原
+router.post('/full/restore/:filename', adminMiddleware, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_.\-:]/g, '');
+    const zipPath = join(fullBackupDir, safeFilename);
+
+    if (!fs.existsSync(zipPath)) {
+      return res.status(404).json({ error: '備份檔案不存在' });
+    }
+
+    fs.mkdirSync(fullBackupDir, { recursive: true });
+    fs.mkdirSync(backupDir, { recursive: true });
+
+    // 備份當前
+    fs.copyFileSync(join(dataDir, 'caloscanai.db'), join(backupDir, `before_full_restore_${Date.now()}.db`));
+
+    // 解壓縮到暫存目錄
+    const { execSync } = require('child_process');
+    const extractDir = join(fullBackupDir, 'temp_restore_' + Date.now());
+    fs.mkdirSync(extractDir, { recursive: true });
+    execSync(`unzip -o "${zipPath}" -d "${extractDir}"`, { stdio: 'pipe' });
+
+    // 找到解壓出來的資料夾
+    const extractedFolders = fs.readdirSync(extractDir).filter(f => fs.statSync(join(extractDir, f)).isDirectory());
+    if (extractedFolders.length === 0) {
+      throw new Error('解壓縮失敗：找不到資料夾');
+    }
+    const extractedDir = join(extractDir, extractedFolders[0]);
+
+    // 複製資料庫
+    const restoreDb = join(extractedDir, 'caloscanai.db');
+    if (fs.existsSync(restoreDb)) {
+      fs.copyFileSync(restoreDb, join(dataDir, 'caloscanai.db'));
+    }
+
+    // 複製照片
+    const restoreUploads = join(extractedDir, 'uploads');
+    if (fs.existsSync(restoreUploads)) {
+      copyDirRecursive(restoreUploads, uploadsDir);
+    }
+
+    // 清理暫存
+    fs.rmSync(extractDir, { recursive: true });
+
+    res.json({
+      success: true,
+      message: '完整還原成功（資料庫 + 照片），已自動備份當前資料'
+    });
+  } catch (error) {
+    console.error('Full restore error:', error);
+    res.status(500).json({ error: '完整還原失敗: ' + error.message });
+  }
+});
+
+// DELETE /api/admin/full/:filename - 刪除 VPS 完整備份
+router.delete('/full/:filename', adminMiddleware, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_.\-:]/g, '');
+    const filePath = join(fullBackupDir, safeFilename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: '備份檔案不存在' });
+    }
+
+    fs.unlinkSync(filePath);
+    res.json({ success: true, message: '刪除成功' });
+  } catch (error) {
+    console.error('Delete full backup error:', error);
+    res.status(500).json({ error: '刪除失敗: ' + error.message });
+  }
+});
+
+// POST /api/admin/full/upload - 上傳完整備份還原（ZIP，含資料庫+照片）
+router.post('/full/upload', adminMiddleware, (req, res) => {
+  try {
+    if (!req.body || !req.body.zipData) {
+      return res.status(400).json({ error: '未提供備份檔案' });
+    }
+
+    const buffer = Buffer.from(req.body.zipData, 'base64');
+    fs.mkdirSync(fullBackupDir, { recursive: true });
+    fs.mkdirSync(backupDir, { recursive: true });
+
+    // 備份當前
+    fs.copyFileSync(join(dataDir, 'caloscanai.db'), join(backupDir, `before_full_upload_${Date.now()}.db`));
+
+    // 寫入 ZIP
+    const zipPath = join(fullBackupDir, 'temp_upload_' + Date.now() + '.zip');
+    fs.writeFileSync(zipPath, buffer);
+
+    // 解壓縮到暫存目錄
+    const { execSync } = require('child_process');
+    const extractDir = join(fullBackupDir, 'temp_restore_' + Date.now());
+    fs.mkdirSync(extractDir, { recursive: true });
+    execSync(`unzip -o "${zipPath}" -d "${extractDir}"`, { stdio: 'pipe' });
+    fs.unlinkSync(zipPath);
+
+    // 找到解壓出來的資料夾
+    const extractedFolders = fs.readdirSync(extractDir).filter(f => fs.statSync(join(extractDir, f)).isDirectory());
+    if (extractedFolders.length === 0) {
+      throw new Error('解壓縮失敗：找不到資料夾');
+    }
+    const extractedDir = join(extractDir, extractedFolders[0]);
+
+    // 複製資料庫
+    const restoreDb = join(extractedDir, 'caloscanai.db');
+    if (fs.existsSync(restoreDb)) {
+      fs.copyFileSync(restoreDb, join(dataDir, 'caloscanai.db'));
+    }
+
+    // 複製照片
+    const restoreUploads = join(extractedDir, 'uploads');
+    if (fs.existsSync(restoreUploads)) {
+      copyDirRecursive(restoreUploads, uploadsDir);
+    }
+
+    // 清理暫存
+    fs.rmSync(extractDir, { recursive: true });
+
+    res.json({
+      success: true,
+      message: '上傳還原成功（資料庫 + 照片），已自動備份當前資料'
+    });
+  } catch (error) {
+    console.error('Full upload restore error:', error);
+    res.status(500).json({ error: '上傳還原失敗: ' + error.message });
+  }
+});
+
+// 輔助函式：遞迴複製目錄
+function copyDirRecursive(src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = join(src, entry.name);
+    const destPath = join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirRecursive(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
 
 export default router;
