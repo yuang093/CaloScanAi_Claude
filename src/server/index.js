@@ -24,9 +24,11 @@ const corsOrigins = process.env.APP_URL
   ? process.env.APP_URL.split(',').map(url => url.trim())
   : [];
 
-if (!process.env.APP_URL && process.env.NODE_ENV === 'production') {
-  console.error('❌ APP_URL environment variable must be set in production!');
-  process.exit(1);
+if (!process.env.APP_URL) {
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('⚠️ APP_URL not set, CORS is open to all origins (不建議用於生產環境)');
+  }
+  console.warn('⚠️ APP_URL not set, CORS is open to all origins');
 }
 
 // Rate limiting - general API
