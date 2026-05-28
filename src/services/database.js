@@ -8,14 +8,6 @@ const __dirname = dirname(__filename);
 
 const dbPath = join(__dirname, '../../data/caloscanai.db');
 
-// 取得本地時區的今天日期 (YYYY-MM-DD)
-function getLocalDate() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60000;
-  const localDate = new Date(now.getTime() - offset);
-  return localDate.toISOString().split('T')[0];
-}
-
 // Ensure data directory exists
 import fs from 'fs';
 const dataDir = join(__dirname, '../../data');
@@ -682,9 +674,12 @@ if (quoteCount.count === 0) {
   ];
 
   const insertQuote = db.prepare('INSERT INTO daily_quotes (quote, author) VALUES (?, ?)');
-  for (const quote of defaultQuotes) {
-    insertQuote.run(...quote);
-  }
+  const insertAllQuotes = db.transaction((quotes) => {
+    for (const quote of quotes) {
+      insertQuote.run(...quote);
+    }
+  });
+  insertAllQuotes(defaultQuotes);
   console.log('✅ 已插入 ' + defaultQuotes.length + ' 筆預設勵志語');
 }
 

@@ -25,7 +25,8 @@ const corsOrigins = process.env.APP_URL
   : [];
 
 if (!process.env.APP_URL && process.env.NODE_ENV === 'production') {
-  console.warn('⚠️ APP_URL not set, CORS is open to all origins');
+  console.error('❌ APP_URL environment variable must be set in production!');
+  process.exit(1);
 }
 
 // Rate limiting - general API
