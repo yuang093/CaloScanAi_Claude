@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenFoodFacts 測試 - CaloScanAi</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .section {
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    .section h2 {
+      font-size: 18px;
+      color: #555;
+      margin-bottom: 15px;
+    }
+    input {
+      width: 70%;
+      padding: 12px 16px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    button {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      display: none;
+    }
+    .result.show { display: block; }
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    .product-img {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      background: white;
+      border-radius: 8px;
+      padding: 5px;
+    }
+    .product-name {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+    .product-brand {
+      color: #666;
+      font-size: 14px;
+    }
+    .nutrition-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .nutrition-item {
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .nutrition-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+    }
+    .nutrition-label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .error {
+      background: #ffe0e0;
+      color: #c00;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+    }
+    .loading {
+      text-align: center;
+      padding: 30px;
+      color: #666;
+    }
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #ddd;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .history {
+      margin-top: 20px;
+    }
+    .history-item {
+      padding: 10px;
+      background: #f0f0f0;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .history-item:hover { background: #e0e0e0; }
+    .history-item span {
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🍎 OpenFoodFacts 測試</h1>
+    <p class="subtitle">測試營養資料庫查詢功能</p>
+
+    <div class="section">
+      <h2>📷 條碼查詢</h2>
+      <input type="text" id="barcode-input" placeholder="輸入條碼 (如: 5449000000996)">
+      <button onclick="searchByBarcode()">查詢</button>
+    </div>
+
+    <div class="section">
+      <h2>🔍 名稱搜尋</h2>
+      <input type="text" id="search-input" placeholder="輸入食物名稱 (如: milk, chocolate, bread)">
+      <button onclick="searchByName()">搜尋</button>
+    </div>
+
+    <div id="loading" class="loading" style="display:none;">
+      <span class="spinner"></span>查詢中...
+    </div>
+
+    <div id="result" class="result"></div>
+    <div id="error" class="error" style="display:none;"></div>
+
+    <div class="section">
+      <h2>📜 查詢歷史</h2>
+      <div id="history" class="history"></div>
+    </div>
+  </div>
+
+  <script>
+    const HISTORY_KEY = 'off_test_history';
+    const API_BASE = 'https://world.openfoodfacts.org';
+
+    // 初始化歷史記錄
+    let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    renderHistory();
+
+    function renderHistory() {
+      const container = document.getElementById('history');
+      if (history.length === 0) {
+        container.innerHTML = '<p style="color:#666;font-size:14px;">尚無查詢記錄</p>';
+        return;
+      }
+      container.innerHTML = history.map((item, i) => `
+        <div class="history-item" onclick="repeatSearch(${i})">
+          <span>${item.name}</span> - ${item.type}
+        </div>
+      `).join('');
+    }
+
+    function saveToHistory(name, type) {
+      history.unshift({ name, type, time: Date.now() });
+      if (history.length > 10) history = history.slice(0, 10);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      renderHistory();
+    }
+
+    function repeatSearch(index) {
+      const item = history[index];
+      if (item.type === 'barcode') {
+        document.getElementById('barcode-input').value = item.name;
+        searchByBarcode();
+      } else {
+        document.getElementById('search-input').value = item.name;
+        searchByName();
+      }
+    }
+
+    function showLoading() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('result').classList.remove('show');
+      document.getElementById('error').style.display = 'none';
+    }
+
+    function hideLoading() {
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    function showError(msg) {
+      hideLoading();
+      document.getElementById('error').textContent = msg;
+      document.getElementById('error').style.display = 'block';
+    }
+
+    function showResult(data) {
+      hideLoading();
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('result').innerHTML = formatProduct(data);
+      document.getElementById('result').classList.add('show');
+    }
+
+    function formatProduct(product) {
+      const p = product.product;
+      if (!p) return '<p>查無產品資料</p>';
+
+      const nutriments = p.nutriments || {};
+
+      return `
+        <div class="result-header">
+          ${p.image_url ? `<img src="${p.image_url}" class="product-img" alt="${p.product_name}">` : ''}
+          <div>
+            <div class="product-name">${p.product_name || '未知產品'}</div>
+            <div class="product-brand">${p.brands || ''}</div>
+            <div class="product-brand">條碼: ${product.code}</div>
+          </div>
+        </div>
+        <div class="nutrition-grid">
+          <div class="nutrition-item">
+            <div class="nutrition-value">${Math.round(nutriments.energy-kcal || 0)}</div>
+            <div class="nutrition-label">卡路里 (kcal)</div>
+          </div>
+          <div class="nutrition-item">
+            <div class="nutrition-value">${(nutriments.proteins || 0).toFixed(1)}g</div>
+            <div class="nutrition-label">蛋白質</div>
+          </div>
+          <div class="nutrition-item">
+            <div class="nutrition-value">${(nutriments.carbohydrates || 0).toFixed(1)}g</div>
+            <div class="nutrition-label">碳水化合物</div>
+          </div>
+          <div class="nutrition-item">
+            <div class="nutrition-value">${(nutriments.fat || 0).toFixed(1)}g</div>
+            <div class="nutrition-label">脂肪</div>
+          </div>
+        </div>
+        ${p.serving_size ? `<p style="margin-top:15px;color:#666;font-size:14px;">每份: ${p.serving_size}</p>` : ''}
+      `;
+    }
+
+    async function searchByBarcode() {
+      const barcode = document.getElementById('barcode-input').value.trim();
+      if (!barcode) {
+        showError('請輸入條碼');
+        return;
+      }
+
+      showLoading();
+      saveToHistory(barcode, 'barcode');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v0/product/${barcode}.json`, {
+          headers: { 'User-Agent': 'CaloScanAi-Test/1.0' }
+        });
+        const data = await res.json();
+
+        if (data.status === 0) {
+          showError('查無此條碼：' + barcode);
+        } else {
+          showResult(data);
+        }
+      } catch (err) {
+        showError('網路錯誤：' + err.message);
+      }
+    }
+
+    async function searchByName() {
+      const query = document.getElementById('search-input').value.trim();
+      if (!query) {
+        showError('請輸入食物名稱');
+        return;
+      }
+
+      showLoading();
+      saveToHistory(query, 'name');
+
+      try {
+        const res = await fetch(`${API_BASE}/cgi/search.pl?search_terms=${encodeURIComponent(query)}&json=1&page_size=5`, {
+          headers: { 'User-Agent': 'CaloScanAi-Test/1.0' }
+        });
+        const data = await res.json();
+
+        if (!data.products || data.products.length === 0) {
+          showError('查無結果：' + query);
+          return;
+        }
+
+        // 顯示第一個結果
+        showResult({ product: data.products[0], code: data.products[0].code });
+      } catch (err) {
+        showError('網路錯誤：' + err.message);
+      }
+    }
+
+    // 支援 Enter 鍵
+    document.getElementById('barcode-input').addEventListener('keypress', e => {
+      if (e.key === 'Enter') searchByBarcode();
+    });
+    document.getElementById('search-input').addEventListener('keypress', e => {
+      if (e.key === 'Enter') searchByName();
+    });
+  </script>
+</body>
+</html>
