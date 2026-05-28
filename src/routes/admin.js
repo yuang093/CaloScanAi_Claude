@@ -620,12 +620,13 @@ router.get('/db/list', adminMiddleware, (req, res) => {
 router.post('/db/restore/:filename', adminMiddleware, (req, res) => {
   try {
     const filename = req.params.filename;
-    const safeFilename = filename.replace(/[^a-zA-Z0-9_.]/g, '');
+    // 允許字母、數字、底線、點、連字符、冒號（ISO時間格式）
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_.\-:]/g, '');
     const srcPath = join(backupDir, safeFilename);
     const dbFile = join(dataDir, 'caloscanai.db');
 
     if (!fs.existsSync(srcPath)) {
-      return res.status(404).json({ error: '備份檔案不存在' });
+      return res.status(404).json({ error: '備份檔案不存在: ' + safeFilename });
     }
 
     // 先備份當前資料庫（以防萬一）
