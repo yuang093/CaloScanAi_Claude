@@ -303,6 +303,7 @@ window.loadHistoryData = async function(period) {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     });
     const result = await response.json();
+    console.log("[loadHistoryData] API result:", JSON.stringify(result).substring(0, 500));
 
     if (result.success && result.data.records.length > 0) {
       const records = result.data.records;
@@ -319,7 +320,10 @@ window.loadHistoryData = async function(period) {
       // Lazy load Chart.js before creating charts
       await window.loadChartJs();
 
-      const ctx = document.getElementById('history-chart').getContext('2d');
+      // Small delay to ensure div is visible (canvas can't getContext when parent is hidden)
+      await new Promise(r => setTimeout(r, 50));
+
+      const ctx = document.getElementById('calorie-chart').getContext('2d');
       window.calorieChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -393,6 +397,7 @@ window.exportHistoryCSV = async function() {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     });
     const result = await response.json();
+    console.log("[loadHistoryData] API result:", JSON.stringify(result).substring(0, 500));
 
     if (!result.success || !result.data.records.length) {
       alert('尚無資料可匯出');
@@ -437,6 +442,7 @@ window.exportHistoryPDF = async function() {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     });
     const result = await response.json();
+    console.log("[loadHistoryData] API result:", JSON.stringify(result).substring(0, 500));
 
     if (!result.success || !result.data.records.length) {
       alert('尚無資料可匯出');
