@@ -6,6 +6,7 @@ import { getLocalDate } from '../utils/date.js';
 import db from '../services/database.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { execSync } from 'child_process';
 import fs from 'fs';
 
 const router = express.Router();
@@ -746,7 +747,6 @@ router.get('/full/backup', adminMiddleware, (req, res) => {
     }
 
     // 壓縮成 zip
-    const { execSync } = require('child_process');
     const zipPath = join(fullBackupDir, backupName + '.zip');
     execSync(`cd "${fullBackupDir}" && zip -r "${backupName}.zip" "${backupName}"`, { stdio: 'pipe' });
 
@@ -835,7 +835,6 @@ router.post('/full/restore/:filename', adminMiddleware, (req, res) => {
     fs.copyFileSync(join(dataDir, 'caloscanai.db'), join(backupDir, `before_full_restore_${Date.now()}.db`));
 
     // 解壓縮到暫存目錄
-    const { execSync } = require('child_process');
     const extractDir = join(fullBackupDir, 'temp_restore_' + Date.now());
     fs.mkdirSync(extractDir, { recursive: true });
     execSync(`unzip -o "${zipPath}" -d "${extractDir}"`, { stdio: 'pipe' });
@@ -910,7 +909,6 @@ router.post('/full/upload', adminMiddleware, (req, res) => {
     fs.writeFileSync(zipPath, buffer);
 
     // 解壓縮到暫存目錄
-    const { execSync } = require('child_process');
     const extractDir = join(fullBackupDir, 'temp_restore_' + Date.now());
     fs.mkdirSync(extractDir, { recursive: true });
     execSync(`unzip -o "${zipPath}" -d "${extractDir}"`, { stdio: 'pipe' });
