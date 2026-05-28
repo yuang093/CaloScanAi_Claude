@@ -260,7 +260,7 @@ window.loadFavorites = async function() {
               <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
               <div style="font-size:0.8rem; color:var(--color-text-muted);">${window.escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
             </div>
-            <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0}, true, '${escapedImgPath}')" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
+            <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0}, true, '${escapedImgPath}')" class="btn btn-primary btn-small" style="flex-shrink:0; padding:6px 12px; font-size:0.75rem;">加入</button>
           </div>`;
         }
       }).join('');
