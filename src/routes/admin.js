@@ -623,13 +623,16 @@ router.get('/db/list', adminMiddleware, (req, res) => {
 router.post('/db/restore/:filename', adminMiddleware, (req, res) => {
   try {
     const filename = req.params.filename;
-    // 允許字母、數字、底線、點、連字符、冒號（ISO時間格式）
-    const safeFilename = filename.replace(/[^a-zA-Z0-9_.\-:]/g, '');
+    // 阻止路徑穿越：只允許字母、數字、底線、連字符、冒號（ISO時間格式）
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_\-:]/g, '');
+    if (safeFilename !== filename) {
+      return res.status(400).json({ error: '無效的檔案名稱' });
+    }
     const srcPath = join(backupDir, safeFilename);
     const dbFile = join(dataDir, 'caloscanai.db');
 
     if (!fs.existsSync(srcPath)) {
-      return res.status(404).json({ error: '備份檔案不存在: ' + safeFilename });
+      return res.status(404).json({ error: '備份檔案不存在' });
     }
 
     // 先備份當前資料庫（以防萬一）
@@ -654,7 +657,10 @@ router.post('/db/restore/:filename', adminMiddleware, (req, res) => {
 router.delete('/db/:filename', adminMiddleware, (req, res) => {
   try {
     const filename = req.params.filename;
-    const safeFilename = filename.replace(/[^a-zA-Z0-9_.\-:]/g, '');
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_\-:]/g, '');
+    if (safeFilename !== filename) {
+      return res.status(400).json({ error: '無效的檔案名稱' });
+    }
     const filePath = join(backupDir, safeFilename);
 
     if (!fs.existsSync(filePath)) {
@@ -799,7 +805,10 @@ router.get('/full/list', adminMiddleware, (req, res) => {
 router.get('/full/download/:filename', adminMiddleware, (req, res) => {
   try {
     const filename = req.params.filename;
-    const safeFilename = filename.replace(/[^a-zA-Z0-9_.\-:]/g, '');
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_\-:]/g, '');
+    if (safeFilename !== filename) {
+      return res.status(400).json({ error: '無效的檔案名稱' });
+    }
     const filePath = join(fullBackupDir, safeFilename);
 
     if (!fs.existsSync(filePath)) {
@@ -808,7 +817,7 @@ router.get('/full/download/:filename', adminMiddleware, (req, res) => {
 
     const fileBuffer = fs.readFileSync(filePath);
     res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
-    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Type', 'application/gzip');
     res.setHeader('Content-Length', fileBuffer.length);
     res.end(fileBuffer);
   } catch (error) {
@@ -821,7 +830,10 @@ router.get('/full/download/:filename', adminMiddleware, (req, res) => {
 router.post('/full/restore/:filename', adminMiddleware, (req, res) => {
   try {
     const filename = req.params.filename;
-    const safeFilename = filename.replace(/[^a-zA-Z0-9_.\-:]/g, '');
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_\-:]/g, '');
+    if (safeFilename !== filename) {
+      return res.status(400).json({ error: '無效的檔案名稱' });
+    }
     const tarPath = join(fullBackupDir, safeFilename);
 
     if (!fs.existsSync(tarPath)) {
@@ -837,14 +849,28 @@ router.post('/full/restore/:filename', adminMiddleware, (req, res) => {
     // 解壓縮到暫存目錄
     const extractDir = join(fullBackupDir, 'temp_restore_' + Date.now());
     fs.mkdirSync(extractDir, { recursive: true });
-    execSync(`tar -xzf "${tarPath}" -C "${extractDir}"`, { stdio: 'pipe' });
+    try {
+      execSync(`tar -xzf "${tarPath}" -C "${extractDir}"`, { stdio: 'pipe' });
+    } catch (execError) {
+      fs.rmSync(extractDir, { recursive: true });
+      return res.status(500).json({ error: '解壓縮失敗: ' + execError.message });
+    }
 
-    // 找到解壓出來的資料夾
+    // 找到解壓出來的資料夾並驗證
     const extractedFolders = fs.readdirSync(extractDir).filter(f => fs.statSync(join(extractDir, f)).isDirectory());
     if (extractedFolders.length === 0) {
+      fs.rmSync(extractDir, { recursive: true });
       throw new Error('解壓縮失敗：找不到資料夾');
     }
     const extractedDir = join(extractDir, extractedFolders[0]);
+
+    // 防止路徑穿越：驗證解壓出來的路徑在允許範圍內
+    const realExtractDir = fs.realpathSync(extractDir);
+    const realExtractedDir = fs.realpathSync(extractedDir);
+    if (!realExtractedDir.startsWith(realExtractDir)) {
+      fs.rmSync(extractDir, { recursive: true });
+      return res.status(400).json({ error: '無效的備份檔案' });
+    }
 
     // 複製資料庫
     const restoreDb = join(extractedDir, 'caloscanai.db');
@@ -875,7 +901,10 @@ router.post('/full/restore/:filename', adminMiddleware, (req, res) => {
 router.delete('/full/:filename', adminMiddleware, (req, res) => {
   try {
     const filename = req.params.filename;
-    const safeFilename = filename.replace(/[^a-zA-Z0-9_.\-:]/g, '');
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_\-:]/g, '');
+    if (safeFilename !== filename) {
+      return res.status(400).json({ error: '無效的檔案名稱' });
+    }
     const filePath = join(fullBackupDir, safeFilename);
 
     if (!fs.existsSync(filePath)) {
@@ -897,7 +926,16 @@ router.post('/full/upload', adminMiddleware, (req, res) => {
       return res.status(400).json({ error: '未提供備份檔案' });
     }
 
-    const buffer = Buffer.from(req.body.tarData, 'base64');
+    let buffer;
+    try {
+      buffer = Buffer.from(req.body.tarData, 'base64');
+      if (buffer.length === 0) {
+        return res.status(400).json({ error: '無效的 base64 資料' });
+      }
+    } catch (decodeError) {
+      return res.status(400).json({ error: 'base64 解碼失敗: ' + decodeError.message });
+    }
+
     fs.mkdirSync(fullBackupDir, { recursive: true });
     fs.mkdirSync(backupDir, { recursive: true });
 
@@ -911,15 +949,30 @@ router.post('/full/upload', adminMiddleware, (req, res) => {
     // 解壓縮到暫存目錄
     const extractDir = join(fullBackupDir, 'temp_restore_' + Date.now());
     fs.mkdirSync(extractDir, { recursive: true });
-    execSync(`tar -xzf "${tarPath}" -C "${extractDir}"`, { stdio: 'pipe' });
+    try {
+      execSync(`tar -xzf "${tarPath}" -C "${extractDir}"`, { stdio: 'pipe' });
+    } catch (execError) {
+      fs.rmSync(extractDir, { recursive: true });
+      fs.unlinkSync(tarPath);
+      return res.status(500).json({ error: '解壓縮失敗: ' + execError.message });
+    }
     fs.unlinkSync(tarPath);
 
-    // 找到解壓出來的資料夾
+    // 找到解壓出來的資料夾並驗證
     const extractedFolders = fs.readdirSync(extractDir).filter(f => fs.statSync(join(extractDir, f)).isDirectory());
     if (extractedFolders.length === 0) {
-      throw new Error('解壓縮失敗：找不到資料夾');
+      fs.rmSync(extractDir, { recursive: true });
+      return res.status(400).json({ error: '解壓縮失敗：找不到資料夾' });
     }
     const extractedDir = join(extractDir, extractedFolders[0]);
+
+    // 防止路徑穿越：驗證解壓出來的路徑在允許範圍內
+    const realExtractDir = fs.realpathSync(extractDir);
+    const realExtractedDir = fs.realpathSync(extractedDir);
+    if (!realExtractedDir.startsWith(realExtractDir)) {
+      fs.rmSync(extractDir, { recursive: true });
+      return res.status(400).json({ error: '無效的備份檔案' });
+    }
 
     // 複製資料庫
     const restoreDb = join(extractedDir, 'caloscanai.db');
