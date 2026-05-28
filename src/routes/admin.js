@@ -4,6 +4,11 @@ import { UserDB, FoodLogDB, DailyProgressDB, QuoteDB, BarcodeDB } from '../servi
 import { verifyToken } from '../middleware/auth.js';
 import { getLocalDate } from '../utils/date.js';
 import db from '../services/database.js';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 const router = express.Router();
 
@@ -541,6 +546,157 @@ router.post('/restore', adminMiddleware, (req, res) => {
   } catch (error) {
     console.error('Restore error:', error);
     res.status(500).json({ error: '還原失敗: ' + error.message });
+  }
+});
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// 取得實際的 data 目錄路徑（從 server/index.js 往上两级）
+const serverRoot = join(__dirname, '../../src/server/../../'); // = /app (container)
+const dataDir = join(process.cwd(), 'data');
+const backupDir = join(process.cwd(), 'backups/db');
+
+// GET /api/admin/db/backup - 備份資料庫到 VPS
+router.get('/db/backup', adminMiddleware, (req, res) => {
+  try {
+    const dbFile = join(dataDir, 'caloscanai.db');
+    if (!fs.existsSync(dbFile)) {
+      return res.status(404).json({ error: '資料庫檔案不存在' });
+    }
+
+    // 確保備份目錄存在
+    fs.mkdirSync(backupDir, { recursive: true });
+
+    const date = new Date();
+    const dateStr = date.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const filename = `caloscanai_${dateStr}.db`;
+    const destPath = join(backupDir, filename);
+
+    // 使用 shell 執行 SQLite VACUUM INTO 確保備份完整性
+    execSync(`sqlite3 "${dbFile}" ".backup '${destPath}'"`, { stdio: 'pipe' });
+
+    const stats = fs.statSync(destPath);
+    const backups = fs.readdirSync(backupDir).filter(f => f.endsWith('.db')).sort().reverse();
+
+    res.json({
+      success: true,
+      message: '資料庫備份成功',
+      data: {
+        filename,
+        path: destPath,
+        size: stats.size,
+        createdAt: stats.mtime.toISOString(),
+        backups: backups.slice(0, 10) // 最近 10 個備份
+      }
+    });
+  } catch (error) {
+    console.error('DB backup error:', error);
+    res.status(500).json({ error: '備份失敗: ' + error.message });
+  }
+});
+
+// GET /api/admin/db/list - 列出 VPS 上的備份
+router.get('/db/list', adminMiddleware, (req, res) => {
+  try {
+    fs.mkdirSync(backupDir, { recursive: true });
+    const backups = fs.readdirSync(backupDir)
+      .filter(f => f.endsWith('.db'))
+      .map(f => {
+        const stats = fs.statSync(join(backupDir, f));
+        return {
+          filename: f,
+          size: stats.size,
+          createdAt: stats.mtime.toISOString()
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({ success: true, data: backups });
+  } catch (error) {
+    console.error('List backups error:', error);
+    res.status(500).json({ error: '取得備份列表失敗' });
+  }
+});
+
+// POST /api/admin/db/restore/:filename - 從 VPS 備份還原
+router.post('/db/restore/:filename', adminMiddleware, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_.]/g, '');
+    const srcPath = join(backupDir, safeFilename);
+    const dbFile = join(dataDir, 'caloscanai.db');
+
+    if (!fs.existsSync(srcPath)) {
+      return res.status(404).json({ error: '備份檔案不存在' });
+    }
+
+    // 先備份當前資料庫（以防萬一）
+    const backupName = `before_restore_${Date.now()}.db`;
+    execSync(`sqlite3 "${dbFile}" ".backup '${join(backupDir, backupName)}'"`, { stdio: 'pipe' });
+
+    // 關閉資料庫連接（讓 Docker 容器可以複製檔案）
+    db.close();
+
+    // 複製備份檔案到資料庫位置
+    fs.copyFileSync(srcPath, dbFile);
+
+    res.json({
+      success: true,
+      message: '還原成功，已自動備份當前資料庫'
+    });
+  } catch (error) {
+    console.error('DB restore error:', error);
+    res.status(500).json({ error: '還原失敗: ' + error.message });
+  }
+});
+
+// GET /api/admin/db/download - 下載資料庫到電腦
+router.get('/db/download', adminMiddleware, (req, res) => {
+  try {
+    const dbFile = join(dataDir, 'caloscanai.db');
+    if (!fs.existsSync(dbFile)) {
+      return res.status(404).json({ error: '資料庫檔案不存在' });
+    }
+
+    const filename = `caloscanai_${new Date().toISOString().slice(0, 10)}.db`;
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/x-sqlite3');
+    res.sendFile(dbFile);
+  } catch (error) {
+    console.error('DB download error:', error);
+    res.status(500).json({ error: '下載失敗' });
+  }
+});
+
+// POST /api/admin/db/upload - 上傳資料庫檔案還原
+router.post('/db/upload', adminMiddleware, (req, res) => {
+  try {
+    if (!req.body || !req.body.dbData) {
+      return res.status(400).json({ error: '未提供資料庫檔案' });
+    }
+
+    const buffer = Buffer.from(req.body.dbData, 'base64');
+    const dbFile = join(dataDir, 'caloscanai.db');
+
+    // 先備份當前資料庫
+    fs.mkdirSync(backupDir, { recursive: true });
+    const backupName = `before_upload_${Date.now()}.db`;
+    execSync(`sqlite3 "${dbFile}" ".backup '${join(backupDir, backupName)}'"`, { stdio: 'pipe' });
+
+    // 關閉資料庫連接
+    db.close();
+
+    // 寫入新資料庫檔案
+    fs.writeFileSync(dbFile, buffer);
+
+    res.json({
+      success: true,
+      message: '上傳還原成功，已自動備份當前資料庫'
+    });
+  } catch (error) {
+    console.error('DB upload error:', error);
+    res.status(500).json({ error: '上傳失敗: ' + error.message });
   }
 });
 
