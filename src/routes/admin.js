@@ -748,7 +748,6 @@ router.get('/full/backup', adminMiddleware, (req, res) => {
     }
 
     // 壓縮成 tar.gz（tar 在 Docker 通常有）
-    const tarPath = join(fullBackupDir, backupName + '.tar.gz');
     execSync(`tar -czf "${tarPath}" -C "${fullBackupDir}" "${backupName}"`, { stdio: 'pipe' });
 
     // 刪除未壓縮的資料夾
