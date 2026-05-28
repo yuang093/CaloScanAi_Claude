@@ -736,6 +736,7 @@ router.get('/full/backup', adminMiddleware, (req, res) => {
     const dateStr = date.toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const backupName = `full_backup_${dateStr}`;
     const backupFolder = join(fullBackupDir, backupName);
+    const tarPath = join(fullBackupDir, backupName + '.tar.gz');
     fs.mkdirSync(backupFolder, { recursive: true });
 
     // 複製資料庫
@@ -746,21 +747,21 @@ router.get('/full/backup', adminMiddleware, (req, res) => {
       copyDirRecursive(uploadsDir, join(backupFolder, 'uploads'));
     }
 
-    // 壓縮成 zip
-    const zipPath = join(fullBackupDir, backupName + '.zip');
-    execSync(`cd "${fullBackupDir}" && zip -r "${backupName}.zip" "${backupName}"`, { stdio: 'pipe' });
+    // 壓縮成 tar.gz（tar 在 Docker 通常有）
+    const tarPath = join(fullBackupDir, backupName + '.tar.gz');
+    execSync(`tar -czf "${tarPath}" -C "${fullBackupDir}" "${backupName}"`, { stdio: 'pipe' });
 
     // 刪除未壓縮的資料夾
     fs.rmSync(backupFolder, { recursive: true });
 
-    const stats = fs.statSync(zipPath);
-    const backups = fs.readdirSync(fullBackupDir).filter(f => f.endsWith('.zip')).sort().reverse();
+    const stats = fs.statSync(tarPath);
+    const backups = fs.readdirSync(fullBackupDir).filter(f => f.endsWith('.tar.gz')).sort().reverse();
 
     res.json({
       success: true,
       message: '完整備份成功（資料庫 + 照片）',
       data: {
-        filename: backupName + '.zip',
+        filename: backupName + '.tar.gz',
         size: stats.size,
         createdAt: stats.mtime.toISOString(),
         backups: backups.slice(0, 10)
@@ -777,7 +778,7 @@ router.get('/full/list', adminMiddleware, (req, res) => {
   try {
     fs.mkdirSync(fullBackupDir, { recursive: true });
     const backups = fs.readdirSync(fullBackupDir)
-      .filter(f => f.endsWith('.zip'))
+      .filter(f => f.endsWith('.tar.gz'))
       .map(f => {
         const stats = fs.statSync(join(fullBackupDir, f));
         return {
@@ -822,9 +823,9 @@ router.post('/full/restore/:filename', adminMiddleware, (req, res) => {
   try {
     const filename = req.params.filename;
     const safeFilename = filename.replace(/[^a-zA-Z0-9_.\-:]/g, '');
-    const zipPath = join(fullBackupDir, safeFilename);
+    const tarPath = join(fullBackupDir, safeFilename);
 
-    if (!fs.existsSync(zipPath)) {
+    if (!fs.existsSync(tarPath)) {
       return res.status(404).json({ error: '備份檔案不存在' });
     }
 
@@ -837,7 +838,7 @@ router.post('/full/restore/:filename', adminMiddleware, (req, res) => {
     // 解壓縮到暫存目錄
     const extractDir = join(fullBackupDir, 'temp_restore_' + Date.now());
     fs.mkdirSync(extractDir, { recursive: true });
-    execSync(`unzip -o "${zipPath}" -d "${extractDir}"`, { stdio: 'pipe' });
+    execSync(`tar -xzf "${tarPath}" -C "${extractDir}"`, { stdio: 'pipe' });
 
     // 找到解壓出來的資料夾
     const extractedFolders = fs.readdirSync(extractDir).filter(f => fs.statSync(join(extractDir, f)).isDirectory());
@@ -890,29 +891,29 @@ router.delete('/full/:filename', adminMiddleware, (req, res) => {
   }
 });
 
-// POST /api/admin/full/upload - 上傳完整備份還原（ZIP，含資料庫+照片）
+// POST /api/admin/full/upload - 上傳完整備份還原（tar.gz，含資料庫+照片）
 router.post('/full/upload', adminMiddleware, (req, res) => {
   try {
-    if (!req.body || !req.body.zipData) {
+    if (!req.body || !req.body.tarData) {
       return res.status(400).json({ error: '未提供備份檔案' });
     }
 
-    const buffer = Buffer.from(req.body.zipData, 'base64');
+    const buffer = Buffer.from(req.body.tarData, 'base64');
     fs.mkdirSync(fullBackupDir, { recursive: true });
     fs.mkdirSync(backupDir, { recursive: true });
 
     // 備份當前
     fs.copyFileSync(join(dataDir, 'caloscanai.db'), join(backupDir, `before_full_upload_${Date.now()}.db`));
 
-    // 寫入 ZIP
-    const zipPath = join(fullBackupDir, 'temp_upload_' + Date.now() + '.zip');
-    fs.writeFileSync(zipPath, buffer);
+    // 寫入 tar.gz
+    const tarPath = join(fullBackupDir, 'temp_upload_' + Date.now() + '.tar.gz');
+    fs.writeFileSync(tarPath, buffer);
 
     // 解壓縮到暫存目錄
     const extractDir = join(fullBackupDir, 'temp_restore_' + Date.now());
     fs.mkdirSync(extractDir, { recursive: true });
-    execSync(`unzip -o "${zipPath}" -d "${extractDir}"`, { stdio: 'pipe' });
-    fs.unlinkSync(zipPath);
+    execSync(`tar -xzf "${tarPath}" -C "${extractDir}"`, { stdio: 'pipe' });
+    fs.unlinkSync(tarPath);
 
     // 找到解壓出來的資料夾
     const extractedFolders = fs.readdirSync(extractDir).filter(f => fs.statSync(join(extractDir, f)).isDirectory());

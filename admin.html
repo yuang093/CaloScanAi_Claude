@@ -520,8 +520,8 @@
 
           <!-- 完整備份上傳還原 -->
           <div style="margin-top:16px; padding-top:16px; border-top:1px dashed #ddd;">
-            <p style="color:var(--color-text-muted,#666); font-size:0.85rem; margin-bottom:8px;">從電腦上傳完整備份（.zip）還原：</p>
-            <input type="file" id="full-upload-input" accept=".zip" style="display:none;" onchange="uploadFullFromPc(event)">
+            <p style="color:var(--color-text-muted,#666); font-size:0.85rem; margin-bottom:8px;">從電腦上傳完整備份（.tar.gz）還原：</p>
+            <input type="file" id="full-upload-input" accept=".tar.gz" style="display:none;" onchange="uploadFullFromPc(event)">
             <button onclick="document.getElementById('full-upload-input').click()" class="btn btn-secondary">選擇 .zip 檔案上傳還原</button>
             <div id="full-upload-status" style="margin-top:8px;"></div>
           </div>
@@ -1235,7 +1235,7 @@
         return;
       }
       try {
-        document.getElementById('full-backup-status').innerHTML = '<span style="color:#666;">下載中...</span>';
+        document.getElementById('full-backup-status').innerHTML = '<span style="color:#666;">下載中（可能需要幾分鐘）...</span>';
         const response = await fetch('/api/admin/full/download/' + filename, {
           headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
         });
@@ -1351,7 +1351,7 @@
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + localStorage.getItem('token')
           },
-          body: JSON.stringify({ zipData: base64 })
+          body: JSON.stringify({ tarData: base64 })
         });
         const result = await response.json();
         if (result.success) {
