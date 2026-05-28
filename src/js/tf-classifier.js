@@ -7,6 +7,7 @@ const CONFIDENCE_THRESHOLD = 0.7;
 let mobilenetModel = null;
 let knnClassifier = null;
 let isLoading = false;
+let tf = null;
 
 // 載入 MobileNet 模型
 window.loadFoodClassifier = async function() {
@@ -18,7 +19,7 @@ window.loadFoodClassifier = async function() {
     console.log('[TF Classifier] Loading MobileNet model...');
 
     // 動態載入 TensorFlow.js
-    await import('@tensorflow/tfjs');
+    tf = await import('@tensorflow/tfjs');
     const mobilenet = await import('@tensorflow-models/mobilenet');
     const knn = await import('@tensorflow-models/knn-classifier');
 
