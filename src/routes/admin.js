@@ -551,9 +551,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // 取得實際的 data 目錄路徑（從 server/index.js 往上两级）
-const serverRoot = join(__dirname, '../../src/server/../../'); // = /app (container)
 const dataDir = join(process.cwd(), 'data');
-const backupDir = join(process.cwd(), 'backups/db');
+const backupDir = join(dataDir, 'backups/db'); // 放在 data volume 內
 
 // GET /api/admin/db/backup - 備份資料庫到 VPS
 router.get('/db/backup', adminMiddleware, (req, res) => {
