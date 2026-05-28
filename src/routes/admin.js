@@ -387,13 +387,17 @@ router.delete('/quotes/:id', adminMiddleware, (req, res) => {
 router.get('/backup', adminMiddleware, (req, res) => {
   try {
     const backupData = {
-      version: '1.0',
+      version: '2.0',
       timestamp: new Date().toISOString(),
       tables: {
-        barcodes: db.prepare('SELECT * FROM barcodes ORDER BY created_at DESC').all(),
+        barcodes: db.prepare('SELECT * FROM barcodes ORDER BY id').all(),
         users: db.prepare('SELECT id, username, name, role, created_at FROM users ORDER BY id').all(),
         user_profiles: db.prepare('SELECT * FROM user_profiles').all(),
-        daily_quotes: db.prepare('SELECT * FROM daily_quotes ORDER BY id').all()
+        daily_quotes: db.prepare('SELECT * FROM daily_quotes ORDER BY id').all(),
+        food_logs: db.prepare('SELECT * FROM food_logs ORDER BY id').all(),
+        daily_progress: db.prepare('SELECT * FROM daily_progress ORDER BY id').all(),
+        favorites: db.prepare('SELECT * FROM favorites ORDER BY id').all(),
+        shopping_lists: db.prepare('SELECT * FROM shopping_lists ORDER BY id').all()
       }
     };
 
@@ -416,26 +420,117 @@ router.post('/restore', adminMiddleware, (req, res) => {
       return res.status(400).json({ error: '無效的備份資料' });
     }
 
+    const tables = data.tables;
+
     // Restore barcodes
-    if (data.tables.barcodes && Array.isArray(data.tables.barcodes)) {
-      // Clear existing barcodes and insert new ones
+    if (tables.barcodes && Array.isArray(tables.barcodes)) {
       db.exec('DELETE FROM barcodes');
-      const stmt = db.prepare(`
-        INSERT INTO barcodes (barcode, name, brand, calories, protein, carbs, fat, serving_size, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      const barcodeStmt = db.prepare(`
+        INSERT INTO barcodes (barcode, name, brand, calories, protein, carbs, fat, serving_size, image_path, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
-      for (const item of data.tables.barcodes) {
-        stmt.run(
-          item.barcode,
-          item.name,
-          item.brand || '未知',
-          item.calories || 0,
-          item.protein || 0,
-          item.carbs || 0,
-          item.fat || 0,
-          item.serving_size || '未知',
+      for (const item of tables.barcodes) {
+        barcodeStmt.run(
+          item.barcode, item.name, item.brand || '未知',
+          item.calories || 0, item.protein || 0, item.carbs || 0, item.fat || 0,
+          item.serving_size || '未知', item.image_path || null,
           item.created_at || new Date().toISOString()
         );
+      }
+    }
+
+    // Restore users (password is hashed, so we skip password column for security)
+    if (tables.users && Array.isArray(tables.users)) {
+      // Remove existing non-admin users, keep admins
+      db.exec("DELETE FROM users WHERE role = 'user'");
+      const userStmt = db.prepare(`
+        INSERT INTO users (username, name, role, created_at) VALUES (?, ?, ?, ?)
+      `);
+      for (const item of tables.users) {
+        if (item.role === 'admin') {
+          userStmt.run(item.username, item.name, item.role, item.created_at);
+        }
+      }
+    }
+
+    // Restore user_profiles
+    if (tables.user_profiles && Array.isArray(tables.user_profiles)) {
+      for (const item of tables.user_profiles) {
+        const existing = db.prepare('SELECT id FROM user_profiles WHERE user_id = ?').get(item.user_id);
+        if (!existing) {
+          db.prepare(`
+            INSERT INTO user_profiles (user_id, weight, height, age, gender, activity_level, goal_calories, custom_bmr, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(item.user_id, item.weight, item.height, item.age, item.gender, item.activity_level,
+            item.goal_calories, item.custom_bmr, item.created_at);
+        }
+      }
+    }
+
+    // Restore daily_quotes
+    if (tables.daily_quotes && Array.isArray(tables.daily_quotes)) {
+      db.exec('DELETE FROM daily_quotes');
+      const quoteStmt = db.prepare('INSERT INTO daily_quotes (quote, author, created_at) VALUES (?, ?, ?)');
+      for (const item of tables.daily_quotes) {
+        quoteStmt.run(item.quote, item.author || null, item.created_at);
+      }
+    }
+
+    // Restore food_logs
+    if (tables.food_logs && Array.isArray(tables.food_logs)) {
+      for (const item of tables.food_logs) {
+        const existing = db.prepare('SELECT id FROM food_logs WHERE id = ?').get(item.id);
+        if (!existing) {
+          db.prepare(`
+            INSERT INTO food_logs (id, user_id, image_path, meal_type, calories, protein, carbs, fat, description, barcode_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(item.id, item.user_id, item.image_path || null, item.meal_type,
+            item.calories || 0, item.protein || 0, item.carbs || 0, item.fat || 0,
+            item.description, item.barcode_id, item.created_at);
+        }
+      }
+    }
+
+    // Restore daily_progress
+    if (tables.daily_progress && Array.isArray(tables.daily_progress)) {
+      for (const item of tables.daily_progress) {
+        const existing = db.prepare('SELECT id FROM daily_progress WHERE id = ?').get(item.id);
+        if (!existing) {
+          db.prepare(`
+            INSERT INTO daily_progress (id, user_id, date, total_calories, total_protein, total_carbs, total_fat, goal_calories, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(item.id, item.user_id, item.date, item.total_calories || 0,
+            item.total_protein || 0, item.total_carbs || 0, item.total_fat || 0,
+            item.goal_calories || 2000, item.created_at);
+        }
+      }
+    }
+
+    // Restore favorites
+    if (tables.favorites && Array.isArray(tables.favorites)) {
+      for (const item of tables.favorites) {
+        const existing = db.prepare('SELECT id FROM favorites WHERE id = ?').get(item.id);
+        if (!existing) {
+          db.prepare(`
+            INSERT INTO favorites (id, user_id, barcode_id, name, brand, calories, protein, carbs, fat, serving_size, use_count, image_path, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(item.id, item.user_id, item.barcode_id, item.name, item.brand,
+            item.calories || 0, item.protein || 0, item.carbs || 0, item.fat || 0,
+            item.serving_size, item.use_count || 0, item.image_path || null, item.created_at);
+        }
+      }
+    }
+
+    // Restore shopping_lists
+    if (tables.shopping_lists && Array.isArray(tables.shopping_lists)) {
+      for (const item of tables.shopping_lists) {
+        const existing = db.prepare('SELECT id FROM shopping_lists WHERE id = ?').get(item.id);
+        if (!existing) {
+          db.prepare(`
+            INSERT INTO shopping_lists (id, user_id, name, items, created_at)
+            VALUES (?, ?, ?, ?, ?)
+          `).run(item.id, item.user_id, item.name, item.items || '[]', item.created_at);
+        }
       }
     }
 
@@ -445,7 +540,7 @@ router.post('/restore', adminMiddleware, (req, res) => {
     });
   } catch (error) {
     console.error('Restore error:', error);
-    res.status(500).json({ error: '還原失敗' });
+    res.status(500).json({ error: '還原失敗: ' + error.message });
   }
 });
 

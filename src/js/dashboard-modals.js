@@ -229,27 +229,24 @@ window.loadFavorites = async function() {
         const imgSrc = window.getFoodImgSrc(food.image_path);
 
         if (isStats) {
-          // 最常食用模式 - 卡片式 UI
+          // 最常食用模式 - 精簡卡片 UI
           return `
-          <div style="background:#fafafa; border-radius:12px; padding:14px; margin-bottom:10px; border:1px solid var(--color-border);">
-            <div style="display:flex; align-items:flex-start; gap:12px;">
-              <div style="width:56px;height:56px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#f3f0f0;">
+          <div style="background:#fafafa; border-radius:8px; padding:10px; margin-bottom:8px; border:1px solid var(--color-border);">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0;background:#f3f0f0;">
                 <img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />
               </div>
               <div style="flex:1; min-width:0;">
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                  <span style="background:#e8f5e9; color:#2d6a4f; font-size:0.7rem; padding:2px 8px; border-radius:12px; font-weight:600;">📊 最常食用</span>
-                  <span style="background:#fff3e0; color:#e65100; font-size:0.7rem; padding:2px 8px; border-radius:12px; font-weight:600;">🔥 ${food.use_count}次</span>
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+                  <span style="background:#e8f5e9; color:#2d6a4f; font-size:0.65rem; padding:1px 6px; border-radius:10px; font-weight:600;">最常食用</span>
+                  <span style="background:#fff3e0; color:#e65100; font-size:0.65rem; padding:1px 6px; border-radius:10px; font-weight:600;">${food.use_count}次</span>
                 </div>
-                <div style="font-weight:600; font-size:1rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
-                <div style="font-size:0.85rem; color:#666; margin-top:4px;">
-                  ${food.calories} kcal
-                </div>
-                <div style="font-size:0.75rem; color:var(--color-text-muted); margin-top:4px;">
-                  🥩 蛋白質 ${food.protein}g  •  🍚 碳水 ${food.carbs}g  •  🧈 脂肪 ${food.fat}g
+                <div style="font-weight:600; font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
+                <div style="font-size:0.72rem; color:#666; margin-top:1px;">
+                  ${food.calories} kcal | 蛋白 ${food.protein}g | 碳水 ${food.carbs}g | 脂肪 ${food.fat}g
                 </div>
               </div>
-              <button onclick="window.addFoodFromStats(${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat}, '${escapedName}', '${escapedImgPath}')" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
+              <button onclick="window.addFoodFromStats(${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat}, '${escapedName}', '${escapedImgPath}')" class="btn btn-primary btn-small" style="flex-shrink:0; padding:6px 12px; font-size:0.75rem;">加入</button>
             </div>
           </div>`;
         } else {
