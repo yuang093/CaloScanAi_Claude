@@ -3,8 +3,7 @@
 
 const safeNum = (n) => n == null ? 0 : (isNaN(n) ? 0 : Number(n));
 const safeDate = (d) => d == null ? '' : String(d);
-const fmt = (n) => safeNum(n).toLocaleString('zh-TW', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const fmtNum = (n) => safeNum(n).toLocaleString('zh-TW');
+const fmt = (n) => safeNum(n).toLocaleString('zh-TW');
 
 function getLocalDateStr(date) {
   const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
@@ -172,7 +171,7 @@ function createStyle2HTML(stats, records, endDateStr) {
                   <span style="color:#64748b;">${safeDate(r.date).slice(5)}</span>
                   <span style="color:#94a3b8;font-size:24px;">(${dayName})</span>
                 </td>
-                <td style="padding:18px 10px;text-align:right;font-weight:600;color:${calColor};">${fmtNum(safeNum(r.total_calories))}</td>
+                <td style="padding:18px 10px;text-align:right;font-weight:600;color:${calColor};">${fmt(safeNum(r.total_calories))}</td>
                 <td style="padding:18px 10px;text-align:right;color:#64748b;">${fmt(safeNum(r.total_protein))}g</td>
                 <td style="padding:18px 10px;text-align:right;color:#64748b;">${fmt(safeNum(r.total_carbs))}g</td>
                 <td style="padding:18px 10px;text-align:right;color:#64748b;">${fmt(safeNum(r.total_fat))}g</td>
@@ -208,7 +207,7 @@ function createStyle1HTML(stats, records, endDateStr) {
       </div>
       <table style="width:100%;border-collapse:collapse;font-size:32px;">
         <thead><tr style="background:#2d6a4f;color:white;"><th style="padding:20px;">日期</th><th style="padding:20px;text-align:right;">熱量</th><th style="padding:20px;text-align:right;">蛋白</th><th style="padding:20px;text-align:right;">碳水</th><th style="padding:20px;text-align:right;">脂肪</th></tr></thead>
-        <tbody>${records.slice(0,18).map((r,i) => `<tr style="background:${i%2===0?'#f9f9f9':'white'};"><td style="padding:16px;">${safeDate(r.date)}</td><td style="padding:16px;text-align:right;">${fmtNum(safeNum(r.total_calories))}</td><td style="padding:16px;text-align:right;">${fmt(safeNum(r.total_protein))}</td><td style="padding:16px;text-align:right;">${fmt(safeNum(r.total_carbs))}</td><td style="padding:16px;text-align:right;">${fmt(safeNum(r.total_fat))}</td></tr>`).join('')}</tbody>
+        <tbody>${records.slice(0,18).map((r,i) => `<tr style="background:${i%2===0?'#f9f9f9':'white'};"><td style="padding:16px;">${safeDate(r.date)}</td><td style="padding:16px;text-align:right;">${fmt(safeNum(r.total_calories))}</td><td style="padding:16px;text-align:right;">${fmt(safeNum(r.total_protein))}</td><td style="padding:16px;text-align:right;">${fmt(safeNum(r.total_carbs))}</td><td style="padding:16px;text-align:right;">${fmt(safeNum(r.total_fat))}</td></tr>`).join('')}</tbody>
       </table>
       <div style="text-align:center;margin-top:50px;font-size:28px;color:#999;">由 CaloScanAi 自動生成</div>
     </div>
