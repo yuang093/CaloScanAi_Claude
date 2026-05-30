@@ -3,7 +3,7 @@
 
 const safeNum = (n) => n == null ? 0 : (isNaN(n) ? 0 : Number(n));
 const safeDate = (d) => d == null ? '' : String(d);
-const fmt = (n) => safeNum(n).toLocaleString('zh-TW');
+const fmt = (n) => safeNum(n).toLocaleString('zh-TW', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 function getLocalDateStr(date) {
   const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
