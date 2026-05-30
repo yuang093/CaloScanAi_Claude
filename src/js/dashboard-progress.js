@@ -437,13 +437,11 @@ window.exportHistoryPDF = async function() {
     const startDateObj = new Date();
     startDateObj.setDate(startDateObj.getDate() - days);
     const endDateStr = toLocalDateStr(endDateObj);
-    const startDateStr = toLocalDateStr(startDateObj);
 
-    const response = await fetch('/api/progress/history?startDate=' + startDateStr + '&endDate=' + endDateStr + '&limit=' + days, {
+    const response = await fetch('/api/progress/history?startDate=' + toLocalDateStr(startDateObj) + '&endDate=' + endDateStr + '&limit=' + days, {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     });
     const result = await response.json();
-    console.log("[loadHistoryData] API result:", JSON.stringify(result).substring(0, 500));
 
     if (!result.success || !result.data.records.length) {
       alert('尚無資料可匯出');
@@ -451,92 +449,7 @@ window.exportHistoryPDF = async function() {
     }
 
     const records = result.data.records;
-    const totalCal = records.reduce((sum, r) => sum + r.total_calories, 0);
-    const avgCal = Math.round(totalCal / records.length);
-    const avgPro = Math.round(records.reduce((sum, r) => sum + r.total_protein, 0) / records.length * 10) / 10;
-    const avgCarbs = Math.round(records.reduce((sum, r) => sum + r.total_carbs, 0) / records.length * 10) / 10;
-    const avgFat = Math.round(records.reduce((sum, r) => sum + r.total_fat, 0) / records.length * 10) / 10;
-
-    const safeDate = (d) => d == null ? '' : String(d).replace(/</g, '<').replace(/>/g, '>');
-    const safeNum = (n) => n == null ? 0 : (isNaN(n) ? 0 : Number(n));
-
-    // Create printable HTML and open in new window
-    const win = window.open('', '_blank');
-    win.document.write(`
-      <html>
-      <head>
-        <title>CaloScanAi 健康報表</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
-          h1 { color: #2d6a4f; border-bottom: 2px solid #2d6a4f; padding-bottom: 10px; }
-          h2 { color: #c85a3b; margin-top: 30px; }
-          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-          th { background: #2d6a4f; color: white; }
-          tr:nth-child(even) { background: #f9f9f9; }
-          .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
-          .summary-item { background: #f0f0f0; padding: 15px; border-radius: 8px; text-align: center; }
-          .summary-item h3 { margin: 0; color: #c85a3b; font-size: 1.5rem; }
-          .summary-item p { margin: 5px 0 0 0; color: #666; }
-          .footer { margin-top: 40px; text-align: center; color: #999; font-size: 0.8rem; }
-          @media print { body { padding: 0; } }
-        </style>
-      </head>
-      <body>
-        <h1>CaloScanAi 健康報表</h1>
-        <p>報表日期：${endDateStr}</p>
-
-        <h2>統計摘要</h2>
-        <div class="summary">
-          <div class="summary-item">
-            <h3>${avgCal}</h3>
-            <p>平均熱量 (kcal)</p>
-          </div>
-          <div class="summary-item">
-            <h3>${avgPro}g</h3>
-            <p>平均蛋白質</p>
-          </div>
-          <div class="summary-item">
-            <h3>${avgCarbs}g</h3>
-            <p>平均碳水</p>
-          </div>
-          <div class="summary-item">
-            <h3>${avgFat}g</h3>
-            <p>平均脂肪</p>
-          </div>
-        </div>
-
-        <h2>📅 每日記錄</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>日期</th>
-              <th>熱量 (kcal)</th>
-              <th>蛋白質 (g)</th>
-              <th>碳水 (g)</th>
-              <th>脂肪 (g)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${records.map(r => `
-              <tr>
-                <td>${safeDate(r.date)}</td>
-                <td>${safeNum(r.total_calories)}</td>
-                <td>${safeNum(r.total_protein)}</td>
-                <td>${safeNum(r.total_carbs)}</td>
-                <td>${safeNum(r.total_fat)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-
-        <div class="footer">
-          由 CaloScanAi 自動生成 | 報表日期：${new Date().toLocaleDateString('zh-TW')}
-        </div>
-      </body>
-      </html>
-    `);
-    win.document.close();
+    await window.generatePDF_Style(2, records, endDateStr);
   } catch (error) {
     console.error('Export PDF error:', error);
     alert('匯出失敗');
