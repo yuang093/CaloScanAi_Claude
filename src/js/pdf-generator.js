@@ -3,6 +3,8 @@
 
 const safeNum = (n) => n == null ? 0 : (isNaN(n) ? 0 : Number(n));
 const safeDate = (d) => d == null ? '' : String(d);
+const fmt = (n) => safeNum(n).toLocaleString('zh-TW', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const fmtNum = (n) => safeNum(n).toLocaleString('zh-TW');
 
 function getLocalDateStr(date) {
   const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
@@ -84,22 +86,22 @@ function createStyle2HTML(stats, records, endDateStr) {
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:30px;margin-bottom:60px;">
         <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:40px;padding:40px 20px;text-align:center;">
           <div style="font-size:72px;margin-bottom:10px;">🔥</div>
-          <div style="font-size:64px;font-weight:700;color:#d97706;">${avgCal}</div>
+          <div style="font-size:64px;font-weight:700;color:#d97706;">${fmt(avgCal)}</div>
           <div style="font-size:32px;color:#92400e;">平均熱量 kcal</div>
         </div>
         <div style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);border-radius:40px;padding:40px 20px;text-align:center;">
           <div style="font-size:72px;margin-bottom:10px;">💪</div>
-          <div style="font-size:64px;font-weight:700;color:#2563eb;">${avgPro}g</div>
+          <div style="font-size:64px;font-weight:700;color:#2563eb;">${fmt(avgPro)}g</div>
           <div style="font-size:32px;color:#1e40af;">蛋白質</div>
         </div>
         <div style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);border-radius:40px;padding:40px 20px;text-align:center;">
           <div style="font-size:72px;margin-bottom:10px;">🍞</div>
-          <div style="font-size:64px;font-weight:700;color:#059669;">${avgCarbs}g</div>
+          <div style="font-size:64px;font-weight:700;color:#059669;">${fmt(avgCarbs)}g</div>
           <div style="font-size:32px;color:#047857;">碳水化合物</div>
         </div>
         <div style="background:linear-gradient(135deg,#fce7f3,#fbcfe8);border-radius:40px;padding:40px 20px;text-align:center;">
           <div style="font-size:72px;margin-bottom:10px;">🥑</div>
-          <div style="font-size:64px;font-weight:700;color:#db2777;">${avgFat}g</div>
+          <div style="font-size:64px;font-weight:700;color:#db2777;">${fmt(avgFat)}g</div>
           <div style="font-size:32px;color:#be185d;">脂肪</div>
         </div>
       </div>
@@ -137,9 +139,9 @@ function createStyle2HTML(stats, records, endDateStr) {
         <div style="background:white;border-radius:40px;padding:40px;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
           <div style="font-size:40px;font-weight:600;color:#374151;margin-bottom:25px;">📈 熱量統計</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:36px;">
-            <div style="display:flex;justify-content:space-between;"><span style="color:#6b7280;">最高</span><span style="font-weight:600;color:#ef4444;">${maxCal}</span></div>
-            <div style="display:flex;justify-content:space-between;"><span style="color:#6b7280;">最低</span><span style="font-weight:600;color:#22c55e;">${minCal}</span></div>
-            <div style="display:flex;justify-content:space-between;"><span style="color:#6b7280;">本週均</span><span style="font-weight:600;color:#4f46e5;">${week1Avg}</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:#6b7280;">最高</span><span style="font-weight:600;color:#ef4444;">${fmt(maxCal)}</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:#6b7280;">最低</span><span style="font-weight:600;color:#22c55e;">${fmt(minCal)}</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:#6b7280;">本週均</span><span style="font-weight:600;color:#4f46e5;">${fmt(week1Avg)}</span></div>
             <div style="display:flex;justify-content:space-between;"><span style="color:#6b7280;">趨勢</span><span style="font-weight:600;color:${trend>=0?'#ef4444':'#22c55e'};">${trend>=0?'↑':'↓'}${Math.abs(trend)}</span></div>
           </div>
         </div>
@@ -170,10 +172,10 @@ function createStyle2HTML(stats, records, endDateStr) {
                   <span style="color:#64748b;">${safeDate(r.date).slice(5)}</span>
                   <span style="color:#94a3b8;font-size:24px;">(${dayName})</span>
                 </td>
-                <td style="padding:18px 10px;text-align:right;font-weight:600;color:${calColor};">${safeNum(r.total_calories)}</td>
-                <td style="padding:18px 10px;text-align:right;color:#64748b;">${safeNum(r.total_protein)}g</td>
-                <td style="padding:18px 10px;text-align:right;color:#64748b;">${safeNum(r.total_carbs)}g</td>
-                <td style="padding:18px 10px;text-align:right;color:#64748b;">${safeNum(r.total_fat)}g</td>
+                <td style="padding:18px 10px;text-align:right;font-weight:600;color:${calColor};">${fmtNum(safeNum(r.total_calories))}</td>
+                <td style="padding:18px 10px;text-align:right;color:#64748b;">${fmt(safeNum(r.total_protein))}g</td>
+                <td style="padding:18px 10px;text-align:right;color:#64748b;">${fmt(safeNum(r.total_carbs))}g</td>
+                <td style="padding:18px 10px;text-align:right;color:#64748b;">${fmt(safeNum(r.total_fat))}g</td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -199,14 +201,14 @@ function createStyle1HTML(stats, records, endDateStr) {
       <div style="font-size:64px;color:#2d6a4f;border-bottom:3px solid #2d6a4f;padding-bottom:20px;margin-bottom:40px;">CaloScanAi 健康報表</div>
       <div style="font-size:36px;color:#666;margin-bottom:50px;">${endDateStr} | 近${records.length}天</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:25px;margin-bottom:50px;">
-        <div style="background:#f0f9f4;padding:30px;border-radius:20px;text-align:center;border-left:5px solid #2d6a4f;"><div style="font-size:56px;font-weight:bold;color:#2d6a4f;">${avgCal}</div><div style="font-size:30px;color:#666;">平均熱量</div></div>
-        <div style="background:#f0f9f4;padding:30px;border-radius:20px;text-align:center;border-left:5px solid #2d6a4f;"><div style="font-size:56px;font-weight:bold;color:#2d6a4f;">${avgPro}g</div><div style="font-size:30px;color:#666;">蛋白質</div></div>
-        <div style="background:#f0f9f4;padding:30px;border-radius:20px;text-align:center;border-left:5px solid #2d6a4f;"><div style="font-size:56px;font-weight:bold;color:#2d6a4f;">${avgCarbs}g</div><div style="font-size:30px;color:#666;">碳水</div></div>
-        <div style="background:#f0f9f4;padding:30px;border-radius:20px;text-align:center;border-left:5px solid #2d6a4f;"><div style="font-size:56px;font-weight:bold;color:#2d6a4f;">${avgFat}g</div><div style="font-size:30px;color:#666;">脂肪</div></div>
+        <div style="background:#f0f9f4;padding:30px;border-radius:20px;text-align:center;border-left:5px solid #2d6a4f;"><div style="font-size:56px;font-weight:bold;color:#2d6a4f;">${fmt(avgCal)}</div><div style="font-size:30px;color:#666;">平均熱量</div></div>
+        <div style="background:#f0f9f4;padding:30px;border-radius:20px;text-align:center;border-left:5px solid #2d6a4f;"><div style="font-size:56px;font-weight:bold;color:#2d6a4f;">${fmt(avgPro)}g</div><div style="font-size:30px;color:#666;">蛋白質</div></div>
+        <div style="background:#f0f9f4;padding:30px;border-radius:20px;text-align:center;border-left:5px solid #2d6a4f;"><div style="font-size:56px;font-weight:bold;color:#2d6a4f;">${fmt(avgCarbs)}g</div><div style="font-size:30px;color:#666;">碳水</div></div>
+        <div style="background:#f0f9f4;padding:30px;border-radius:20px;text-align:center;border-left:5px solid #2d6a4f;"><div style="font-size:56px;font-weight:bold;color:#2d6a4f;">${fmt(avgFat)}g</div><div style="font-size:30px;color:#666;">脂肪</div></div>
       </div>
       <table style="width:100%;border-collapse:collapse;font-size:32px;">
         <thead><tr style="background:#2d6a4f;color:white;"><th style="padding:20px;">日期</th><th style="padding:20px;text-align:right;">熱量</th><th style="padding:20px;text-align:right;">蛋白</th><th style="padding:20px;text-align:right;">碳水</th><th style="padding:20px;text-align:right;">脂肪</th></tr></thead>
-        <tbody>${records.slice(0,18).map((r,i) => `<tr style="background:${i%2===0?'#f9f9f9':'white'};"><td style="padding:16px;">${safeDate(r.date)}</td><td style="padding:16px;text-align:right;">${safeNum(r.total_calories)}</td><td style="padding:16px;text-align:right;">${safeNum(r.total_protein)}</td><td style="padding:16px;text-align:right;">${safeNum(r.total_carbs)}</td><td style="padding:16px;text-align:right;">${safeNum(r.total_fat)}</td></tr>`).join('')}</tbody>
+        <tbody>${records.slice(0,18).map((r,i) => `<tr style="background:${i%2===0?'#f9f9f9':'white'};"><td style="padding:16px;">${safeDate(r.date)}</td><td style="padding:16px;text-align:right;">${fmtNum(safeNum(r.total_calories))}</td><td style="padding:16px;text-align:right;">${fmt(safeNum(r.total_protein))}</td><td style="padding:16px;text-align:right;">${fmt(safeNum(r.total_carbs))}</td><td style="padding:16px;text-align:right;">${fmt(safeNum(r.total_fat))}</td></tr>`).join('')}</tbody>
       </table>
       <div style="text-align:center;margin-top:50px;font-size:28px;color:#999;">由 CaloScanAi 自動生成</div>
     </div>
