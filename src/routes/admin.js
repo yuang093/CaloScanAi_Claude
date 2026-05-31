@@ -36,6 +36,7 @@ const adminMiddleware = async (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
+    next(error);
     res.status(401).json({ error: '無效的認證令牌' });
   }
 };
@@ -95,7 +96,7 @@ router.put('/users/:id/password', adminMiddleware, (req, res) => {
     return res.status(400).json({ error: '密碼至少需要 6 個字元' });
   }
 
-  const hashedPassword = bcrypt.hashSync(password, 10);
+  const hashedPassword = bcrypt.hashSync(password, 12);
   const result = db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, req.params.id);
 
   if (result.changes === 0) {
@@ -502,7 +503,7 @@ router.post('/restore', adminMiddleware, (req, res) => {
         if (!existing) {
           db.prepare(`
             INSERT INTO daily_progress (id, user_id, date, total_calories, total_protein, total_carbs, total_fat, goal_calories, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
           `).run(item.id, item.user_id, item.date, item.total_calories || 0,
             item.total_protein || 0, item.total_carbs || 0, item.total_fat || 0,
             item.goal_calories || 2000, item.created_at);

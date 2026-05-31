@@ -292,7 +292,7 @@ window.loadRecentFoods = async function() {
             <img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />
           </div>
           <div style="flex:1; min-width:0; padding-right:12px;">
-            <div style="font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${f.description || '未命名食物'}</div>
+            <div style="font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(f.description || '未命名食物')}</div>
             <div style="font-size:0.8rem; color:var(--color-text-muted);">${f.calories} kcal</div>
           </div>
           <button onclick="window.copyFoodLog(${f.id}, '${fEscapedName}', ${f.calories || 0}, ${f.protein || 0}, ${f.carbs || 0}, ${f.fat || 0}, '${fEscapedImgPath}')" style="flex-shrink:0; padding:4px 10px; font-size:0.72rem; background:var(--color-surface); color:var(--color-text); border:1.5px solid var(--color-border); border-radius:6px; cursor:pointer;">加入</button>
@@ -911,7 +911,7 @@ window.showBatchResults = function() {
   resultsList.innerHTML = batchAnalysisResults.map((item, index) => `
     <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid var(--color-border);">
       <div style="flex:1;">
-        <div style="font-weight:500;">${item.name}</div>
+        <div style="font-weight:500;">${window.escapeHtml(item.name)}</div>
         <div style="font-size:0.8rem; color:var(--color-text-muted);">蛋白質 ${item.protein}g | 碳水 ${item.carbs}g | 脂肪 ${item.fat}g</div>
       </div>
       <div style="font-weight:bold; color:var(--color-primary);">${item.calories} kcal</div>
@@ -1085,7 +1085,7 @@ window.renderShareCard = function() {
           const icons = ['🍎','🥚','🍚','🐟','🥗','🍌','🍗','🥛','🥑','🍠'];
           return `
           <div style="display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid ${isDarkStyle?'rgba(255,255,255,0.05)':'#f0f0f0'}; font-size:0.75rem;">
-            <span style="color:${isDarkStyle?'#e2e8f0':'#333'};">${icons[i] || '🍽️'} ${f.name || f.description || '食物'}</span>
+            <span style="color:${isDarkStyle?'#e2e8f0':'#333'};">${icons[i] || '🍽️'} ${window.escapeHtml(f.name || f.description || '食物')}</span>
             <span style="color:${config.textColor}; font-weight:600;">${f.calories || 0} kcal</span>
           </div>`;
         }).join('') : `<div style="text-align:center; color:${subTextColor}; padding:20px 0; font-size:0.8rem;">尚無食物記錄</div>`}

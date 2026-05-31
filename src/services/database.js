@@ -686,7 +686,7 @@ if (quoteCount.count === 0) {
 // User operations
 export const UserDB = {
   create(username, password, name, role = 'user') {
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    const hashedPassword = bcrypt.hashSync(password, 12);
     const stmt = db.prepare('INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)');
     const result = stmt.run(username, hashedPassword, name, role);
     return this.findById(result.lastInsertRowid);
