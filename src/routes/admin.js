@@ -4,6 +4,10 @@ import { UserDB, FoodLogDB, DailyProgressDB, QuoteDB, BarcodeDB } from '../servi
 import { verifyToken } from '../middleware/auth.js';
 import { getLocalDate } from '../utils/date.js';
 import db from '../services/database.js';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { execSync } from 'child_process';
+import fs from 'fs';
 
 const router = express.Router();
 
@@ -32,6 +36,7 @@ const adminMiddleware = async (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
+    next(error);
     res.status(401).json({ error: '無效的認證令牌' });
   }
 };
@@ -91,7 +96,7 @@ router.put('/users/:id/password', adminMiddleware, (req, res) => {
     return res.status(400).json({ error: '密碼至少需要 6 個字元' });
   }
 
-  const hashedPassword = bcrypt.hashSync(password, 10);
+  const hashedPassword = bcrypt.hashSync(password, 12);
   const result = db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, req.params.id);
 
   if (result.changes === 0) {
@@ -387,13 +392,17 @@ router.delete('/quotes/:id', adminMiddleware, (req, res) => {
 router.get('/backup', adminMiddleware, (req, res) => {
   try {
     const backupData = {
-      version: '1.0',
+      version: '2.0',
       timestamp: new Date().toISOString(),
       tables: {
-        barcodes: db.prepare('SELECT * FROM barcodes ORDER BY created_at DESC').all(),
+        barcodes: db.prepare('SELECT * FROM barcodes ORDER BY id').all(),
         users: db.prepare('SELECT id, username, name, role, created_at FROM users ORDER BY id').all(),
         user_profiles: db.prepare('SELECT * FROM user_profiles').all(),
-        daily_quotes: db.prepare('SELECT * FROM daily_quotes ORDER BY id').all()
+        daily_quotes: db.prepare('SELECT * FROM daily_quotes ORDER BY id').all(),
+        food_logs: db.prepare('SELECT * FROM food_logs ORDER BY id').all(),
+        daily_progress: db.prepare('SELECT * FROM daily_progress ORDER BY id').all(),
+        favorites: db.prepare('SELECT * FROM favorites ORDER BY id').all(),
+        shopping_lists: db.prepare('SELECT * FROM shopping_lists ORDER BY id').all()
       }
     };
 
@@ -416,26 +425,117 @@ router.post('/restore', adminMiddleware, (req, res) => {
       return res.status(400).json({ error: '無效的備份資料' });
     }
 
+    const tables = data.tables;
+
     // Restore barcodes
-    if (data.tables.barcodes && Array.isArray(data.tables.barcodes)) {
-      // Clear existing barcodes and insert new ones
+    if (tables.barcodes && Array.isArray(tables.barcodes)) {
       db.exec('DELETE FROM barcodes');
-      const stmt = db.prepare(`
-        INSERT INTO barcodes (barcode, name, brand, calories, protein, carbs, fat, serving_size, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      const barcodeStmt = db.prepare(`
+        INSERT INTO barcodes (barcode, name, brand, calories, protein, carbs, fat, serving_size, image_path, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
-      for (const item of data.tables.barcodes) {
-        stmt.run(
-          item.barcode,
-          item.name,
-          item.brand || '未知',
-          item.calories || 0,
-          item.protein || 0,
-          item.carbs || 0,
-          item.fat || 0,
-          item.serving_size || '未知',
+      for (const item of tables.barcodes) {
+        barcodeStmt.run(
+          item.barcode, item.name, item.brand || '未知',
+          item.calories || 0, item.protein || 0, item.carbs || 0, item.fat || 0,
+          item.serving_size || '未知', item.image_path || null,
           item.created_at || new Date().toISOString()
         );
+      }
+    }
+
+    // Restore users (password is hashed, so we skip password column for security)
+    if (tables.users && Array.isArray(tables.users)) {
+      // Remove existing non-admin users, keep admins
+      db.exec("DELETE FROM users WHERE role = 'user'");
+      const userStmt = db.prepare(`
+        INSERT INTO users (username, name, role, created_at) VALUES (?, ?, ?, ?)
+      `);
+      for (const item of tables.users) {
+        if (item.role === 'admin') {
+          userStmt.run(item.username, item.name, item.role, item.created_at);
+        }
+      }
+    }
+
+    // Restore user_profiles
+    if (tables.user_profiles && Array.isArray(tables.user_profiles)) {
+      for (const item of tables.user_profiles) {
+        const existing = db.prepare('SELECT id FROM user_profiles WHERE user_id = ?').get(item.user_id);
+        if (!existing) {
+          db.prepare(`
+            INSERT INTO user_profiles (user_id, weight, height, age, gender, activity_level, goal_calories, custom_bmr, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(item.user_id, item.weight, item.height, item.age, item.gender, item.activity_level,
+            item.goal_calories, item.custom_bmr, item.created_at);
+        }
+      }
+    }
+
+    // Restore daily_quotes
+    if (tables.daily_quotes && Array.isArray(tables.daily_quotes)) {
+      db.exec('DELETE FROM daily_quotes');
+      const quoteStmt = db.prepare('INSERT INTO daily_quotes (quote, author, created_at) VALUES (?, ?, ?)');
+      for (const item of tables.daily_quotes) {
+        quoteStmt.run(item.quote, item.author || null, item.created_at);
+      }
+    }
+
+    // Restore food_logs
+    if (tables.food_logs && Array.isArray(tables.food_logs)) {
+      for (const item of tables.food_logs) {
+        const existing = db.prepare('SELECT id FROM food_logs WHERE id = ?').get(item.id);
+        if (!existing) {
+          db.prepare(`
+            INSERT INTO food_logs (id, user_id, image_path, meal_type, calories, protein, carbs, fat, description, barcode_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(item.id, item.user_id, item.image_path || null, item.meal_type,
+            item.calories || 0, item.protein || 0, item.carbs || 0, item.fat || 0,
+            item.description, item.barcode_id, item.created_at);
+        }
+      }
+    }
+
+    // Restore daily_progress
+    if (tables.daily_progress && Array.isArray(tables.daily_progress)) {
+      for (const item of tables.daily_progress) {
+        const existing = db.prepare('SELECT id FROM daily_progress WHERE id = ?').get(item.id);
+        if (!existing) {
+          db.prepare(`
+            INSERT INTO daily_progress (id, user_id, date, total_calories, total_protein, total_carbs, total_fat, goal_calories, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(item.id, item.user_id, item.date, item.total_calories || 0,
+            item.total_protein || 0, item.total_carbs || 0, item.total_fat || 0,
+            item.goal_calories || 2000, item.created_at);
+        }
+      }
+    }
+
+    // Restore favorites
+    if (tables.favorites && Array.isArray(tables.favorites)) {
+      for (const item of tables.favorites) {
+        const existing = db.prepare('SELECT id FROM favorites WHERE id = ?').get(item.id);
+        if (!existing) {
+          db.prepare(`
+            INSERT INTO favorites (id, user_id, barcode_id, name, brand, calories, protein, carbs, fat, serving_size, use_count, image_path, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(item.id, item.user_id, item.barcode_id, item.name, item.brand,
+            item.calories || 0, item.protein || 0, item.carbs || 0, item.fat || 0,
+            item.serving_size, item.use_count || 0, item.image_path || null, item.created_at);
+        }
+      }
+    }
+
+    // Restore shopping_lists
+    if (tables.shopping_lists && Array.isArray(tables.shopping_lists)) {
+      for (const item of tables.shopping_lists) {
+        const existing = db.prepare('SELECT id FROM shopping_lists WHERE id = ?').get(item.id);
+        if (!existing) {
+          db.prepare(`
+            INSERT INTO shopping_lists (id, user_id, name, items, created_at)
+            VALUES (?, ?, ?, ?, ?)
+          `).run(item.id, item.user_id, item.name, item.items || '[]', item.created_at);
+        }
       }
     }
 
@@ -445,8 +545,474 @@ router.post('/restore', adminMiddleware, (req, res) => {
     });
   } catch (error) {
     console.error('Restore error:', error);
-    res.status(500).json({ error: '還原失敗' });
+    res.status(500).json({ error: '還原失敗: ' + error.message });
   }
 });
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// 取得實際的 data 目錄路徑（從 server/index.js 往上两级）
+const dataDir = join(process.cwd(), 'data');
+const backupDir = join(dataDir, 'backups/db'); // 放在 data volume 內
+const uploadsDir = join(process.cwd(), 'uploads'); // 上傳照片目錄
+const fullBackupDir = join(dataDir, 'backups/full'); // 完整備份目錄
+
+// GET /api/admin/db/backup - 備份資料庫到 VPS
+router.get('/db/backup', adminMiddleware, (req, res) => {
+  try {
+    const dbFile = join(dataDir, 'caloscanai.db');
+    if (!fs.existsSync(dbFile)) {
+      return res.status(404).json({ error: '資料庫檔案不存在' });
+    }
+
+    // 確保備份目錄存在
+    fs.mkdirSync(backupDir, { recursive: true });
+
+    const date = new Date();
+    const dateStr = date.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const filename = `caloscanai_${dateStr}.db`;
+    const destPath = join(backupDir, filename);
+
+    // 使用 Node.js 直接複製檔案（無需 sqlite3 CLI）
+    fs.copyFileSync(dbFile, destPath);
+
+    const stats = fs.statSync(destPath);
+    const backups = fs.readdirSync(backupDir).filter(f => f.endsWith('.db')).sort().reverse();
+
+    res.json({
+      success: true,
+      message: '資料庫備份成功',
+      data: {
+        filename,
+        path: destPath,
+        size: stats.size,
+        createdAt: stats.mtime.toISOString(),
+        backups: backups.slice(0, 10) // 最近 10 個備份
+      }
+    });
+  } catch (error) {
+    console.error('DB backup error:', error);
+    res.status(500).json({ error: '備份失敗: ' + error.message });
+  }
+});
+
+// GET /api/admin/db/list - 列出 VPS 上的備份
+router.get('/db/list', adminMiddleware, (req, res) => {
+  try {
+    fs.mkdirSync(backupDir, { recursive: true });
+    const backups = fs.readdirSync(backupDir)
+      .filter(f => f.endsWith('.db'))
+      .map(f => {
+        const stats = fs.statSync(join(backupDir, f));
+        return {
+          filename: f,
+          size: stats.size,
+          createdAt: stats.mtime.toISOString()
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({ success: true, data: backups });
+  } catch (error) {
+    console.error('List backups error:', error);
+    res.status(500).json({ error: '取得備份列表失敗' });
+  }
+});
+
+// POST /api/admin/db/restore/:filename - 從 VPS 備份還原
+router.post('/db/restore/:filename', adminMiddleware, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    // 阻止路徑穿越：只允許字母、數字、底線、連字符、冒號（ISO時間格式）
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_\-:]/g, '');
+    if (safeFilename !== filename) {
+      return res.status(400).json({ error: '無效的檔案名稱' });
+    }
+    const srcPath = join(backupDir, safeFilename);
+    const dbFile = join(dataDir, 'caloscanai.db');
+
+    if (!fs.existsSync(srcPath)) {
+      return res.status(404).json({ error: '備份檔案不存在' });
+    }
+
+    // 先備份當前資料庫（以防萬一）
+    fs.mkdirSync(backupDir, { recursive: true });
+    const backupName = `before_restore_${Date.now()}.db`;
+    fs.copyFileSync(dbFile, join(backupDir, backupName));
+
+    // 複製備份檔案到資料庫位置（不關閉連接，讓 better-sqlite3 自行處理）
+    fs.copyFileSync(srcPath, dbFile);
+
+    res.json({
+      success: true,
+      message: '還原成功，已自動備份當前資料庫'
+    });
+  } catch (error) {
+    console.error('DB restore error:', error);
+    res.status(500).json({ error: '還原失敗: ' + error.message });
+  }
+});
+
+// DELETE /api/admin/db/:filename - 刪除 VPS 備份
+router.delete('/db/:filename', adminMiddleware, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_\-:]/g, '');
+    if (safeFilename !== filename) {
+      return res.status(400).json({ error: '無效的檔案名稱' });
+    }
+    const filePath = join(backupDir, safeFilename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: '備份檔案不存在' });
+    }
+
+    fs.unlinkSync(filePath);
+    res.json({ success: true, message: '刪除成功' });
+  } catch (error) {
+    console.error('Delete backup error:', error);
+    res.status(500).json({ error: '刪除失敗: ' + error.message });
+  }
+});
+
+// GET /api/admin/db/download - 下載資料庫到電腦
+router.get('/db/download', adminMiddleware, (req, res) => {
+  try {
+    const dbFile = join(dataDir, 'caloscanai.db');
+    if (!fs.existsSync(dbFile)) {
+      return res.status(404).json({ error: '資料庫檔案不存在' });
+    }
+
+    // 讀取檔案為緩衝區（避免 sendFile 被鎖定）
+    const fileBuffer = fs.readFileSync(dbFile);
+    const filename = `caloscanai_${new Date().toISOString().slice(0, 10)}.db`;
+
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/x-sqlite3');
+    res.setHeader('Content-Length', fileBuffer.length);
+    res.end(fileBuffer);
+  } catch (error) {
+    console.error('DB download error:', error);
+    res.status(500).json({ error: '下載失敗: ' + error.message });
+  }
+});
+
+// POST /api/admin/db/upload - 上傳資料庫檔案還原
+router.post('/db/upload', adminMiddleware, (req, res) => {
+  try {
+    if (!req.body || !req.body.dbData) {
+      return res.status(400).json({ error: '未提供資料庫檔案' });
+    }
+
+    const buffer = Buffer.from(req.body.dbData, 'base64');
+    const dbFile = join(dataDir, 'caloscanai.db');
+
+    // 先備份當前資料庫
+    fs.mkdirSync(backupDir, { recursive: true });
+    const backupName = `before_upload_${Date.now()}.db`;
+    fs.copyFileSync(dbFile, join(backupDir, backupName));
+
+    // 寫入新資料庫檔案
+    fs.writeFileSync(dbFile, buffer);
+
+    res.json({
+      success: true,
+      message: '上傳還原成功，已自動備份當前資料庫'
+    });
+  } catch (error) {
+    console.error('DB upload error:', error);
+    res.status(500).json({ error: '上傳失敗: ' + error.message });
+  }
+});
+
+// ==================== 完整備份（資料庫 + 照片）====================
+
+// GET /api/admin/full/backup - 完整備份到 VPS（資料庫 + 照片）
+router.get('/full/backup', adminMiddleware, (req, res) => {
+  try {
+    const dbFile = join(dataDir, 'caloscanai.db');
+    if (!fs.existsSync(dbFile)) {
+      return res.status(404).json({ error: '資料庫檔案不存在' });
+    }
+
+    fs.mkdirSync(fullBackupDir, { recursive: true });
+    fs.mkdirSync(backupDir, { recursive: true });
+
+    const date = new Date();
+    const dateStr = date.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const backupName = `full_backup_${dateStr}`;
+    const backupFolder = join(fullBackupDir, backupName);
+    const tarPath = join(fullBackupDir, backupName + '.tar.gz');
+    fs.mkdirSync(backupFolder, { recursive: true });
+
+    // 複製資料庫
+    fs.copyFileSync(dbFile, join(backupFolder, 'caloscanai.db'));
+
+    // 複製照片目錄
+    if (fs.existsSync(uploadsDir)) {
+      copyDirRecursive(uploadsDir, join(backupFolder, 'uploads'));
+    }
+
+    // 壓縮成 tar.gz（tar 在 Docker 通常有）
+    execSync(`tar -czf "${tarPath}" -C "${fullBackupDir}" "${backupName}"`, { stdio: 'pipe' });
+
+    // 刪除未壓縮的資料夾
+    fs.rmSync(backupFolder, { recursive: true });
+
+    const stats = fs.statSync(tarPath);
+    const backups = fs.readdirSync(fullBackupDir).filter(f => f.endsWith('.tar.gz')).sort().reverse();
+
+    res.json({
+      success: true,
+      message: '完整備份成功（資料庫 + 照片）',
+      data: {
+        filename: backupName + '.tar.gz',
+        size: stats.size,
+        createdAt: stats.mtime.toISOString(),
+        backups: backups.slice(0, 10)
+      }
+    });
+  } catch (error) {
+    console.error('Full backup error:', error);
+    res.status(500).json({ error: '完整備份失敗: ' + error.message });
+  }
+});
+
+// GET /api/admin/full/list - 列出 VPS 完整備份
+router.get('/full/list', adminMiddleware, (req, res) => {
+  try {
+    fs.mkdirSync(fullBackupDir, { recursive: true });
+    const backups = fs.readdirSync(fullBackupDir)
+      .filter(f => f.endsWith('.tar.gz'))
+      .map(f => {
+        const stats = fs.statSync(join(fullBackupDir, f));
+        return {
+          filename: f,
+          size: stats.size,
+          createdAt: stats.mtime.toISOString()
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({ success: true, data: backups });
+  } catch (error) {
+    console.error('List full backups error:', error);
+    res.status(500).json({ error: '取得備份列表失敗' });
+  }
+});
+
+// GET /api/admin/full/download/:filename - 下載完整備份到電腦
+router.get('/full/download/:filename', adminMiddleware, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_\-:]/g, '');
+    if (safeFilename !== filename) {
+      return res.status(400).json({ error: '無效的檔案名稱' });
+    }
+    const filePath = join(fullBackupDir, safeFilename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: '備份檔案不存在' });
+    }
+
+    const fileBuffer = fs.readFileSync(filePath);
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    res.setHeader('Content-Type', 'application/gzip');
+    res.setHeader('Content-Length', fileBuffer.length);
+    res.end(fileBuffer);
+  } catch (error) {
+    console.error('Full backup download error:', error);
+    res.status(500).json({ error: '下載失敗' });
+  }
+});
+
+// POST /api/admin/full/restore/:filename - 從 VPS 完整備份還原
+router.post('/full/restore/:filename', adminMiddleware, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_\-:]/g, '');
+    if (safeFilename !== filename) {
+      return res.status(400).json({ error: '無效的檔案名稱' });
+    }
+    const tarPath = join(fullBackupDir, safeFilename);
+
+    if (!fs.existsSync(tarPath)) {
+      return res.status(404).json({ error: '備份檔案不存在' });
+    }
+
+    fs.mkdirSync(fullBackupDir, { recursive: true });
+    fs.mkdirSync(backupDir, { recursive: true });
+
+    // 備份當前
+    fs.copyFileSync(join(dataDir, 'caloscanai.db'), join(backupDir, `before_full_restore_${Date.now()}.db`));
+
+    // 解壓縮到暫存目錄
+    const extractDir = join(fullBackupDir, 'temp_restore_' + Date.now());
+    fs.mkdirSync(extractDir, { recursive: true });
+    try {
+      execSync(`tar -xzf "${tarPath}" -C "${extractDir}"`, { stdio: 'pipe' });
+    } catch (execError) {
+      fs.rmSync(extractDir, { recursive: true });
+      return res.status(500).json({ error: '解壓縮失敗: ' + execError.message });
+    }
+
+    // 找到解壓出來的資料夾並驗證
+    const extractedFolders = fs.readdirSync(extractDir).filter(f => fs.statSync(join(extractDir, f)).isDirectory());
+    if (extractedFolders.length === 0) {
+      fs.rmSync(extractDir, { recursive: true });
+      throw new Error('解壓縮失敗：找不到資料夾');
+    }
+    const extractedDir = join(extractDir, extractedFolders[0]);
+
+    // 防止路徑穿越：驗證解壓出來的路徑在允許範圍內
+    const realExtractDir = fs.realpathSync(extractDir);
+    const realExtractedDir = fs.realpathSync(extractedDir);
+    if (!realExtractedDir.startsWith(realExtractDir)) {
+      fs.rmSync(extractDir, { recursive: true });
+      return res.status(400).json({ error: '無效的備份檔案' });
+    }
+
+    // 複製資料庫
+    const restoreDb = join(extractedDir, 'caloscanai.db');
+    if (fs.existsSync(restoreDb)) {
+      fs.copyFileSync(restoreDb, join(dataDir, 'caloscanai.db'));
+    }
+
+    // 複製照片
+    const restoreUploads = join(extractedDir, 'uploads');
+    if (fs.existsSync(restoreUploads)) {
+      copyDirRecursive(restoreUploads, uploadsDir);
+    }
+
+    // 清理暫存
+    fs.rmSync(extractDir, { recursive: true });
+
+    res.json({
+      success: true,
+      message: '完整還原成功（資料庫 + 照片），已自動備份當前資料'
+    });
+  } catch (error) {
+    console.error('Full restore error:', error);
+    res.status(500).json({ error: '完整還原失敗: ' + error.message });
+  }
+});
+
+// DELETE /api/admin/full/:filename - 刪除 VPS 完整備份
+router.delete('/full/:filename', adminMiddleware, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_\-:]/g, '');
+    if (safeFilename !== filename) {
+      return res.status(400).json({ error: '無效的檔案名稱' });
+    }
+    const filePath = join(fullBackupDir, safeFilename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: '備份檔案不存在' });
+    }
+
+    fs.unlinkSync(filePath);
+    res.json({ success: true, message: '刪除成功' });
+  } catch (error) {
+    console.error('Delete full backup error:', error);
+    res.status(500).json({ error: '刪除失敗: ' + error.message });
+  }
+});
+
+// POST /api/admin/full/upload - 上傳完整備份還原（tar.gz，含資料庫+照片）
+router.post('/full/upload', adminMiddleware, (req, res) => {
+  try {
+    if (!req.body || !req.body.tarData) {
+      return res.status(400).json({ error: '未提供備份檔案' });
+    }
+
+    let buffer;
+    try {
+      buffer = Buffer.from(req.body.tarData, 'base64');
+      if (buffer.length === 0) {
+        return res.status(400).json({ error: '無效的 base64 資料' });
+      }
+    } catch (decodeError) {
+      return res.status(400).json({ error: 'base64 解碼失敗: ' + decodeError.message });
+    }
+
+    fs.mkdirSync(fullBackupDir, { recursive: true });
+    fs.mkdirSync(backupDir, { recursive: true });
+
+    // 備份當前
+    fs.copyFileSync(join(dataDir, 'caloscanai.db'), join(backupDir, `before_full_upload_${Date.now()}.db`));
+
+    // 寫入 tar.gz
+    const tarPath = join(fullBackupDir, 'temp_upload_' + Date.now() + '.tar.gz');
+    fs.writeFileSync(tarPath, buffer);
+
+    // 解壓縮到暫存目錄
+    const extractDir = join(fullBackupDir, 'temp_restore_' + Date.now());
+    fs.mkdirSync(extractDir, { recursive: true });
+    try {
+      execSync(`tar -xzf "${tarPath}" -C "${extractDir}"`, { stdio: 'pipe' });
+    } catch (execError) {
+      fs.rmSync(extractDir, { recursive: true });
+      fs.unlinkSync(tarPath);
+      return res.status(500).json({ error: '解壓縮失敗: ' + execError.message });
+    }
+    fs.unlinkSync(tarPath);
+
+    // 找到解壓出來的資料夾並驗證
+    const extractedFolders = fs.readdirSync(extractDir).filter(f => fs.statSync(join(extractDir, f)).isDirectory());
+    if (extractedFolders.length === 0) {
+      fs.rmSync(extractDir, { recursive: true });
+      return res.status(400).json({ error: '解壓縮失敗：找不到資料夾' });
+    }
+    const extractedDir = join(extractDir, extractedFolders[0]);
+
+    // 防止路徑穿越：驗證解壓出來的路徑在允許範圍內
+    const realExtractDir = fs.realpathSync(extractDir);
+    const realExtractedDir = fs.realpathSync(extractedDir);
+    if (!realExtractedDir.startsWith(realExtractDir)) {
+      fs.rmSync(extractDir, { recursive: true });
+      return res.status(400).json({ error: '無效的備份檔案' });
+    }
+
+    // 複製資料庫
+    const restoreDb = join(extractedDir, 'caloscanai.db');
+    if (fs.existsSync(restoreDb)) {
+      fs.copyFileSync(restoreDb, join(dataDir, 'caloscanai.db'));
+    }
+
+    // 複製照片
+    const restoreUploads = join(extractedDir, 'uploads');
+    if (fs.existsSync(restoreUploads)) {
+      copyDirRecursive(restoreUploads, uploadsDir);
+    }
+
+    // 清理暫存
+    fs.rmSync(extractDir, { recursive: true });
+
+    res.json({
+      success: true,
+      message: '上傳還原成功（資料庫 + 照片），已自動備份當前資料'
+    });
+  } catch (error) {
+    console.error('Full upload restore error:', error);
+    res.status(500).json({ error: '上傳還原失敗: ' + error.message });
+  }
+});
+
+// 輔助函式：遞迴複製目錄
+function copyDirRecursive(src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = join(src, entry.name);
+    const destPath = join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirRecursive(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
 
 export default router;

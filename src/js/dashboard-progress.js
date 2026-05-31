@@ -212,7 +212,8 @@ window.fetchProgressData = async function() {
       window.generateRecommendation(stats, goalCalories, profileResult.data);
     }
   } catch (error) {
-    console.error('Failed to fetch progress:', error);
+    console.error("Failed to fetch progress:", error);
+    const progressPage = document.getElementById("progress-page"); if (progressPage && progressPage.style.display !== "none") { const errorDiv = document.getElementById("progress-error") || (function() { const d = document.createElement("div"); d.id = "progress-error"; d.style.cssText = "color:#721c24;background:#f8d7da;border:1px solid #f5c6cb;padding:12px;border-radius:8px;margin:16px 0;"; d.textContent = "載入進度失敗，請稍後再試"; progressPage.prepend(d); return d; })(); errorDiv.style.display = "block"; }
   }
 };
 
@@ -285,15 +286,25 @@ window.loadHistoryData = async function(period) {
     if (period === '90days') days = 90;
 
     const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    const startDateObj = new Date();
+    startDateObj.setDate(startDateObj.getDate() - days);
 
-    const formatDate = (d) => d.toISOString().split('T')[0];
+    const toLocalDateStr = (d) => {
+      const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+      const taiwan = new Date(utc + (8 * 60 * 60 * 1000));
+      const y = taiwan.getFullYear();
+      const m = String(taiwan.getMonth() + 1).padStart(2, '0');
+      const day = String(taiwan.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    const endDateStr = toLocalDateStr(endDate);
+    const startDateStr = toLocalDateStr(startDateObj);
 
-    const response = await fetch('/api/progress/history?startDate=' + formatDate(startDate) + '&endDate=' + formatDate(endDate) + '&limit=' + days, {
+    const response = await fetch('/api/progress/history?startDate=' + startDateStr + '&endDate=' + endDateStr + '&limit=' + days, {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     });
     const result = await response.json();
+    console.log("[loadHistoryData] API result:", JSON.stringify(result).substring(0, 500));
 
     if (result.success && result.data.records.length > 0) {
       const records = result.data.records;
@@ -310,7 +321,10 @@ window.loadHistoryData = async function(period) {
       // Lazy load Chart.js before creating charts
       await window.loadChartJs();
 
-      const ctx = document.getElementById('history-chart').getContext('2d');
+      // Small delay to ensure div is visible (canvas can't getContext when parent is hidden)
+      await new Promise(r => setTimeout(r, 50));
+
+      const ctx = document.getElementById('calorie-chart').getContext('2d');
       window.calorieChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -366,15 +380,25 @@ window.loadHistoryData = async function(period) {
 window.exportHistoryCSV = async function() {
   try {
     let days = 30;
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    const formatDate = (d) => d.toISOString().split('T')[0];
+    const toLocalDateStr = (d) => {
+      const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+      const taiwan = new Date(utc + (8 * 60 * 60 * 1000));
+      const y = taiwan.getFullYear();
+      const m = String(taiwan.getMonth() + 1).padStart(2, '0');
+      const day = String(taiwan.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    const endDateObj = new Date();
+    const startDateObj = new Date();
+    startDateObj.setDate(startDateObj.getDate() - days);
+    const endDateStr = toLocalDateStr(endDateObj);
+    const startDateStr = toLocalDateStr(startDateObj);
 
-    const response = await fetch('/api/progress/history?startDate=' + formatDate(startDate) + '&endDate=' + formatDate(endDate) + '&limit=' + days, {
+    const response = await fetch('/api/progress/history?startDate=' + startDateStr + '&endDate=' + endDateStr + '&limit=' + days, {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     });
     const result = await response.json();
+    console.log("[loadHistoryData] API result:", JSON.stringify(result).substring(0, 500));
 
     if (!result.success || !result.data.records.length) {
       alert('尚無資料可匯出');
@@ -390,7 +414,7 @@ window.exportHistoryCSV = async function() {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'caloscanai_history_' + formatDate(endDate) + '.csv';
+    link.download = 'caloscanai_history_' + endDateStr + '.csv';
     link.click();
   } catch (error) {
     console.error('Export CSV error:', error);
@@ -401,12 +425,20 @@ window.exportHistoryCSV = async function() {
 window.exportHistoryPDF = async function() {
   try {
     let days = 30;
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    const formatDate = (d) => d.toISOString().split('T')[0];
+    const toLocalDateStr = (d) => {
+      const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+      const taiwan = new Date(utc + (8 * 60 * 60 * 1000));
+      const y = taiwan.getFullYear();
+      const m = String(taiwan.getMonth() + 1).padStart(2, '0');
+      const day = String(taiwan.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    const endDateObj = new Date();
+    const startDateObj = new Date();
+    startDateObj.setDate(startDateObj.getDate() - days);
+    const endDateStr = toLocalDateStr(endDateObj);
 
-    const response = await fetch('/api/progress/history?startDate=' + formatDate(startDate) + '&endDate=' + formatDate(endDate) + '&limit=' + days, {
+    const response = await fetch('/api/progress/history?startDate=' + toLocalDateStr(startDateObj) + '&endDate=' + endDateStr + '&limit=' + days, {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     });
     const result = await response.json();
@@ -417,89 +449,7 @@ window.exportHistoryPDF = async function() {
     }
 
     const records = result.data.records;
-    const totalCal = records.reduce((sum, r) => sum + r.total_calories, 0);
-    const avgCal = Math.round(totalCal / records.length);
-    const avgPro = Math.round(records.reduce((sum, r) => sum + r.total_protein, 0) / records.length * 10) / 10;
-    const avgCarbs = Math.round(records.reduce((sum, r) => sum + r.total_carbs, 0) / records.length * 10) / 10;
-    const avgFat = Math.round(records.reduce((sum, r) => sum + r.total_fat, 0) / records.length * 10) / 10;
-
-    // Create printable HTML and open in new window
-    const win = window.open('', '_blank');
-    win.document.write(`
-      <html>
-      <head>
-        <title>CaloScanAi 健康報表</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
-          h1 { color: #2d6a4f; border-bottom: 2px solid #2d6a4f; padding-bottom: 10px; }
-          h2 { color: #c85a3b; margin-top: 30px; }
-          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-          th { background: #2d6a4f; color: white; }
-          tr:nth-child(even) { background: #f9f9f9; }
-          .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
-          .summary-item { background: #f0f0f0; padding: 15px; border-radius: 8px; text-align: center; }
-          .summary-item h3 { margin: 0; color: #c85a3b; font-size: 1.5rem; }
-          .summary-item p { margin: 5px 0 0 0; color: #666; }
-          .footer { margin-top: 40px; text-align: center; color: #999; font-size: 0.8rem; }
-          @media print { body { padding: 0; } }
-        </style>
-      </head>
-      <body>
-        <h1>🥗 CaloScanAi 健康報表</h1>
-        <p>報表日期：${formatDate(endDate)}</p>
-
-        <h2>📊 統計摘要</h2>
-        <div class="summary">
-          <div class="summary-item">
-            <h3>${avgCal}</h3>
-            <p>平均熱量 (kcal)</p>
-          </div>
-          <div class="summary-item">
-            <h3>${avgPro}g</h3>
-            <p>平均蛋白質</p>
-          </div>
-          <div class="summary-item">
-            <h3>${avgCarbs}g</h3>
-            <p>平均碳水</p>
-          </div>
-          <div class="summary-item">
-            <h3>${avgFat}g</h3>
-            <p>平均脂肪</p>
-          </div>
-        </div>
-
-        <h2>📅 每日記錄</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>日期</th>
-              <th>熱量 (kcal)</th>
-              <th>蛋白質 (g)</th>
-              <th>碳水 (g)</th>
-              <th>脂肪 (g)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${records.map(r => `
-              <tr>
-                <td>${r.date}</td>
-                <td>${r.total_calories}</td>
-                <td>${r.total_protein}</td>
-                <td>${r.total_carbs}</td>
-                <td>${r.total_fat}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-
-        <div class="footer">
-          由 CaloScanAi 自動生成 | 報表日期：${new Date().toLocaleDateString('zh-TW')}
-        </div>
-      </body>
-      </html>
-    `);
-    win.document.close();
+    await window.generatePDF_Style(2, records, endDateStr);
   } catch (error) {
     console.error('Export PDF error:', error);
     alert('匯出失敗');

@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import sharp from 'sharp';
 import { analyzeFoodImage, parseNutritionalData } from '../services/minimax.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { FoodLogDB, DailyProgressDB, UserProfileDB, BarcodeDB, FavoritesDB, ShoppingDB } from '../services/database.js';
@@ -88,10 +89,14 @@ router.post('/upload', authMiddleware, async (req, res, next) => {
     const imagePath = subDir + '/' + filename;
     const fullPath = join(UPLOADS_DIR, imagePath);
 
-    // Write image file
+    // Write image file with Sharp optimization
     const imageBuffer = Buffer.from(base64Data, 'base64');
-    fs.writeFileSync(fullPath, imageBuffer);
-    console.log('[Food/upload] Image saved to:', fullPath);
+    const optimizedBuffer = await sharp(imageBuffer)
+      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 85, mozjpeg: true })
+      .toBuffer();
+    fs.writeFileSync(fullPath, optimizedBuffer);
+    console.log('[Food/upload] Image saved to:', fullPath, 'original:', imageBuffer.length, 'optimized:', optimizedBuffer.length);
 
     // Also add to food database (barcodes table) - generate pseudo-barcode for AI analyzed foods
     const foodName = nutrition.name || nutrition.description || 'AI 分析食物';

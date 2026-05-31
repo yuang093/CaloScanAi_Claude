@@ -165,6 +165,30 @@ window.analyzeImage = async function() {
   btn.innerHTML = '<span class="loading-spinner"></span> 分析中...';
 
   try {
+    // 嘗試使用 TensorFlow 分類器（快速路徑）
+    const previewImg = document.getElementById('preview-image');
+    if (previewImg) {
+      const tfResult = await window.classifyFoodWithTF(previewImg);
+      if (tfResult && tfResult.confidence >= 0.7) {
+        // TF 分類器高置信度，直接使用快取結果
+        console.log('[Food] Quick match from TF classifier:', tfResult.label);
+        window.analysisData = {
+          name: tfResult.label,
+          totalCalories: 0,
+          totalProtein: 0,
+          totalCarbs: 0,
+          totalFat: 0,
+          description: '（快速匹配）',
+          isQuickMatch: true,
+          tfConfidence: tfResult.confidence
+        };
+        window.displayAnalysisResult(window.analysisData);
+        btn.disabled = false;
+        btn.textContent = '分析食物';
+        return;
+      }
+    }
+
     const base64Data = window.currentPreview.replace(/^data:image\/\w+;base64,/, '');
 
     const res = await fetch('/api/food/analyze', {
@@ -307,6 +331,14 @@ window.addToFoodLog = async function() {
 
     const result = await res.json();
     if (result.success) {
+      // 如果是快速匹配（TF分類器），訓練分類器
+      if (window.analysisData.isQuickMatch && window.analysisData.name) {
+        const previewImg = document.getElementById('preview-image');
+        if (previewImg) {
+          window.trainFoodClassifier(previewImg, window.analysisData.name);
+        }
+      }
+
       const entry = {
         id: result.data.id,
         image: window.currentPreview,
@@ -344,15 +376,19 @@ window.renderFoodLog = function() {
     return;
   }
 
-  container.innerHTML = window.foodLog.map(item => `
+  container.innerHTML = window.foodLog.map(item => {
+    const safeName = item.name
+      ? String(item.name).replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>')
+      : '未命名';
+    return `
     <div class="food-log-item" onclick="window.showFoodDetail(${item.id})" style="cursor:pointer;">
       <img class="food-log-img" src="${item.image}" alt="${item.name}">
       <div class="food-log-info">
-        <div class="food-log-name" style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.name || '未命名'}</div>
+        <div class="food-log-name" style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${safeName}</div>
         <div class="food-log-time">${item.time}</div>
       </div>
     </div>
-  `).join('');
+  `;}).join('');
 };
 
 window.updateProgressTotals = function(goalCalories = 2000) {

@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import foodRouter from '../routes/food.js';
@@ -22,9 +24,40 @@ const corsOrigins = process.env.APP_URL
   ? process.env.APP_URL.split(',').map(url => url.trim())
   : [];
 
-if (!process.env.APP_URL && process.env.NODE_ENV === 'production') {
+if (!process.env.APP_URL) {
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('⚠️ APP_URL not set, CORS is open to all origins (不建議用於生產環境)');
+  }
   console.warn('⚠️ APP_URL not set, CORS is open to all origins');
 }
+
+// Rate limiting - general API
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per window
+  message: { error: '請求太頻繁，請稍後再試' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Rate limiting - stricter for auth endpoints (login, register)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 attempts per window
+  message: { error: '登入嘗試太頻繁，請稍後再試' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Helmet security headers (CSP disabled due to inline event handlers in HTML)
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
+
+// Apply rate limiting
+app.use('/api/', generalLimiter);
+app.use('/api/auth/', authLimiter);
 
 app.use(cors({
   origin: corsOrigins.length > 0 ? corsOrigins : '*',

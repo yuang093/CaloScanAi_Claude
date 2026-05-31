@@ -10,11 +10,18 @@
     "test": "echo \"Tests not configured yet\""
   },
   "dependencies": {
+    "@tensorflow-models/knn-classifier": "^1.2.6",
+    "@tensorflow-models/mobilenet": "^2.1.1",
+    "@tensorflow/tfjs": "^4.22.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.10.0",
     "cors": "^2.8.6",
     "express": "^4.22.2",
-    "jsonwebtoken": "^9.0.3"
+    "express-rate-limit": "^8.5.2",
+    "helmet": "^8.2.0",
+    "jsonwebtoken": "^9.0.3",
+    "jspdf": "^4.2.1",
+    "sharp": "^0.34.5"
   },
   "engines": {
     "node": ">=18.0.0"

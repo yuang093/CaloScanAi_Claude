@@ -58,7 +58,8 @@ window.searchFoodDatabase = async function() {
 
     if (result.success && result.data.length > 0) {
       resultsDiv.innerHTML = result.data.map(food => {
-        const escapedName = food.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        const escapedName = window.escapeJSLiteral(food.name);
+        const escapedImgPath = window.escapeJSLiteral(food.image_path);
         const imgSrc = window.getFoodImgSrc(food.image_path);
         return `
         <div style="padding:12px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:12px;">
@@ -69,7 +70,7 @@ window.searchFoodDatabase = async function() {
             <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name)}</div>
             <div style="font-size:0.8rem; color:#666;">${window.escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
           </div>
-          <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat})" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
+          <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat}, false, '${escapedImgPath}')" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
         </div>
       `}).join('');
     } else if (result.success && result.data.length === 0) {
@@ -95,15 +96,7 @@ window.getFoodImgSrc = function(imagePath) {
 
 // ============ Utilities ============
 
-window.getLocalDate = function() {
-  const now = new Date();
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const taiwanDate = new Date(utc + (8 * 60 * 60 * 1000));
-  const year = taiwanDate.getUTCFullYear();
-  const month = String(taiwanDate.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(taiwanDate.getUTCDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+// getLocalDate：已合併至 date.js，請使用 window.getLocalDate (由 date.js 暴露)
 
 window.escapeHtml = function(text) {
   const div = document.createElement('div');
@@ -111,9 +104,20 @@ window.escapeHtml = function(text) {
   return div.innerHTML;
 };
 
+// JS 字串注入到 onclick 時的完整跳脹（單引號、雙引號、反斜線、換行）
+window.escapeJSLiteral = function(text) {
+  if (text == null) return 'null';
+  return String(text)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r');
+};
+
 // ============ Add Food From Database ============
 
-window.addFoodFromDatabase = async function(id, name, calories, protein, carbs, fat, isFavorite = false) {
+window.addFoodFromDatabase = async function(id, name, calories, protein, carbs, fat, isFavorite = false, imagePath = null) {
   try {
     const response = await fetch('/api/food/add-from-database', {
       method: 'POST',
@@ -121,7 +125,7 @@ window.addFoodFromDatabase = async function(id, name, calories, protein, carbs, 
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + localStorage.getItem('token')
       },
-      body: JSON.stringify({ barcodeId: id, isFavorite, name, calories, protein, carbs, fat })
+      body: JSON.stringify({ barcodeId: id, isFavorite, name, calories, protein, carbs, fat, imagePath: imagePath || null })
     });
     const result = await response.json();
 
@@ -219,32 +223,30 @@ window.loadFavorites = async function() {
 
     if (result.success && result.data.length > 0) {
       container.innerHTML = result.data.slice(0, 20).map(food => {
-        const escapedName = (food.name || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        const escapedName = window.escapeJSLiteral(food.name || '');
+        const escapedImgPath = window.escapeJSLiteral(food.image_path);
         const isStats = food.isStats;
         const imgSrc = window.getFoodImgSrc(food.image_path);
 
         if (isStats) {
-          // 最常食用模式 - 卡片式 UI
+          // 最常食用模式 - 精簡卡片 UI
           return `
-          <div style="background:#fafafa; border-radius:12px; padding:14px; margin-bottom:10px; border:1px solid var(--color-border);">
-            <div style="display:flex; align-items:flex-start; gap:12px;">
-              <div style="width:56px;height:56px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#f3f0f0;">
+          <div style="background:#fafafa; border-radius:8px; padding:10px; margin-bottom:8px; border:1px solid var(--color-border);">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0;background:#f3f0f0;">
                 <img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />
               </div>
               <div style="flex:1; min-width:0;">
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                  <span style="background:#e8f5e9; color:#2d6a4f; font-size:0.7rem; padding:2px 8px; border-radius:12px; font-weight:600;">📊 最常食用</span>
-                  <span style="background:#fff3e0; color:#e65100; font-size:0.7rem; padding:2px 8px; border-radius:12px; font-weight:600;">🔥 ${food.use_count}次</span>
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+                  <span style="background:#e8f5e9; color:#2d6a4f; font-size:0.65rem; padding:1px 6px; border-radius:10px; font-weight:600;">最常食用</span>
+                  <span style="background:#fff3e0; color:#e65100; font-size:0.65rem; padding:1px 6px; border-radius:10px; font-weight:600;">${food.use_count}次</span>
                 </div>
-                <div style="font-weight:600; font-size:1rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
-                <div style="font-size:0.85rem; color:#666; margin-top:4px;">
-                  ${food.calories} kcal
-                </div>
-                <div style="font-size:0.75rem; color:var(--color-text-muted); margin-top:4px;">
-                  🥩 蛋白質 ${food.protein}g  •  🍚 碳水 ${food.carbs}g  •  🧈 脂肪 ${food.fat}g
+                <div style="font-weight:600; font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
+                <div style="font-size:0.72rem; color:#666; margin-top:1px;">
+                  ${food.calories} kcal | 蛋白 ${food.protein}g | 碳水 ${food.carbs}g | 脂肪 ${food.fat}g
                 </div>
               </div>
-              <button onclick="window.addFoodFromStats(${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat}, '${escapedName}', ${food.image_path ? '\'' + food.image_path + '\'' : 'null'})" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
+              <button onclick="window.addFoodFromStats(${food.calories}, ${food.protein}, ${food.carbs}, ${food.fat}, '${escapedName}', '${escapedImgPath}')" style="flex-shrink:0; padding:4px 10px; font-size:0.72rem; background:var(--color-primary); color:white; border:none; border-radius:6px; cursor:pointer;">加入</button>
             </div>
           </div>`;
         } else {
@@ -258,7 +260,7 @@ window.loadFavorites = async function() {
               <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(food.name || '未命名')}</div>
               <div style="font-size:0.8rem; color:var(--color-text-muted);">${window.escapeHtml(food.brand || '')} • ${food.calories} kcal</div>
             </div>
-            <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0}, true)" class="btn btn-primary btn-small" style="flex-shrink:0;">加入</button>
+            <button onclick="window.addFoodFromDatabase(${food.id}, '${escapedName}', ${food.calories || 0}, ${food.protein || 0}, ${food.carbs || 0}, ${food.fat || 0}, true, '${escapedImgPath}')" style="flex-shrink:0; padding:4px 10px; font-size:0.72rem; background:var(--color-primary); color:white; border:none; border-radius:6px; cursor:pointer;">加入</button>
           </div>`;
         }
       }).join('');
@@ -281,7 +283,8 @@ window.loadRecentFoods = async function() {
 
     if (result.success && result.data.length > 0) {
       container.innerHTML = result.data.map(f => {
-        const escapedName = (f.description || '未命名食物').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        const fEscapedName = window.escapeJSLiteral(f.description || '未命名食物');
+        const fEscapedImgPath = window.escapeJSLiteral(f.image_path);
         const imgSrc = window.getFoodImgSrc(f.image_path);
         return `
         <div style="display:flex; align-items:center; padding:8px; border-bottom:1px solid var(--color-border);">
@@ -289,10 +292,10 @@ window.loadRecentFoods = async function() {
             <img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />
           </div>
           <div style="flex:1; min-width:0; padding-right:12px;">
-            <div style="font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${f.description || '未命名食物'}</div>
+            <div style="font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${window.escapeHtml(f.description || '未命名食物')}</div>
             <div style="font-size:0.8rem; color:var(--color-text-muted);">${f.calories} kcal</div>
           </div>
-          <button onclick="window.copyFoodLog(${f.id}, '${escapedName}', ${f.calories || 0}, ${f.protein || 0}, ${f.carbs || 0}, ${f.fat || 0}, ${f.image_path ? '\'' + f.image_path + '\'' : 'null'})" class="btn btn-secondary btn-small" style="flex-shrink:0;">加入</button>
+          <button onclick="window.copyFoodLog(${f.id}, '${fEscapedName}', ${f.calories || 0}, ${f.protein || 0}, ${f.carbs || 0}, ${f.fat || 0}, '${fEscapedImgPath}')" style="flex-shrink:0; padding:4px 10px; font-size:0.72rem; background:var(--color-surface); color:var(--color-text); border:1.5px solid var(--color-border); border-radius:6px; cursor:pointer;">加入</button>
         </div>
       `}).join('');
     } else {
@@ -908,7 +911,7 @@ window.showBatchResults = function() {
   resultsList.innerHTML = batchAnalysisResults.map((item, index) => `
     <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid var(--color-border);">
       <div style="flex:1;">
-        <div style="font-weight:500;">${item.name}</div>
+        <div style="font-weight:500;">${window.escapeHtml(item.name)}</div>
         <div style="font-size:0.8rem; color:var(--color-text-muted);">蛋白質 ${item.protein}g | 碳水 ${item.carbs}g | 脂肪 ${item.fat}g</div>
       </div>
       <div style="font-weight:bold; color:var(--color-primary);">${item.calories} kcal</div>
@@ -1082,7 +1085,7 @@ window.renderShareCard = function() {
           const icons = ['🍎','🥚','🍚','🐟','🥗','🍌','🍗','🥛','🥑','🍠'];
           return `
           <div style="display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid ${isDarkStyle?'rgba(255,255,255,0.05)':'#f0f0f0'}; font-size:0.75rem;">
-            <span style="color:${isDarkStyle?'#e2e8f0':'#333'};">${icons[i] || '🍽️'} ${f.name || f.description || '食物'}</span>
+            <span style="color:${isDarkStyle?'#e2e8f0':'#333'};">${icons[i] || '🍽️'} ${window.escapeHtml(f.name || f.description || '食物')}</span>
             <span style="color:${config.textColor}; font-weight:600;">${f.calories || 0} kcal</span>
           </div>`;
         }).join('') : `<div style="text-align:center; color:${subTextColor}; padding:20px 0; font-size:0.8rem;">尚無食物記錄</div>`}

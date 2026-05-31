@@ -8,14 +8,6 @@ const __dirname = dirname(__filename);
 
 const dbPath = join(__dirname, '../../data/caloscanai.db');
 
-// 取得本地時區的今天日期 (YYYY-MM-DD)
-function getLocalDate() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60000;
-  const localDate = new Date(now.getTime() - offset);
-  return localDate.toISOString().split('T')[0];
-}
-
 // Ensure data directory exists
 import fs from 'fs';
 const dataDir = join(__dirname, '../../data');
@@ -682,16 +674,19 @@ if (quoteCount.count === 0) {
   ];
 
   const insertQuote = db.prepare('INSERT INTO daily_quotes (quote, author) VALUES (?, ?)');
-  for (const quote of defaultQuotes) {
-    insertQuote.run(...quote);
-  }
+  const insertAllQuotes = db.transaction((quotes) => {
+    for (const quote of quotes) {
+      insertQuote.run(...quote);
+    }
+  });
+  insertAllQuotes(defaultQuotes);
   console.log('✅ 已插入 ' + defaultQuotes.length + ' 筆預設勵志語');
 }
 
 // User operations
 export const UserDB = {
   create(username, password, name, role = 'user') {
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    const hashedPassword = bcrypt.hashSync(password, 12);
     const stmt = db.prepare('INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)');
     const result = stmt.run(username, hashedPassword, name, role);
     return this.findById(result.lastInsertRowid);
@@ -891,7 +886,7 @@ export const DailyProgressDB = {
     const merged = [...progressRecords];
 
     foodLogsStats.forEach(fl => {
-      const d = fl.date instanceof Date ? fl.date.toISOString().split('T')[0] : fl.date;
+      const d = fl.date; // SQLite datetime already returns string in YYYY-MM-DD format
       if (!progressDates.has(d)) {
         merged.push({
           user_id: userId,
@@ -900,7 +895,7 @@ export const DailyProgressDB = {
           total_protein: fl.total_protein,
           total_carbs: fl.total_carbs,
           total_fat: fl.total_fat,
-          goal_calories: 2000,
+          goal_calories: fl.goal_calories ?? 2000,
           meal_count: fl.meal_count
         });
         progressDates.add(d);

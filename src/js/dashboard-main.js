@@ -91,8 +91,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (adminBtn) adminBtn.style.display = 'inline-block';
   }
 
-  // Load food log from API
-  window.loadFoodLog();
+  // Load food log from API - 先等 date.js 載入完成
+    try {
+      await import('../utils/date.js').then(m => {
+        window.getLocalDate = m.getLocalDate;
+      });
+    } catch (err) {
+      console.error('[CaloScanAi] Failed to load date.js:', err);
+    }
+    window.loadFoodLog();
 
   // Apply saved theme
   const savedTheme = localStorage.getItem('caloscanai_theme') || 'natural';
